@@ -296,8 +296,8 @@ async def get_trial_balance(db: AsyncSession, account_id: uuid.UUID, as_of: date
     total_credit = 0
     
     for row in result.all():
-        d = row.total_debit or 0
-        c = row.total_credit or 0
+        d = int(row.total_debit or 0)
+        c = int(row.total_credit or 0)
         
         # Calculate net balance for the trial balance presentation
         net_d = d - c if d > c else 0
@@ -354,8 +354,8 @@ async def get_balance_sheet_v2(db: AsyncSession, account_id: uuid.UUID, as_of: d
     net_income = 0
     
     for row in result.all():
-        d = row.debit or 0
-        c = row.credit or 0
+        d = int(row.debit or 0)
+        c = int(row.credit or 0)
         
         if row.account_type == AccountType.ASSET:
             bal = d - c

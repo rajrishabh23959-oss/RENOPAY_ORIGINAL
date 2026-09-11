@@ -341,7 +341,7 @@ TEMPLATES: dict[str, str] = {
   {% for a in balance_sheet.assets %}
   <tr><td>{{ a.name }}</td><td style="text-align:right" class="amount-neutral">{{ a.balance }}</td></tr>
   {% endfor %}
-  <tr class="highlight-row"><td>Total Assets</td><td style="text-align:right" class="amount-neutral">{{ balance_sheet.total_assets }}</td></tr>
+  <tr class="highlight-row"><td>Total Assets</td><td style="text-align:right" class="amount-neutral">₹{{ "%.2f"|format(balance_sheet.total_assets) }}</td></tr>
   </tbody>
 </table>
 <h3>Liabilities</h3>
@@ -350,7 +350,7 @@ TEMPLATES: dict[str, str] = {
   {% for l in balance_sheet.liabilities %}
   <tr><td>{{ l.name }}</td><td style="text-align:right" class="amount-neutral">{{ l.balance }}</td></tr>
   {% endfor %}
-  <tr class="highlight-row"><td>Total Liabilities</td><td style="text-align:right" class="amount-neutral">{{ balance_sheet.total_liabilities }}</td></tr>
+  <tr class="highlight-row"><td>Total Liabilities</td><td style="text-align:right" class="amount-neutral">₹{{ "%.2f"|format(balance_sheet.total_liabilities) }}</td></tr>
   </tbody>
 </table>
 <h3>Equity</h3>
@@ -359,12 +359,12 @@ TEMPLATES: dict[str, str] = {
   {% for e in balance_sheet.equity %}
   <tr><td>{{ e.name }}</td><td style="text-align:right" class="amount-neutral">{{ e.balance }}</td></tr>
   {% endfor %}
-  <tr class="highlight-row"><td>Total Equity</td><td style="text-align:right" class="amount-neutral">{{ balance_sheet.total_equity }}</td></tr>
+  <tr class="highlight-row"><td>Total Equity</td><td style="text-align:right" class="amount-neutral">₹{{ "%.2f"|format(balance_sheet.total_equity) }}</td></tr>
   </tbody>
 </table>
 <div class="summary-grid" style="margin-top: 20px;">
   <div class="summary-card"><div class="label">Total Assets</div><div class="value">₹{{ "%.2f"|format(balance_sheet.total_assets) }}</div></div>
-  <div class="summary-card"><div class="label">Total Liab + Equity</div><div class="value">₹{{ "%.2f"|format(balance_sheet.total_liabilities + balance_sheet.total_equity) }}</div></div>
+  <div class="summary-card"><div class="label">Total Liab + Equity</div><div class="value">₹{{ "%.2f"|format(balance_sheet.total_liab_equity) }}</div></div>
 </div>
 </div>
 

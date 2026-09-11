@@ -220,14 +220,18 @@ async def generate_report(
 
             # Balance Sheet v2
             bs_data = await accounting_engine.get_balance_sheet_v2(db, account.id, dt_to)
+            total_assets = float(bs_data["total_assets"]) / 100
+            total_liabilities = float(bs_data["total_liabilities"]) / 100
+            total_equity = float(bs_data["total_equity"]) / 100
             balance_sheet = {
                 "balanced": bs_data["balanced"],
-                "total_assets": bs_data["total_assets"] / 100,
-                "total_liabilities": bs_data["total_liabilities"] / 100,
-                "total_equity": bs_data["total_equity"] / 100,
-                "assets": [{"name": a["name"], "balance": f"₹{a['balance'] / 100:.2f}"} for a in bs_data["assets"]],
-                "liabilities": [{"name": line["name"], "balance": f"₹{line['balance'] / 100:.2f}"} for line in bs_data["liabilities"]],
-                "equity": [{"name": e["name"], "balance": f"₹{e['balance'] / 100:.2f}"} for e in bs_data["equity"]],
+                "total_assets": total_assets,
+                "total_liabilities": total_liabilities,
+                "total_equity": total_equity,
+                "total_liab_equity": total_liabilities + total_equity,
+                "assets": [{"name": a["name"], "balance": f"₹{float(a['balance']) / 100:.2f}"} for a in bs_data["assets"]],
+                "liabilities": [{"name": line["name"], "balance": f"₹{float(line['balance']) / 100:.2f}"} for line in bs_data["liabilities"]],
+                "equity": [{"name": e["name"], "balance": f"₹{float(e['balance']) / 100:.2f}"} for e in bs_data["equity"]],
             }
 
             # Cash flow
