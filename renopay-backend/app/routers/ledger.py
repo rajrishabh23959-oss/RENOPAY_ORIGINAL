@@ -269,8 +269,14 @@ async def generate_report(
 
     from fastapi.responses import Response
 
+    is_pdf = buf.getvalue().startswith(b"%PDF")
+    real_content_type = "application/pdf" if is_pdf else "text/html; charset=utf-8"
+    real_ext = "pdf" if is_pdf else "html"
+    if not filename.endswith(f".{real_ext}"):
+        filename = f"{filename.rsplit('.', 1)[0]}.{real_ext}"
+
     return Response(
         content=buf.getvalue(),
-        media_type=content_type,
+        media_type=real_content_type,
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

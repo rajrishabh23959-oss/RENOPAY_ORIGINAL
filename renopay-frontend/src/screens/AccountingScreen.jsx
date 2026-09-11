@@ -99,9 +99,9 @@ export function AccountingScreen({ onBack }) {
         type: "full_accounting_pack",
       });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `RenoPay_Accounting_Pack.pdf`;
+      const isPdf = blob.type === "application/pdf";
+      const ext = isPdf ? "pdf" : "html";
+      a.download = `RenoPay_Accounting_Pack.${ext}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
