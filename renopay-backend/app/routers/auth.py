@@ -107,6 +107,12 @@ async def set_pin(payload: SetPinRequest, user: User = Depends(get_current_user)
     return await _issue_tokens(db, user.id, None)
 
 
+def _ensure_utc(dt: datetime | None) -> datetime | None:
+    if dt is None:
+        return None
+    return dt.replace(tzinfo=timezone.utc) if dt.tzinfo is None else dt
+
+
 @router.post("/login", response_model=TokenResponse)
 async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.phone_number == payload.phone_number))
@@ -114,7 +120,7 @@ async def login(payload: LoginRequest, db: AsyncSession = Depends(get_db)):
     if user is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No account found with this phone number")
 
-    if user.pin_locked_until and user.pin_locked_until > datetime.now(timezone.utc):
+    if user.pin_locked_until and _ensure_utc(user.pin_locked_until) > datetime.now(timezone.utc):
         raise HTTPException(status.HTTP_423_LOCKED, "Account temporarily locked — too many failed PIN attempts")
 
     # If user has configured a PIN and a PIN was supplied, verify it
@@ -172,7 +178,7 @@ async def refresh_token_endpoint(payload: RefreshRequest, db: AsyncSession = Dep
         await db.commit()
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Token reused. All sessions revoked.")
         
-    if matched.expires_at <= datetime.now(timezone.utc):
+    if _ensure_utc(matched.expires_at) <= datetime.now(timezone.utc):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Expired refresh token")
 
     # Rotate: revoke old, issue new

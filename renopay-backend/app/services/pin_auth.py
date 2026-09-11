@@ -25,7 +25,8 @@ async def verify_user_pin(db, user: User, pin: str | None) -> None:
     the in-memory `user` object's lockout fields, consistent with how
     the payment engine already handles this (one commit at the end of
     the surrounding operation, not one per check)."""
-    if user.pin_locked_until and user.pin_locked_until > datetime.now(timezone.utc):
+    locked_until = user.pin_locked_until.replace(tzinfo=timezone.utc) if user.pin_locked_until and user.pin_locked_until.tzinfo is None else user.pin_locked_until
+    if locked_until and locked_until > datetime.now(timezone.utc):
         raise PinError("pin_locked", "Too many incorrect PIN attempts — try again later")
 
     if not user.pin_hash:

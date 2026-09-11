@@ -29,17 +29,27 @@ export function LoginScreen({ onDone, initialMode = "login" }) {
   const handleLoginSubmit = async (e) => {
     e?.preventDefault?.();
     setErr("");
-    if (!loginPhone.trim()) {
+    const cleanPhone = loginPhone.replace(/\D/g, "");
+    if (!cleanPhone) {
       setErr("Please enter your registered phone number");
       return;
     }
     setLoading(true);
     try {
-      await login(loginPhone.trim(), loginPin.trim() || null);
+      await login(cleanPhone, loginPin.trim() || null);
       await refreshProfile?.();
       onDone?.();
     } catch (e2) {
-      setErr(e2.response?.data?.detail?.message || e2.response?.data?.detail || "Invalid phone number or PIN");
+      const detail = e2.response?.data?.detail;
+      let msg = "Invalid phone number or PIN";
+      if (typeof detail === "string") {
+        msg = detail;
+      } else if (Array.isArray(detail)) {
+        msg = detail.map((d) => d.msg || d.message).join(", ");
+      } else if (detail?.message) {
+        msg = detail.message;
+      }
+      setErr(msg);
     } finally {
       setLoading(false);
     }
@@ -48,8 +58,13 @@ export function LoginScreen({ onDone, initialMode = "login" }) {
   const handleRegSubmit = async (e) => {
     e?.preventDefault?.();
     setErr("");
-    if (!formData.fullName.trim() || !formData.phone.trim() || !formData.email.trim()) {
+    const cleanPhone = formData.phone.replace(/\D/g, "");
+    if (!formData.fullName.trim() || !cleanPhone || !formData.email.trim()) {
       setErr("Please fill in Full Name, Phone Number, and Email");
+      return;
+    }
+    if (cleanPhone.length < 10 || cleanPhone.length > 15) {
+      setErr("Phone number must contain 10 to 15 digits");
       return;
     }
     if (formData.pin && formData.pin.length !== 6) {
@@ -60,7 +75,7 @@ export function LoginScreen({ onDone, initialMode = "login" }) {
     try {
       const payload = {
         full_name: formData.fullName.trim(),
-        phone_number: formData.phone.trim(),
+        phone_number: cleanPhone,
         email: formData.email.trim() || null,
         pan_number: formData.pan.trim() || null,
         aadhaar_number: formData.aadhaar.trim() || null,
@@ -84,7 +99,16 @@ export function LoginScreen({ onDone, initialMode = "login" }) {
       await refreshProfile?.();
       onDone?.();
     } catch (e2) {
-      setErr(e2.response?.data?.detail?.message || e2.response?.data?.detail || "Registration failed. Please check details.");
+      const detail = e2.response?.data?.detail;
+      let msg = "Registration failed. Please check details.";
+      if (typeof detail === "string") {
+        msg = detail;
+      } else if (Array.isArray(detail)) {
+        msg = detail.map((d) => d.msg || d.message).join(", ");
+      } else if (detail?.message) {
+        msg = detail.message;
+      }
+      setErr(msg);
     } finally {
       setLoading(false);
     }

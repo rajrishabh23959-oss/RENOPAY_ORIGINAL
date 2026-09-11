@@ -25,8 +25,13 @@ async def websocket_endpoint(
         if not user_id:
             await websocket.close(code=4401)
             return
+    except WebSocketDisconnect:
+        return
     except Exception:
-        await websocket.close(code=4401)
+        try:
+            await websocket.close(code=4401)
+        except Exception:
+            pass
         return
 
     # User is authenticated, register the connection
