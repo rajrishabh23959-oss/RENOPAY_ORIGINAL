@@ -116,6 +116,7 @@ async def post_transaction_to_journal(db: AsyncSession, txn: Transaction) -> Jou
         lines.append(JournalLine(
             journal_entry_id=entry.id,
             chart_account_id=asset_coa.id,
+            debit_paise=0,
             credit_paise=txn.amount_paise,
             payee_vpa=txn.counterparty_vpa,
             payee_name=txn.counterparty_name,
@@ -124,6 +125,7 @@ async def post_transaction_to_journal(db: AsyncSession, txn: Transaction) -> Jou
             journal_entry_id=entry.id,
             chart_account_id=expense_coa.id,
             debit_paise=txn.amount_paise,
+            credit_paise=0,
             payee_vpa=txn.counterparty_vpa,
             payee_name=txn.counterparty_name,
         ))
@@ -133,6 +135,7 @@ async def post_transaction_to_journal(db: AsyncSession, txn: Transaction) -> Jou
             lines.append(JournalLine(
                 journal_entry_id=entry.id,
                 chart_account_id=asset_coa.id,
+                debit_paise=0,
                 credit_paise=txn.round_up_paise,
                 payee_vpa="gold@renopay",
                 payee_name="Digital Gold",
@@ -141,6 +144,7 @@ async def post_transaction_to_journal(db: AsyncSession, txn: Transaction) -> Jou
                 journal_entry_id=entry.id,
                 chart_account_id=gold_coa.id,
                 debit_paise=txn.round_up_paise,
+                credit_paise=0,
                 payee_vpa="gold@renopay",
                 payee_name="Digital Gold",
             ))
@@ -154,12 +158,14 @@ async def post_transaction_to_journal(db: AsyncSession, txn: Transaction) -> Jou
             journal_entry_id=entry.id,
             chart_account_id=asset_coa.id,
             debit_paise=txn.amount_paise,
+            credit_paise=0,
             payee_vpa=txn.counterparty_vpa,
             payee_name=txn.counterparty_name,
         ))
         lines.append(JournalLine(
             journal_entry_id=entry.id,
             chart_account_id=income_coa.id,
+            debit_paise=0,
             credit_paise=txn.amount_paise,
             payee_vpa=txn.counterparty_vpa,
             payee_name=txn.counterparty_name,
@@ -201,17 +207,19 @@ async def get_ledger_for_account(db: AsyncSession, chart_account_id: uuid.UUID):
     lines = []
     running_balance = 0
     for line, entry in result.all():
+        d = line.debit_paise or 0
+        c = line.credit_paise or 0
         if coa.account_type in (AccountType.ASSET, AccountType.EXPENSE):
-            running_balance += (line.debit_paise - line.credit_paise)
+            running_balance += (d - c)
         else:
-            running_balance += (line.credit_paise - line.debit_paise)
+            running_balance += (c - d)
             
         lines.append({
             "date": entry.created_at,
             "entry_no": entry.entry_no,
             "narration": entry.narration,
-            "debit": line.debit_paise,
-            "credit": line.credit_paise,
+            "debit": d,
+            "credit": c,
             "balance": running_balance,
             "payee": line.payee_vpa or line.payee_name
         })
@@ -240,15 +248,17 @@ async def get_ledger_for_payee(db: AsyncSession, account_id: uuid.UUID, payee_vp
     total_credit = 0
     
     for line, entry, coa in result.all():
-        total_debit += line.debit_paise
-        total_credit += line.credit_paise
+        d = line.debit_paise or 0
+        c = line.credit_paise or 0
+        total_debit += d
+        total_credit += c
         lines.append({
             "date": entry.created_at,
             "entry_no": entry.entry_no,
             "narration": entry.narration,
             "account_name": coa.name,
-            "debit": line.debit_paise,
-            "credit": line.credit_paise
+            "debit": d,
+            "credit": c
         })
         
     return {
@@ -415,7 +425,9 @@ async def get_cash_flow(db: AsyncSession, account_id: uuid.UUID, from_date: date
     
     for row in result.all():
         # This is a very simplified mapping.
-        net = row.debit_paise - row.credit_paise
+        d = row.debit_paise or 0
+        c = row.credit_paise or 0
+        net = d - c
         
         if "Gold" in row.name or "Vault" in row.name or "Savings" in row.name:
             if net != 0:
