@@ -71,9 +71,16 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"Warning during seed check: {e}")
 
-    scheduler = start_scheduler()
+    import os
+    scheduler = None
+    if not os.environ.get("VERCEL"):
+        try:
+            scheduler = start_scheduler()
+        except Exception as e:
+            print(f"Warning starting scheduler: {e}")
     yield
-    scheduler.shutdown()
+    if scheduler:
+        scheduler.shutdown()
 
 
 app = FastAPI(
@@ -90,6 +97,15 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
+
+
+@app.middleware("http")
+async def handle_api_prefix(request, call_next):
+    if request.scope["path"].startswith("/api/"):
+        request.scope["path"] = request.scope["path"][4:]
+    elif request.scope["path"] == "/api":
+        request.scope["path"] = "/"
+    return await call_next(request)
 
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(accounts.router, prefix="/accounts", tags=["accounts"])

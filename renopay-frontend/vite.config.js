@@ -20,6 +20,21 @@ export default defineConfig({
       },
     },
   },
+  preview: {
+    port: 5173,
+    proxy: {
+      "/api": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ""),
+      },
+      "/ws": {
+        target: "ws://localhost:8000",
+        ws: true,
+        rewrite: (path) => path.replace(/^\/ws/, "/ws"),
+      },
+    },
+  },
   test: {
     environment: "jsdom",
     setupFiles: ["./vitest.setup.js"],

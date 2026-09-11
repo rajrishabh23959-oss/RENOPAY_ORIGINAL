@@ -5,8 +5,7 @@ import app.models  # Ensures all models are loaded
 
 async def init_db():
     async with engine.begin() as conn:
-        # Create all tables in the SQLite database
-        await conn.run_sync(Base.metadata.drop_all)
+        # Create all tables in the PostgreSQL database
         await conn.run_sync(Base.metadata.create_all)
     print("Database initialized successfully.")
 

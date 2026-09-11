@@ -23,9 +23,15 @@ from app.models.user import User, KYCStatus
 from app.models.account import Account
 from app.core.security import hash_pin
 
-TEST_DATABASE_URL = os.environ.get(
-    "TEST_DATABASE_URL", "sqlite+aiosqlite:///./test_renopay.db"
+raw_test_db = os.environ.get(
+    "TEST_DATABASE_URL", os.environ.get("DATABASE_URL", "postgresql+asyncpg://renopay:renopay@localhost:5432/renopay_test")
 )
+if raw_test_db.startswith("postgres://"):
+    TEST_DATABASE_URL = "postgresql+asyncpg://" + raw_test_db[len("postgres://"):]
+elif raw_test_db.startswith("postgresql://"):
+    TEST_DATABASE_URL = "postgresql+asyncpg://" + raw_test_db[len("postgresql://"):]
+else:
+    TEST_DATABASE_URL = raw_test_db
 
 
 @pytest.fixture(scope="session")

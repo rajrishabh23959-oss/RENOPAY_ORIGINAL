@@ -30,14 +30,14 @@ describe('LoginScreen', () => {
     vi.clearAllMocks();
   });
 
-  it('renders registration mode by default', () => {
-    renderWithAuth(<LoginScreen onDone={mockOnDone} />);
+  it('renders registration mode when initialMode is register', () => {
+    renderWithAuth(<LoginScreen onDone={mockOnDone} initialMode="register" />);
     expect(screen.getByText('Welcome to RenoPay')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Full Name')).toBeInTheDocument();
   });
 
   it('switches to login mode when clicking login link', () => {
-    renderWithAuth(<LoginScreen onDone={mockOnDone} />);
+    renderWithAuth(<LoginScreen onDone={mockOnDone} initialMode="register" />);
     fireEvent.click(screen.getByText('Already have an account? Log in →'));
     
     expect(screen.getByText('Welcome back')).toBeInTheDocument();
@@ -49,7 +49,6 @@ describe('LoginScreen', () => {
     mockLogin.mockResolvedValueOnce();
 
     renderWithAuth(<LoginScreen onDone={mockOnDone} />);
-    fireEvent.click(screen.getByText('Already have an account? Log in →'));
     
     fireEvent.change(screen.getByPlaceholderText('Phone Number'), { target: { value: '9999999999' } });
     fireEvent.change(screen.getByPlaceholderText('6-digit PIN (optional)'), { target: { value: '123456' } });
@@ -66,7 +65,6 @@ describe('LoginScreen', () => {
     mockLogin.mockRejectedValueOnce({ response: { data: { detail: 'Invalid credentials' } } });
 
     renderWithAuth(<LoginScreen onDone={mockOnDone} />);
-    fireEvent.click(screen.getByText('Already have an account? Log in →'));
     
     fireEvent.change(screen.getByPlaceholderText('Phone Number'), { target: { value: '9999999999' } });
     fireEvent.change(screen.getByPlaceholderText('6-digit PIN (optional)'), { target: { value: '123456' } });
@@ -83,7 +81,7 @@ describe('LoginScreen', () => {
     const mockRegister = vi.fn().mockResolvedValueOnce();
     render(
       <AuthContext.Provider value={{ login: mockLogin, register: mockRegister, refreshProfile: mockRefreshProfile }}>
-        <LoginScreen onDone={mockOnDone} />
+        <LoginScreen onDone={mockOnDone} initialMode="register" />
       </AuthContext.Provider>
     );
 

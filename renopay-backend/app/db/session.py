@@ -1,14 +1,12 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from app.core.config import settings
 
-# SQLite async engine requires check_same_thread=False because FastAPI
-# serves requests on multiple threads. PostgreSQL/asyncpg rejects this parameter.
-connect_args = {"check_same_thread": False} if settings.DATABASE_URL.startswith("sqlite") else {}
-
+# Neon Serverless PostgreSQL connection configuration
 engine = create_async_engine(
-    settings.DATABASE_URL,
+    settings.ASYNC_DATABASE_URL,
     echo=settings.DEBUG,
-    connect_args=connect_args,
+    pool_pre_ping=True,
+    pool_recycle=300,
 )
 
 AsyncSessionLocal = async_sessionmaker(

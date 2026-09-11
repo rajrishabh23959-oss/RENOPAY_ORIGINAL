@@ -12,9 +12,29 @@ class Settings(BaseSettings):
     ENV: str = "development"  # development | staging | production
     DEBUG: bool = False
 
-    # --- Database ---
-    DATABASE_URL: str = "sqlite+aiosqlite:///./renopay.db"
-    SYNC_DATABASE_URL: str = "sqlite:///./renopay.db"
+    # --- Database (Neon PostgreSQL) ---
+    DATABASE_URL: str = "postgresql+asyncpg://renopay:renopay@localhost:5432/renopay"
+    SYNC_DATABASE_URL: str = ""
+
+    @property
+    def ASYNC_DATABASE_URL(self) -> str:
+        url = self.DATABASE_URL
+        if url.startswith("postgres://"):
+            url = "postgresql+asyncpg://" + url[len("postgres://"):]
+        elif url.startswith("postgresql://"):
+            url = "postgresql+asyncpg://" + url[len("postgresql://"):]
+        return url
+
+    @property
+    def RESOLVED_SYNC_DATABASE_URL(self) -> str:
+        url = self.SYNC_DATABASE_URL or self.DATABASE_URL
+        if url.startswith("postgres://"):
+            url = "postgresql+psycopg2://" + url[len("postgres://"):]
+        elif url.startswith("postgresql://"):
+            url = "postgresql+psycopg2://" + url[len("postgresql://"):]
+        elif url.startswith("postgresql+asyncpg://"):
+            url = "postgresql+psycopg2://" + url[len("postgresql+asyncpg://"):]
+        return url
 
     # --- Redis (OTP cache, rate limiting, PIN attempt lockout) ---
     REDIS_URL: str = "redis://localhost:6379/0"
@@ -80,6 +100,7 @@ class Settings(BaseSettings):
         "http://localhost:3000",
         "http://10.0.2.2:8000",
         "http://10.0.2.2:5173",
+        "https://renopay-original.vercel.app",
     ]
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
