@@ -1,0 +1,88 @@
+"""
+Central configuration. Everything secret or environment-specific lives here,
+loaded from a .env file — never hardcoded in code.
+"""
+from pydantic import field_validator, ValidationInfo
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    # --- App ---
+    APP_NAME: str = "RenoPay"
+    ENV: str = "development"  # development | staging | production
+    DEBUG: bool = False
+
+    # --- Database ---
+    DATABASE_URL: str = "sqlite+aiosqlite:///./renopay.db"
+    SYNC_DATABASE_URL: str = "sqlite:///./renopay.db"
+
+    # --- Redis (OTP cache, rate limiting, PIN attempt lockout) ---
+    REDIS_URL: str = "redis://localhost:6379/0"
+
+    # --- Auth / JWT ---
+    JWT_SECRET_KEY: str = "CHANGE_ME_IN_ENV"
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 15
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 30
+
+    # --- PIN / OTP security ---
+    OTP_EXPIRE_SECONDS: int = 300
+    MAX_PIN_ATTEMPTS: int = 5
+    PIN_LOCKOUT_MINUTES: int = 15
+
+    # --- SMS delivery for OTPs ---
+    # "console" (default) logs the OTP server-side instead of sending a
+    # real SMS — safe for local dev/demos. Set to "twilio" for real
+    # delivery once TWILIO_* credentials below are filled in.
+    SMS_PROVIDER: str = "console"
+    TWILIO_ACCOUNT_SID: str = ""
+    TWILIO_AUTH_TOKEN: str = ""
+    TWILIO_FROM_NUMBER: str = ""
+
+    # --- Encryption for sensitive fields (Aadhaar ref, etc.) ---
+    FIELD_ENCRYPTION_KEY: str = "CHANGE_ME_32_BYTE_FERNET_KEY_HERE=="
+
+    @field_validator("JWT_SECRET_KEY")
+    @classmethod
+    def validate_jwt_secret(cls, v: str, info: ValidationInfo):
+        if v == "CHANGE_ME_IN_ENV" and info.data.get("ENV", "development") != "development":
+            raise ValueError("JWT_SECRET_KEY must be changed in non-development environments")
+        return v
+
+    @field_validator("FIELD_ENCRYPTION_KEY")
+    @classmethod
+    def validate_fernet_key(cls, v: str, info: ValidationInfo):
+        if v.startswith("CHANGE_ME") and info.data.get("ENV", "development") != "development":
+            raise ValueError("FIELD_ENCRYPTION_KEY must be changed in non-development environments")
+        return v
+
+    @field_validator("CORS_ORIGINS", mode="before")
+    @classmethod
+    def validate_cors_origins(cls, v):
+        if isinstance(v, str):
+            v_stripped = v.strip()
+            if v_stripped.startswith("[") and v_stripped.endswith("]"):
+                import json
+                return json.loads(v_stripped)
+            return [x.strip() for x in v.split(",") if x.strip()]
+        return v
+
+    # --- Business rules (mirrors the mock's constants) ---
+    UPI_LITE_MAX_BALANCE_PAISE: int = 200_000       # ₹2,000
+    UPI_LITE_MAX_TXN_PAISE: int = 50_000             # ₹500
+    FINGERPRINT_MAX_TXN_PAISE: int = 200_000         # ₹2,000 — below this, skip PIN
+    HIGH_VALUE_TXN_PAISE: int = 200_000              # ₹2,000 — triggers SentinAI heavier checks
+    PRIVACY_CODE_THRESHOLD_PAISE: int = 200_000
+
+    # --- CORS ---
+    CORS_ORIGINS: list[str] = [
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "http://10.0.2.2:8000",
+        "http://10.0.2.2:5173",
+    ]
+
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+
+
+settings = Settings()

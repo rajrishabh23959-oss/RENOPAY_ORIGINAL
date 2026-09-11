@@ -1,0 +1,33 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [main, master]
+    paths: ["renopay-frontend/**"]
+  pull_request:
+    branches: [main, master]
+    paths: ["renopay-frontend/**"]
+
+defaults:
+  run:
+    working-directory: renopay-frontend
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: renopay-frontend/package-lock.json
+      - run: npm ci
+      - name: Production build
+        run: npm run build
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: renopay-frontend-dist
+          path: renopay-frontend/dist
+          retention-days: 7

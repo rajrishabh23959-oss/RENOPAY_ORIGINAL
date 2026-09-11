@@ -1,0 +1,53 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-renopay}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-renopay}
+      POSTGRES_DB: ${POSTGRES_DB:-renopay}
+    volumes:
+      - renopay_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U renopay"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./renopay-backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: ./renopay-backend/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-renopay}:${POSTGRES_PASSWORD:-renopay}@db:5432/${POSTGRES_DB:-renopay}
+      SYNC_DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-renopay}:${POSTGRES_PASSWORD:-renopay}@db:5432/${POSTGRES_DB:-renopay}
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "8000:8000"
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+  web:
+    build:
+      context: ./renopay-frontend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "80:8080"
+
+volumes:
+  renopay_pgdata:

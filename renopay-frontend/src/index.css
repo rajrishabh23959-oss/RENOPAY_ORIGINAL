@@ -1,0 +1,102 @@
+@import url("https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html, body, #root {
+  background: #0A0908;
+  color: #F5F3F0;
+  font-family: "Outfit", sans-serif;
+  min-height: 100vh;
+}
+
+::-webkit-scrollbar { width: 3px; }
+::-webkit-scrollbar-thumb { background: rgba(255, 106, 26, 0.33); border-radius: 2px; }
+
+input {
+  background: #151210;
+  border: 1.5px solid #2A2320;
+  color: #F5F3F0;
+  border-radius: 13px;
+  padding: 13px 16px;
+  font-size: 15px;
+  width: 100%;
+  outline: none;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+input:focus { border-color: #FF6A1A; box-shadow: 0 0 0 3px rgba(255, 106, 26, 0.28); }
+input::placeholder { color: #5C564F; }
+
+.btn { cursor: pointer; border: none; outline: none; transition: all 0.18s; }
+.btn:active { transform: scale(0.94); }
+
+/* ── Signature Radial Glow Effects ──────────────────────────────── */
+
+/* Large glow for hero/header sections */
+.glow-hero {
+  position: relative;
+}
+.glow-hero::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 340px;
+  height: 340px;
+  background: radial-gradient(circle, rgba(255,163,82,0.30) 0%, rgba(255,106,26,0.18) 35%, rgba(184,66,14,0.06) 65%, transparent 85%);
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+  animation: glowPulse 3s ease-in-out infinite;
+}
+
+/* Smaller glow for icon badges */
+.glow-icon {
+  position: relative;
+}
+.glow-icon::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80px;
+  height: 80px;
+  background: radial-gradient(circle, rgba(255,163,82,0.35) 0%, rgba(255,106,26,0.15) 50%, transparent 80%);
+  filter: blur(30px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Horizontal glow divider between sections */
+.glow-divider {
+  position: relative;
+  height: 1px;
+  background: #2A2320;
+}
+.glow-divider::before {
+  content: '';
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 40px;
+  background: radial-gradient(ellipse, rgba(255,106,26,0.18) 0%, transparent 70%);
+  filter: blur(20px);
+  pointer-events: none;
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}

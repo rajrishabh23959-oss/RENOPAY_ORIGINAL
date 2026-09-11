@@ -1,0 +1,393 @@
+/* ══════════════════════════════════════════════════
+   Cash Balance Card — RenoPay Signature Balance Card
+   Featuring Normal View & Advanced Denomination View
+   ══════════════════════════════════════════════════ */
+
+.cbc-card {
+  border-radius: 24px;
+  background: #151210;
+  border: 1px solid #2A2320;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  position: relative;
+}
+
+.cbc-card:hover {
+  border-color: rgba(255, 106, 26, 0.25);
+}
+
+/* ── Top View Switcher (Normal vs Advanced) ─────── */
+.cbc-toggle-bar {
+  display: flex;
+  background: #0C0A09;
+  padding: 4px;
+  border-bottom: 1px solid #2A2320;
+  gap: 4px;
+}
+
+.cbc-toggle-tab {
+  flex: 1;
+  padding: 8px 14px;
+  border-radius: 16px;
+  border: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: #78716C;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.cbc-toggle-tab:hover:not(.active) {
+  color: #D6D3D1;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.cbc-toggle-tab.active {
+  background: linear-gradient(135deg, #FF6A1A 0%, #D9480F 100%);
+  color: #FFFFFF;
+  font-weight: 700;
+  box-shadow: 0 2px 10px rgba(255, 106, 26, 0.35);
+}
+
+/* ── View Content Container ─────────────────────── */
+.cbc-view-wrap {
+  padding: 20px 20px 18px;
+  animation: cbcFade 0.25s ease-out;
+}
+
+@keyframes cbcFade {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ══════════════════════════════════════════════════
+   NORMAL VIEW
+   ══════════════════════════════════════════════════ */
+.cbc-normal-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.cbc-acc-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.cbc-bank-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: #A8A29E;
+  font-weight: 500;
+}
+
+.cbc-bank-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: rgba(255, 106, 26, 0.12);
+  color: #FF6A1A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+}
+
+.cbc-vpa-pill {
+  font-size: 11px;
+  color: #78716C;
+  font-family: 'Space Mono', monospace;
+  background: #1C1917;
+  padding: 3px 8px;
+  border-radius: 8px;
+  border: 1px solid #2A2320;
+}
+
+.cbc-balance-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.cbc-balance-caption {
+  font-size: 11px;
+  color: #78716C;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  font-weight: 600;
+}
+
+.cbc-eye-toggle {
+  background: transparent;
+  border: none;
+  color: #78716C;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s;
+}
+
+.cbc-eye-toggle:hover {
+  color: #D6D3D1;
+}
+
+.cbc-amount-display {
+  font-family: 'Space Mono', monospace;
+  font-size: 36px;
+  font-weight: 800;
+  color: #FFFFFF;
+  letter-spacing: -0.5px;
+  line-height: 1.15;
+  margin-bottom: 16px;
+}
+
+.cbc-amount-display .rupee {
+  color: #FF6A1A;
+  margin-right: 4px;
+}
+
+.cbc-normal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 14px;
+  border-top: 1px solid #221D1A;
+}
+
+.cbc-status-tag {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #22C55E;
+  font-weight: 600;
+}
+
+.cbc-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22C55E;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.6);
+}
+
+.cbc-switch-hint {
+  font-size: 11px;
+  color: #FF6A1A;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: opacity 0.15s;
+}
+
+.cbc-switch-hint:hover {
+  opacity: 0.8;
+}
+
+/* ══════════════════════════════════════════════════
+   ADVANCED VIEW (Cash Breakdown Table)
+   ══════════════════════════════════════════════════ */
+.cbc-advanced-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.cbc-adv-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.cbc-adv-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cbc-adv-total-chip {
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  font-weight: 700;
+  color: #FF6A1A;
+  background: rgba(255, 106, 26, 0.1);
+  border: 1px solid rgba(255, 106, 26, 0.25);
+  padding: 3px 8px;
+  border-radius: 12px;
+}
+
+/* ── Section Headings (Notes / Coins) ────────────── */
+.cbc-table-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #A8A29E;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin: 10px 0 6px 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── 3-Column Table Header ───────────────────────── */
+.cbc-table-head {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.6fr;
+  padding: 6px 8px 6px;
+  border-bottom: 1px solid #26201D;
+  font-size: 11px;
+  font-weight: 600;
+  color: #78716C;
+}
+
+.cbc-th-denom {
+  text-align: left;
+}
+
+.cbc-th-count {
+  text-align: center;
+}
+
+.cbc-th-total {
+  text-align: right;
+}
+
+/* ── Data Rows ───────────────────────────────────── */
+.cbc-table-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cbc-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1.6fr;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 10px;
+  font-size: 13px;
+  transition: background 0.15s;
+}
+
+.cbc-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.cbc-cell-denom {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cbc-note-thumb {
+  width: 38px;
+  height: 19px;
+  border-radius: 4px;
+  object-fit: cover;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  flex-shrink: 0;
+}
+
+.cbc-note-fallback {
+  width: 38px;
+  height: 19px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, #4C8C56 0%, #2E6036 100%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: 800;
+  color: #E8F5E9;
+  flex-shrink: 0;
+}
+
+.cbc-coin-thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+  flex-shrink: 0;
+}
+
+.cbc-denom-name {
+  font-weight: 600;
+  color: #EDE8E1;
+  font-family: 'Space Mono', monospace;
+  font-size: 12.5px;
+}
+
+.cbc-cell-count {
+  text-align: center;
+  font-weight: 600;
+  color: #D6D3D1;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+}
+
+.cbc-cell-total {
+  text-align: right;
+  font-weight: 700;
+  color: #FFFFFF;
+  font-family: 'Space Mono', monospace;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Highlighted Total Cash Row ──────────────────── */
+.cbc-total-row {
+  margin-top: 14px;
+  background: rgba(255, 106, 26, 0.08);
+  border: 1px solid rgba(255, 106, 26, 0.28);
+  border-radius: 14px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cbc-total-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #FF6A1A;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cbc-total-amount {
+  font-family: 'Space Mono', monospace;
+  font-size: 16px;
+  font-weight: 800;
+  color: #FF6A1A;
+  font-variant-numeric: tabular-nums;
+}

@@ -1,0 +1,95 @@
+import { useState, useEffect } from "react";
+import { PaymentAPI, AnalyticsAPI } from "../lib/api";
+import { useRenoSocket } from "../hooks/useRenoSocket";
+import { Badge, TrustBadge, Card } from "../components/ui";
+import { fmt, ago } from "../lib/format";
+
+export function HistoryScreen({ onBack }) {
+  const [txns, setTxns] = useState([]);
+  const [filter, setFilter] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [downloadingRef, setDownloadingRef] = useState(null);
+
+  const load = () => PaymentAPI.getTransactions(20, 0)
+    .then((res) => { setTxns(res.data || res); })
+    .catch(console.error)
+    .finally(() => setLoading(false));
+
+  useEffect(() => { load(); }, []);
+  useRenoSocket((evt) => { if (evt.type === "balance_update") load(); });
+
+  const handleDownloadReceipt = async (txn_ref) => {
+    if (downloadingRef) return;
+    setDownloadingRef(txn_ref);
+    try {
+      const blob = await AnalyticsAPI.downloadReport({
+        type: "transaction_receipt",
+        txn_ref: txn_ref,
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Receipt_${txn_ref}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert("Failed to download PDF receipt: " + (e?.response?.data?.detail || e.message));
+    } finally {
+      setDownloadingRef(null);
+    }
+  };
+
+  const shown = txns.filter((t) => filter === "all" || t.type === filter);
+
+  return (
+    <div className="min-h-screen bg-bg pb-[100px]">
+      <div className="pt-[50px] pb-[18px] px-[22px] flex items-center gap-3">
+        <button className="btn bg-card border border-line text-textLight rounded-xl px-3.5 py-2.5 text-base" onClick={onBack}>←</button>
+        <h2 className="text-[22px] font-extrabold text-textLight">Transactions</h2>
+      </div>
+      <div className="px-[22px]">
+        <div className="flex gap-2 mb-4">
+          {[["all", "All"], ["debit", "Sent"], ["credit", "Received"]].map(([v, l]) => (
+            <button key={v} className="btn flex-1 py-2 rounded-[10px] text-xs font-semibold"
+                    style={{ background: filter === v ? "#FF6A1A" : "#151210", color: filter === v ? "#fff" : "#5C564F", border: `1px solid ${filter === v ? "#FF6A1A" : "#2A2320"}` }}
+                    onClick={() => setFilter(v)}>
+              {l}
+            </button>
+          ))}
+        </div>
+        {shown.length === 0 && <p className="text-muted text-center py-9">No transactions</p>}
+        {shown.map((t) => (
+          <Card key={t.txn_ref} className="p-3.5 mb-2.5 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center text-base shrink-0">💳</div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-semibold truncate text-textLight">{t.description}</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <TrustBadge score={t.trust_score} />
+                <p className="text-muted text-[10px]">{ago(t.created_at)}</p>
+              </div>
+            </div>
+            <div className="text-right shrink-0 flex flex-col items-end gap-1">
+              <p className="font-mono font-bold text-[13px]" style={{ color: t.type === "credit" ? "#22C55E" : "#ff3d60" }}>
+                {t.type === "credit" ? "+" : "-"}{fmt(t.amount)}
+              </p>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleDownloadReceipt(t.txn_ref)}
+                  disabled={downloadingRef === t.txn_ref}
+                  className="btn bg-card border border-line hover:border-accent/40 text-textLight px-1.5 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1 cursor-pointer"
+                  title="Download PDF Receipt"
+                >
+                  {downloadingRef === t.txn_ref ? "⏳" : "📄 PDF"}
+                </button>
+                <Badge color="#FF6A1A" size={9}>{t.category}</Badge>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+}

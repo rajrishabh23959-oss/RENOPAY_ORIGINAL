@@ -1,0 +1,503 @@
+/* ══════════════════════════════════════════════════
+   Note Slider — RenoPay's signature drag-to-pay UI
+   Featuring original Indian currency photographs
+   ══════════════════════════════════════════════════ */
+
+/* ── Container ───────────────────────────────────── */
+.ns-container {
+  position: relative;
+  user-select: none;
+  -webkit-user-select: none;
+  padding-bottom: 12px;
+}
+
+/* ── Total Display ───────────────────────────────── */
+.ns-total-card {
+  text-align: center;
+  padding: 22px 16px 18px;
+  border-radius: 20px;
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.5s, box-shadow 0.5s;
+}
+
+.ns-total-amount {
+  font-family: 'Space Mono', monospace;
+  font-size: 42px;
+  font-weight: 700;
+  transition: color 0.5s;
+  position: relative;
+  z-index: 1;
+  line-height: 1.1;
+}
+
+.ns-total-label {
+  font-size: 12px;
+  color: #8C847B;
+  margin-top: 6px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Glow behind total — normal (orange) */
+.ns-total-card.ns-normal::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,106,26,0.25) 0%, transparent 70%);
+  filter: blur(40px);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.7;
+  animation: glowPulse 3s ease-in-out infinite;
+}
+
+/* Glow behind total — anxious (red) */
+.ns-total-card.ns-anxious::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 260px;
+  height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(220,38,38,0.35) 0%, transparent 65%);
+  filter: blur(40px);
+  pointer-events: none;
+  z-index: 0;
+  animation: anxietyPulse 1.2s ease-in-out infinite;
+}
+
+.ns-total-card.ns-anxious {
+  border-color: rgba(220,38,38,0.35) !important;
+}
+
+/* ── Drop Zone ───────────────────────────────────── */
+.ns-drop-zone {
+  width: 100%;
+  min-height: 88px;
+  border: 2px dashed #2A2320;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+  padding: 14px 12px;
+  transition: border-color 0.2s, background 0.2s, transform 0.2s, box-shadow 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.ns-drop-zone::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  background: radial-gradient(circle, rgba(255,106,26,0.04) 0%, transparent 70%);
+  animation: dropZoneBreath 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.ns-drop-zone.ns-drop-active {
+  border-color: #FF6A1A;
+  border-style: solid;
+  background: rgba(255,106,26,0.08);
+  transform: scale(1.02);
+  box-shadow: 0 0 30px rgba(255,106,26,0.2), inset 0 0 20px rgba(255,106,26,0.08);
+}
+
+.ns-drop-zone.ns-drop-active::before {
+  background: radial-gradient(circle, rgba(255,106,26,0.14) 0%, transparent 60%);
+  animation: dropZoneActive 0.6s ease-in-out infinite;
+}
+
+.ns-drop-avatar {
+  font-size: 26px;
+  margin-bottom: 4px;
+  transition: transform 0.2s;
+}
+
+.ns-drop-zone.ns-drop-active .ns-drop-avatar {
+  transform: scale(1.25);
+}
+
+.ns-drop-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #EDE8E1;
+  transition: color 0.2s;
+}
+
+.ns-drop-zone.ns-drop-active .ns-drop-text {
+  color: #FF6A1A;
+}
+
+/* Floating "+₹X" texts */
+.ns-floater-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.ns-floater {
+  position: absolute;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  font-family: 'Space Mono', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: #22C55E;
+  animation: floatUp 0.8s ease-out forwards;
+  text-shadow: 0 0 8px rgba(34,197,94,0.4);
+}
+
+/* ── Section Label ───────────────────────────────── */
+.ns-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8C847B;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+  padding-left: 2px;
+}
+
+/* ── Note Grid ───────────────────────────────────── */
+.ns-note-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+/* ── Note Card (Original Photo) ──────────────────── */
+.ns-note {
+  aspect-ratio: 16 / 7.6;
+  border-radius: 8px;
+  position: relative;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 1px 3px rgba(0,0,0,0.3);
+  transition: transform 0.15s cubic-bezier(.4,0,.2,1), box-shadow 0.15s, filter 0.5s, opacity 0.2s;
+  border: 1px solid rgba(255,255,255,0.12);
+  animation: noteAppear 0.35s ease both;
+  background: #181512;
+}
+
+.ns-note:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.6), 0 2px 6px rgba(0,0,0,0.35);
+  border-color: rgba(255,106,26,0.4);
+}
+
+.ns-note:active {
+  cursor: grabbing;
+  transform: scale(1.06);
+  box-shadow: 0 12px 28px rgba(0,0,0,0.7);
+}
+
+/* Original Note Photograph Image */
+.ns-note-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  pointer-events: none;
+  border-radius: 7px;
+}
+
+/* Denomination pill on the note photo */
+.ns-note-badge {
+  position: absolute;
+  bottom: 3px;
+  right: 4px;
+  background: rgba(14, 11, 9, 0.82);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  letter-spacing: 0.2px;
+  pointer-events: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+}
+
+/* Dim notes during drag (non-dragged notes) */
+.ns-note.ns-dimmed {
+  opacity: 0.35;
+  transform: scale(0.96);
+  pointer-events: none;
+}
+
+/* ── Drag Ghost ──────────────────────────────────── */
+.ns-ghost {
+  position: fixed;
+  z-index: 10000;
+  pointer-events: none;
+  box-shadow: 0 12px 38px rgba(0,0,0,0.65), 0 4px 16px rgba(0,0,0,0.4);
+  transition: transform 0.06s linear, opacity 0.06s;
+  will-change: transform, left, top;
+}
+
+.ns-ghost.ns-ghost-near {
+  transform: scale(1.15) !important;
+  box-shadow: 0 16px 48px rgba(255,106,26,0.35), 0 8px 26px rgba(0,0,0,0.5);
+}
+
+/* ── Coin Tray ───────────────────────────────────── */
+.ns-coin-tray {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+
+/* ── Coin Button (Original Photo) ────────────────── */
+.ns-coin {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  cursor: pointer;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: transparent;
+  border: none;
+  padding: 0;
+  transition: transform 0.12s cubic-bezier(.4,0,.2,1), filter 0.15s;
+  filter: drop-shadow(0 6px 12px rgba(0,0,0,0.6));
+}
+
+.ns-coin:hover {
+  transform: translateY(-3px) scale(1.08);
+  filter: drop-shadow(0 8px 16px rgba(255,106,26,0.35)) drop-shadow(0 6px 12px rgba(0,0,0,0.6));
+}
+
+.ns-coin:active {
+  transform: scale(0.9);
+}
+
+.ns-coin.ns-coin-bounce {
+  animation: coinBounce 0.3s ease;
+}
+
+/* Original Coin Photograph Image */
+.ns-coin-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 50%;
+  display: block;
+  pointer-events: none;
+}
+
+/* Denomination label under coin */
+.ns-coin-badge {
+  position: absolute;
+  bottom: -6px;
+  background: rgba(18, 14, 12, 0.95);
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  border-radius: 10px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: #FFE28A;
+  padding: 0 6px;
+  line-height: 15px;
+  letter-spacing: 0.2px;
+  pointer-events: none;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.7);
+}
+
+/* ── Denomination Breakdown ──────────────────────── */
+.ns-breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+  margin-bottom: 10px;
+  min-height: 22px;
+}
+
+.ns-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: #FF6A1A;
+  background: rgba(255,106,26,0.08);
+  border: 1px solid rgba(255,106,26,0.2);
+  animation: badgePop 0.2s cubic-bezier(.4,0,.2,1);
+}
+
+/* ── Controls (Undo / Clear) ─────────────────────── */
+.ns-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.ns-ctrl-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: #151210;
+  border: 1px solid #2A2320;
+  color: #8C847B;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.ns-ctrl-btn:hover:not(:disabled) {
+  background: #1E1A17;
+  color: #EDE8E1;
+  border-color: #3A322D;
+}
+
+.ns-ctrl-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.ns-ctrl-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ── Mode Toggle in PayScreen ────────────────────── */
+.ns-mode-toggle {
+  display: flex;
+  background: #151210;
+  border: 1px solid #2A2320;
+  border-radius: 14px;
+  padding: 3px;
+  margin-bottom: 14px;
+  gap: 3px;
+}
+
+.ns-mode-btn {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 11px;
+  background: transparent;
+  border: none;
+  color: #8C847B;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.ns-mode-btn.ns-mode-active {
+  background: #FF6A1A;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(255,106,26,0.3);
+  font-weight: 700;
+}
+
+.ns-mode-btn:hover:not(.ns-mode-active) {
+  color: #EDE8E1;
+}
+
+/* ── Anxiety Shake Animation ─────────────────────── */
+.ns-shake {
+  animation: anxietyShake 0.4s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+@keyframes anxietyShake {
+  10%, 90% { transform: translate3d(-1px, 0, 0); }
+  20%, 80% { transform: translate3d(2px, 0, 0); }
+  30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
+  40%, 60% { transform: translate3d(3px, 0, 0); }
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.6; transform: translateX(-50%) scale(1); }
+  50% { opacity: 0.85; transform: translateX(-50%) scale(1.08); }
+}
+
+@keyframes anxietyPulse {
+  0%, 100% { opacity: 0.7; transform: translateX(-50%) scale(1); }
+  50% { opacity: 1; transform: translateX(-50%) scale(1.15); }
+}
+
+@keyframes dropZoneBreath {
+  0%, 100% { opacity: 0.3; transform: scale(0.98); }
+  50% { opacity: 0.7; transform: scale(1.02); }
+}
+
+@keyframes dropZoneActive {
+  0%, 100% { transform: scale(1.02); }
+  50% { transform: scale(1.04); }
+}
+
+@keyframes floatUp {
+  0% { opacity: 1; transform: translateX(-50%) translateY(0) scale(0.8); }
+  50% { opacity: 1; transform: translateX(-50%) translateY(-25px) scale(1.2); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-50px) scale(1); }
+}
+
+@keyframes coinBounce {
+  0% { transform: scale(1); }
+  40% { transform: scale(0.82); }
+  75% { transform: scale(1.16); }
+  100% { transform: scale(1); }
+}
+
+@keyframes badgePop {
+  0% { transform: scale(0.7); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes noteAppear {
+  0% { transform: translateY(8px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.ns-high-spend-hint {
+  font-size: 10px;
+  color: #FF6A1A;
+  margin-top: 4px;
+  position: relative;
+  z-index: 1;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}

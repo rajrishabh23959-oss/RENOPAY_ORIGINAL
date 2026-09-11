@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">RENOPAY</string>
+    <string name="title_activity_main">RENOPAY</string>
+    <string name="package_name">com.rishabh.renopay</string>
+    <string name="custom_url_scheme">com.rishabh.renopay</string>
+</resources>
