@@ -18,17 +18,39 @@ class Settings(BaseSettings):
 
     @property
     def ASYNC_DATABASE_URL(self) -> str:
+        from urllib.parse import urlsplit, parse_qs, urlencode, urlunsplit
         url = self.DATABASE_URL
         if url.startswith("postgres://"):
             url = "postgresql+asyncpg://" + url[len("postgres://"):]
         elif url.startswith("postgresql://"):
             url = "postgresql+asyncpg://" + url[len("postgresql://"):]
-        # asyncpg requires ssl=require instead of sslmode=require
-        if "sslmode=require" in url:
-            url = url.replace("sslmode=require", "ssl=require")
-        elif "sslmode=" in url:
-            url = url.replace("sslmode=disable", "ssl=disable").replace("sslmode=prefer", "ssl=prefer")
-        return url
+
+        try:
+            parts = urlsplit(url)
+            query_params = parse_qs(parts.query)
+
+            # Map sslmode -> ssl for asyncpg
+            if "sslmode" in query_params:
+                mode = query_params.pop("sslmode")[0]
+                if mode in ("require", "verify-ca", "verify-full", "prefer"):
+                    query_params["ssl"] = ["require"]
+            elif "ssl" not in query_params and "neon.tech" in parts.netloc:
+                query_params["ssl"] = ["require"]
+
+            # Remove parameters that asyncpg.connect does NOT accept (e.g. channel_binding from Neon)
+            unsupported = ["channel_binding", "endpoint", "gssencmode", "sslrootcert", "sslcert", "sslkey"]
+            for key in unsupported:
+                query_params.pop(key, None)
+
+            flat_query = []
+            for k, v_list in query_params.items():
+                for v in v_list:
+                    flat_query.append((k, v))
+
+            new_query = urlencode(flat_query)
+            return urlunsplit((parts.scheme, parts.netloc, parts.path, new_query, parts.fragment))
+        except Exception:
+            return url
 
     @property
     def RESOLVED_SYNC_DATABASE_URL(self) -> str:
