@@ -12,21 +12,19 @@ from app.services.scheduler import start_scheduler
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Ensure all tables exist on startup
-    from app.db.session import engine, AsyncSessionLocal
-    from app.db.base import Base
-    import app.models  # noqa: F401
-    from app.models.user import User, KYCStatus
-    from app.models.account import Account
-    from app.core.security import hash_pin
-    from app.core.money import generate_virtual_acc_no
-    from sqlalchemy import select
-
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-    # Seed demo users if empty
     try:
+        from app.db.session import engine, AsyncSessionLocal
+        from app.db.base import Base
+        import app.models  # noqa: F401
+        from app.models.user import User, KYCStatus
+        from app.models.account import Account
+        from app.core.security import hash_pin
+        from app.core.money import generate_virtual_acc_no
+        from sqlalchemy import select
+
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+
         async with AsyncSessionLocal() as session:
             res = await session.execute(select(User).where(User.phone_number == "9876543210"))
             if not res.scalar_one_or_none():
@@ -69,7 +67,7 @@ async def lifespan(app: FastAPI):
                 session.add(account2)
                 await session.commit()
     except Exception as e:
-        print(f"Warning during seed check: {e}")
+        print(f"Warning during database initialization: {e}")
 
     import os
     scheduler = None
@@ -107,6 +105,7 @@ async def handle_api_prefix(request, call_next):
         request.scope["path"] = "/"
     return await call_next(request)
 
+
 app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(accounts.router, prefix="/accounts", tags=["accounts"])
 app.include_router(payments.router, prefix="/payments", tags=["payments"])
@@ -126,4 +125,24 @@ app.include_router(accounting.router, prefix="/accounting", tags=["accounting"])
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "1.0.0"}
+    db_status = "unconfigured"
+    db_err = None
+    if "localhost" not in settings.DATABASE_URL:
+        try:
+            from app.db.session import engine
+            from sqlalchemy import text
+            async with engine.connect() as conn:
+                await conn.execute(text("SELECT 1"))
+            db_status = "connected"
+        except Exception as e:
+            db_status = "error"
+            db_err = str(e)
+    else:
+        db_status = "missing_DATABASE_URL_in_vercel"
+
+    return {
+        "status": "ok",
+        "version": "1.0.0",
+        "database": db_status,
+        "database_error": db_err,
+    }

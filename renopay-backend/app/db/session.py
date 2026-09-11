@@ -2,9 +2,14 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from app.core.config import settings
 
 # Neon Serverless PostgreSQL connection configuration
+connect_args = {}
+if "neon.tech" in settings.ASYNC_DATABASE_URL and "ssl=" not in settings.ASYNC_DATABASE_URL:
+    connect_args["ssl"] = "require"
+
 engine = create_async_engine(
     settings.ASYNC_DATABASE_URL,
     echo=settings.DEBUG,
+    connect_args=connect_args,
     pool_pre_ping=True,
     pool_recycle=300,
 )
