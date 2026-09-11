@@ -226,8 +226,10 @@ async def generate_report(
 
         buf = await generate_pdf(template, data)
 
-    return StreamingResponse(
-        buf,
+    from fastapi.responses import Response
+
+    return Response(
+        content=buf.getvalue(),
         media_type=content_type,
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

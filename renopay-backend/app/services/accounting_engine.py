@@ -277,7 +277,7 @@ async def get_trial_balance(db: AsyncSession, account_id: uuid.UUID, as_of: date
     if as_of:
         query = query.where(JournalEntry.created_at <= as_of)
         
-    query = query.group_by(ChartOfAccount.id).order_by(ChartOfAccount.code)
+    query = query.group_by(ChartOfAccount.id, ChartOfAccount.code, ChartOfAccount.name).order_by(ChartOfAccount.code)
     
     result = await db.execute(query)
     
