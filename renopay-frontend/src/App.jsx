@@ -46,7 +46,18 @@ function AppShell() {
   return (
     <div className="max-w-[430px] mx-auto relative">
       {screen === "home"          && <HomeScreen onNavigate={go} />}
-      {screen === "pay"           && <PayScreen onBack={() => go("home")} onNavigate={go} prefillVpa={payPrefill?.vpa || (typeof payPrefill === "string" ? payPrefill : "")} prefillAmount={payPrefill?.amount} prefillNote={payPrefill?.note} />}
+      {screen === "pay"           && (
+        <PayScreen
+          onBack={() => go("home")}
+          onNavigate={go}
+          prefillVpa={payPrefill?.vpa || (typeof payPrefill === "string" ? payPrefill : "")}
+          prefillAmount={payPrefill?.amount}
+          prefillNote={payPrefill?.note}
+          prefillName={payPrefill?.name}
+          prefillCategory={payPrefill?.category}
+          prefillApp={payPrefill?.app}
+        />
+      )}
       {screen === "expenses"      && <ExpensesScreen onBack={() => go("home")} />}
       {screen === "history"       && <HistoryScreen onBack={() => go("home")} />}
       {screen === "addmoney"      && <AddMoneyScreen onBack={() => go("home")} />}

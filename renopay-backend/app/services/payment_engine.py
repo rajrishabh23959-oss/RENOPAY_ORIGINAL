@@ -84,6 +84,7 @@ async def send_money(
     skip_pin_check: bool = False,
     idempotency_key: str | None = None,
     use_upi_lite: bool = False,
+    receiver_name: str | None = None,
 ) -> PaymentResult:
     if amount_paise <= 0:
         raise PaymentError("invalid_amount", "Amount must be greater than zero")
@@ -130,10 +131,21 @@ async def send_money(
     if sender_account_id is None:
         raise PaymentError("sender_not_found", "Sender account not found")
 
-    receiver_result = await db.execute(select(Account.id).where(Account.vpa == receiver_vpa))
+    clean_receiver_vpa = receiver_vpa.strip().lower()
+    receiver_result = await db.execute(select(Account.id).where(Account.vpa == clean_receiver_vpa))
     receiver_account_id = receiver_result.scalar_one_or_none()
     if receiver_account_id is None:
-        raise PaymentError("vpa_not_found", f"VPA not found: {receiver_vpa}")
+        if "@" in clean_receiver_vpa:
+            parts = clean_receiver_vpa.split("@")
+            if len(parts) == 2 and parts[0] and parts[1]:
+                from app.services.upi_directory import get_or_create_external_account
+                ext_acc = await get_or_create_external_account(db, clean_receiver_vpa, receiver_name)
+                receiver_account_id = ext_acc.id
+            else:
+                raise PaymentError("vpa_not_found", f"VPA not found: {receiver_vpa}")
+        else:
+            raise PaymentError("vpa_not_found", f"VPA not found: {receiver_vpa}")
+
     if receiver_account_id == sender_account_id:
         raise PaymentError("self_transfer", "Cannot send money to yourself")
 

@@ -7,6 +7,8 @@ from app.core.money import paise_to_rupees
 class ResolveVPAResponse(BaseModel):
     vpa: str
     name: str
+    app: str | None = "UPI"
+    bank: str | None = None
 
 
 class SendMoneyRequest(BaseModel):
@@ -23,6 +25,7 @@ class SendMoneyRequest(BaseModel):
     device_tilt_deg: float | None = None
     use_upi_lite: bool = False
     idempotency_key: str | None = Field(default=None, max_length=100)
+    receiver_name: str | None = None
 
 
 class SendMoneyResponse(BaseModel):

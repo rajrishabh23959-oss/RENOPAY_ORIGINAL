@@ -14,19 +14,39 @@ from app.schemas.payment import (
 )
 from app.services import payment_engine
 from app.services.payment_engine import PaymentError
+from app.services.upi_directory import identify_upi_provider, format_name_from_vpa
 from app.ws.manager import manager as ws_manager
 
 router = APIRouter()
 
 
 @router.get("/resolve/{vpa}", response_model=ResolveVPAResponse)
-async def resolve_vpa(vpa: str, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Account, User).join(User, Account.user_id == User.id).where(Account.vpa == vpa))
+async def resolve_vpa(
+    vpa: str,
+    pn: str | None = Query(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    clean_vpa = vpa.strip()
+    result = await db.execute(select(Account, User).join(User, Account.user_id == User.id).where(Account.vpa == clean_vpa))
     row = result.first()
-    if row is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "VPA not found")
-    _, user = row
-    return ResolveVPAResponse(vpa=vpa, name=user.full_name)
+    if row is not None:
+        _, user = row
+        return ResolveVPAResponse(vpa=clean_vpa, name=user.full_name, app="RenoPay", bank="RenoPay Virtual Bank")
+
+    # External UPI handle validation (Paytm, PhonePe, Google Pay, BharatPe, BHIM, Banks, etc.)
+    if "@" in clean_vpa:
+        parts = clean_vpa.split("@")
+        if len(parts) == 2 and parts[0] and parts[1]:
+            info = identify_upi_provider(clean_vpa)
+            display_name = pn.strip() if (pn and pn.strip()) else format_name_from_vpa(clean_vpa)
+            return ResolveVPAResponse(
+                vpa=clean_vpa,
+                name=display_name,
+                app=info["app_name"],
+                bank=info["bank_name"],
+            )
+
+    raise HTTPException(status.HTTP_404_NOT_FOUND, "VPA not found")
 
 
 @router.post("/send", response_model=SendMoneyResponse)
@@ -49,6 +69,7 @@ async def send_money(
             device_tilt_deg=payload.device_tilt_deg,
             use_upi_lite=payload.use_upi_lite,
             idempotency_key=payload.idempotency_key,
+            receiver_name=payload.receiver_name,
         )
     except PaymentError as e:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, {"code": e.code, "message": e.message})

@@ -59,7 +59,8 @@ export const AccountAPI = {
 
 // ---------- Payments ----------
 export const PaymentAPI = {
-  resolveVPA: (vpa) => http.get(`/payments/resolve/${encodeURIComponent(vpa)}`).then((r) => r.data),
+  resolveVPA: (vpa, pn = null) =>
+    http.get(`/payments/resolve/${encodeURIComponent(vpa)}`, { params: pn ? { pn } : {} }).then((r) => r.data),
 
   sendMoney: (payload) => http.post("/payments/send", payload).then((r) => r.data),
 

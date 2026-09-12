@@ -3,28 +3,114 @@ import jsQR from "jsqr";
 import { PaymentAPI } from "../lib/api";
 import { Btn, Badge, Card } from "../components/ui";
 
-// Parses `upi://pay?pa=someone@bank&pn=Name...` style payloads as well as bare VPAs
-function extractVpaFromQrText(text) {
-  if (!text) return null;
-  const trimmed = text.trim();
-  // bare VPA
-  if (trimmed.includes("@") && !trimmed.includes("://") && !trimmed.includes("?")) {
-    return trimmed;
-  }
-  // Try parsing as URL or URI
-  try {
-    const url = new URL(trimmed);
-    const pa = url.searchParams.get("pa");
-    if (pa) return decodeURIComponent(pa);
-  } catch {
-    /* fallback to regex */
+// Universal UPI QR Parser: Handles Paytm, PhonePe, Google Pay, BharatPe, BHIM, Bank QRs, bare VPAs & dynamic bills
+export function parseUniversalUpiQr(rawText) {
+  if (!rawText || typeof rawText !== "string") return null;
+  const text = rawText.trim();
+
+  // 1. Helper to extract parameter irrespective of case or encoding
+  const getParam = (key) => {
+    const match = text.match(new RegExp(`[?&]${key}=([^&#\\s]+)`, "i"));
+    return match ? decodeURIComponent(match[1].replace(/\+/g, " ")) : null;
+  };
+
+  const pa = getParam("pa");
+  const pn = getParam("pn");
+  const am = getParam("am");
+  const tn = getParam("tn") || getParam("note");
+  const mc = getParam("mc");
+  const tr = getParam("tr") || getParam("tid");
+
+  let vpa = pa;
+
+  // 2. If no pa param, search for bare VPA pattern (e.g. user@paytm, 9876543210@ybl)
+  if (!vpa) {
+    const bareMatch = text.match(/([a-zA-Z0-9.\-_+]+@[a-zA-Z0-9]+)/);
+    if (bareMatch) {
+      vpa = bareMatch[1];
+    }
   }
 
-  // Regex fallback for upi://pay?pa=xxx
-  const match = trimmed.match(/[?&]pa=([^&]+)/i);
-  if (match) return decodeURIComponent(match[1]);
+  if (!vpa || !vpa.includes("@")) return null;
 
-  return null;
+  vpa = vpa.trim().toLowerCase();
+
+  // 3. Identify UPI App and styling badge
+  const handle = vpa.split("@")[1] || "";
+  let app = "UPI";
+  let appIcon = "📲";
+  let badgeColor = "#22C55E";
+
+  if (["paytm", "ptyes", "pthdfc", "ptsbi", "ptaxis"].includes(handle)) {
+    app = "Paytm";
+    appIcon = "🔷";
+    badgeColor = "#00B9F5";
+  } else if (["ybl", "ibl", "axl"].includes(handle)) {
+    app = "PhonePe";
+    appIcon = "🟣";
+    badgeColor = "#5F259F";
+  } else if (["okaxis", "okhdfcbank", "okicici", "oksbi"].includes(handle)) {
+    app = "Google Pay";
+    appIcon = "🟢";
+    badgeColor = "#4285F4";
+  } else if (["bharatpe", "postbank"].includes(handle)) {
+    app = "BharatPe";
+    appIcon = "⚡";
+    badgeColor = "#00ACC1";
+  } else if (handle === "renopay") {
+    app = "RenoPay";
+    appIcon = "🔥";
+    badgeColor = "#FF6A1A";
+  } else if (["apl", "rapl"].includes(handle)) {
+    app = "Amazon Pay";
+    appIcon = "🛒";
+    badgeColor = "#FF9900";
+  } else if (handle === "cred") {
+    app = "CRED";
+    appIcon = "💳";
+    badgeColor = "#E0E0E0";
+  } else if (handle === "upi") {
+    app = "BHIM UPI";
+    appIcon = "🇮🇳";
+    badgeColor = "#22C55E";
+  } else {
+    app = `${handle.toUpperCase()} UPI`;
+    appIcon = "🏦";
+    badgeColor = "#FFA000";
+  }
+
+  // 4. Map merchant category code (mc) to RenoPay TxnCategory
+  let category = "Other";
+  if (mc) {
+    const num = parseInt(mc, 10);
+    if ((num >= 5400 && num <= 5499) || (num >= 5300 && num <= 5399) || num === 5912 || num === 5999) {
+      category = "Shopping";
+    } else if (num >= 5811 && num <= 5814) {
+      category = "Food";
+    } else if ((num >= 5541 && num <= 5542) || num === 4121 || num === 4111) {
+      category = "Transport";
+    } else if (num === 4900 || num === 4814 || num === 4899) {
+      category = "Bills";
+    } else if (num >= 8011 && num <= 8099) {
+      category = "Health";
+    } else if (num >= 8211 && num <= 8299) {
+      category = "Education";
+    } else if (num >= 7800 && num <= 7999) {
+      category = "Entertainment";
+    }
+  }
+
+  return {
+    vpa,
+    name: pn ? pn.trim() : "",
+    amount: am && !isNaN(parseFloat(am)) && parseFloat(am) > 0 ? parseFloat(am) : null,
+    note: tn ? tn.trim() : "",
+    category,
+    app,
+    appIcon,
+    badgeColor,
+    tr,
+  };
 }
 
 export function ScanScreen({ onBack, onSuccess }) {
@@ -34,6 +120,8 @@ export function ScanScreen({ onBack, onSuccess }) {
   const [cameraStatus, setCameraStatus] = useState("starting"); // starting | active | denied | unsupported
   const [detected, setDetected] = useState(null);
   const [detectedName, setDetectedName] = useState("");
+  const [detectedApp, setDetectedApp] = useState("");
+  const [detectedAmount, setDetectedAmount] = useState(null);
   const [uploadPreview, setUploadPreview] = useState(null);
   const [processingImage, setProcessingImage] = useState(false);
 
@@ -49,20 +137,33 @@ export function ScanScreen({ onBack, onSuccess }) {
     streamRef.current = null;
   };
 
-  const handleDetectedVpa = async (vpaCandidate) => {
+  const handleDetectedUpi = async (parsed) => {
     stopCamera();
     try {
-      const res = await PaymentAPI.resolveVPA(vpaCandidate);
-      setDetected(vpaCandidate);
-      setDetectedName(res?.name || "");
+      const res = await PaymentAPI.resolveVPA(parsed.vpa, parsed.name);
+      const finalName = res?.name || parsed.name || parsed.vpa;
+      const finalApp = res?.app || parsed.app || "UPI";
+
+      setDetected(parsed.vpa);
+      setDetectedName(finalName);
+      setDetectedApp(finalApp);
+      setDetectedAmount(parsed.amount);
       setErr("");
+
       setTimeout(() => {
-        onSuccess?.({ vpa: vpaCandidate, name: res?.name });
+        onSuccess?.({
+          vpa: parsed.vpa,
+          name: finalName,
+          amount: parsed.amount,
+          note: parsed.note,
+          category: parsed.category,
+          app: finalApp,
+        });
       }, 700);
     } catch {
-      setErr(`Scanned "${vpaCandidate}" but it's not a registered RenoPay account`);
+      setErr(`Scanned "${parsed.vpa}" but it's not a valid UPI handle`);
       setMode("manual");
-      setVpa(vpaCandidate);
+      setVpa(parsed.vpa);
     }
   };
 
@@ -81,9 +182,9 @@ export function ScanScreen({ onBack, onSuccess }) {
     const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
 
     if (code?.data) {
-      const vpaCandidate = extractVpaFromQrText(code.data);
-      if (vpaCandidate) {
-        handleDetectedVpa(vpaCandidate);
+      const parsed = parseUniversalUpiQr(code.data);
+      if (parsed) {
+        handleDetectedUpi(parsed);
         return;
       }
     }
@@ -142,14 +243,14 @@ export function ScanScreen({ onBack, onSuccess }) {
 
         setProcessingImage(false);
         if (code?.data) {
-          const vpaCandidate = extractVpaFromQrText(code.data);
-          if (vpaCandidate) {
-            handleDetectedVpa(vpaCandidate);
+          const parsed = parseUniversalUpiQr(code.data);
+          if (parsed) {
+            handleDetectedUpi(parsed);
           } else {
-            setErr(`Found QR data: "${code.data.slice(0, 30)}..." but no valid UPI ID found.`);
+            setErr(`Scanned text: "${code.data.slice(0, 40)}..." is not a recognizable UPI QR code.`);
           }
         } else {
-          setErr("No QR code detected in this image. Please upload a clear QR code image.");
+          setErr("No QR code detected in this image. Please upload a clearer QR code image.");
         }
       };
       img.onerror = () => {
@@ -162,12 +263,17 @@ export function ScanScreen({ onBack, onSuccess }) {
   };
 
   const submitManual = async () => {
-    if (!vpa.includes("@")) { setErr("Enter valid UPI ID e.g. name@renopay"); return; }
+    if (!vpa.includes("@")) { setErr("Enter valid UPI ID e.g. merchant@paytm or name@renopay"); return; }
     try {
       const res = await PaymentAPI.resolveVPA(vpa);
-      onSuccess?.({ vpa, name: res?.name });
+      const parsed = parseUniversalUpiQr(vpa) || {};
+      onSuccess?.({
+        vpa,
+        name: res?.name,
+        app: res?.app || parsed.app || "UPI",
+      });
     } catch {
-      setErr("UPI ID / RenoPay account not found");
+      setErr("Could not verify this UPI ID.");
     }
   };
 
@@ -246,13 +352,22 @@ export function ScanScreen({ onBack, onSuccess }) {
                 </div>
               )}
               {detected && (
-                <div className="absolute bottom-4 left-3 right-3 text-center bg-black/80 backdrop-blur-md py-2 px-3 rounded-xl border border-teal/40">
-                  <p className="text-teal text-sm font-bold animate-fadeIn">✅ {detectedName || detected}</p>
-                  <p className="text-[11px] text-muted">{detected} · Redirecting to pay...</p>
+                <div className="absolute bottom-4 left-3 right-3 text-center bg-black/85 backdrop-blur-md py-2.5 px-3.5 rounded-xl border border-teal/40">
+                  <div className="flex items-center justify-center gap-1.5 mb-0.5">
+                    {detectedApp && (
+                      <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-bold bg-white/10 text-textLight border border-white/15">
+                        {detectedApp}
+                      </span>
+                    )}
+                    <p className="text-teal text-sm font-bold animate-fadeIn">✅ {detectedName || detected}</p>
+                  </div>
+                  <p className="text-[11px] text-muted">
+                    {detected} {detectedAmount ? `· Preset: ₹${detectedAmount}` : ""} · Redirecting to pay...
+                  </p>
                 </div>
               )}
             </div>
-            <p className="text-muted text-xs text-center">Point your camera at a RenoPay / UPI QR code</p>
+            <p className="text-muted text-xs text-center">Point your camera at any UPI QR code (Paytm, PhonePe, GPay, etc.)</p>
           </div>
         )}
 
@@ -289,14 +404,23 @@ export function ScanScreen({ onBack, onSuccess }) {
                   {uploadPreview ? "Choose Another Image" : "Select or Drop QR Code Image"}
                 </p>
                 <p className="text-muted text-xs">
-                  Upload downloaded RenoPay QR or photo of a QR code
+                  Upload Paytm, PhonePe, GPay, BharatPe or any UPI QR image
                 </p>
               </div>
 
               {detected && (
                 <div className="mt-4 p-3 rounded-xl bg-teal/10 border border-teal/30">
-                  <p className="text-teal text-sm font-bold">✅ Found: {detectedName || detected}</p>
-                  <p className="text-muted text-xs">{detected} · Opening payment screen...</p>
+                  <div className="flex items-center justify-center gap-1.5 mb-1">
+                    {detectedApp && (
+                      <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-bold bg-white/10 text-textLight border border-white/15">
+                        {detectedApp}
+                      </span>
+                    )}
+                    <p className="text-teal text-sm font-bold">✅ Found: {detectedName || detected}</p>
+                  </div>
+                  <p className="text-muted text-xs">
+                    {detected} {detectedAmount ? `· Preset: ₹${detectedAmount}` : ""} · Opening payment screen...
+                  </p>
                 </div>
               )}
             </Card>

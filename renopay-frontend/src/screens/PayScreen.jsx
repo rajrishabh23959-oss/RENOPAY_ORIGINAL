@@ -13,7 +13,7 @@ const CATS = [
   { id: "Education", icon: "📚" }, { id: "Other", icon: "📦" },
 ];
 
-export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefillNote }) {
+export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefillNote, prefillName, prefillCategory, prefillApp }) {
   let refreshProfile = null;
   try {
     const auth = useAuth();
@@ -24,10 +24,11 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
 
   const [step, setStep] = useState(prefillVpa ? "amount" : "vpa");
   const [vpa, setVpa] = useState(prefillVpa || "");
-  const [resolvedName, setResolvedName] = useState("");
+  const [resolvedName, setResolvedName] = useState(prefillName || "");
+  const [payeeApp, setPayeeApp] = useState(prefillApp || "");
   const [amount, setAmount] = useState(prefillAmount ? String(prefillAmount) : "");
   const [desc, setDesc] = useState(prefillNote || "");
-  const [category, setCategory] = useState("Other");
+  const [category, setCategory] = useState(prefillCategory || "Other");
   const [useLite, setUseLite] = useState(false);
   const [payMode, setPayMode] = useState("classic");
   const [err, setErr] = useState("");
@@ -38,21 +39,25 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
 
   useEffect(() => {
-    if (prefillVpa) resolveVpa(prefillVpa);
+    if (prefillVpa) resolveVpa(prefillVpa, prefillName);
     if (prefillAmount) setAmount(String(prefillAmount));
     if (prefillNote) setDesc(prefillNote);
+    if (prefillCategory) setCategory(prefillCategory);
+    if (prefillApp) setPayeeApp(prefillApp);
+    if (prefillName) setResolvedName(prefillName);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prefillVpa, prefillAmount, prefillNote]);
+  }, [prefillVpa, prefillAmount, prefillNote, prefillCategory, prefillApp, prefillName]);
 
-  const resolveVpa = async (v) => {
+  const resolveVpa = async (v, hintName = null) => {
     setErr("");
     try {
-      const r = await PaymentAPI.resolveVPA(v);
-      setResolvedName(r.name);
+      const r = await PaymentAPI.resolveVPA(v, hintName || prefillName);
+      setResolvedName(r.name || hintName || prefillName || v);
+      if (r.app) setPayeeApp(r.app);
       setVpa(v);
       setStep("amount");
     } catch {
-      setErr("VPA not found");
+      setErr("Could not verify this UPI address");
     }
   };
 
@@ -101,6 +106,7 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
         to_vpa: vpa, amount: Number(amount), description: desc || "UPI Transfer", pin,
         category, device_fingerprint: getDeviceFingerprint(), use_upi_lite: useLite && Number(amount) <= 500,
         idempotency_key: idempotencyKey,
+        receiver_name: resolvedName,
       };
       const res = await PaymentAPI.sendMoney(payload);
       setResult({ success: true, ...res });
@@ -145,13 +151,13 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
           <form onSubmit={handleResolveSubmit} className="animate-fadeUp">
             <Card className="p-5 mb-4">
               <p className="text-muted text-[11px] tracking-wide mb-2 uppercase">Pay to (UPI ID)</p>
-              <input placeholder="anyone@renopay" value={vpa} onChange={(e) => setVpa(e.target.value)} />
+              <input placeholder="e.g. merchant@paytm or user@renopay" value={vpa} onChange={(e) => setVpa(e.target.value)} />
               {err && <p className="text-danger text-xs mt-2">{err}</p>}
               <div className="flex items-center gap-2 mt-2 text-xs text-muted">
                 <span>Try:</span>
                 <button type="button" className="text-accent hover:underline cursor-pointer" onClick={() => { setVpa("praveen@renopay"); resolveVpa("praveen@renopay"); }}>praveen@renopay</button>
                 <span>or</span>
-                <button type="button" className="text-accent hover:underline cursor-pointer" onClick={() => { setVpa("alex@renopay"); resolveVpa("alex@renopay"); }}>alex@renopay</button>
+                <button type="button" className="text-accent hover:underline cursor-pointer" onClick={() => { setVpa("groceries@paytm"); resolveVpa("groceries@paytm", "City Supermarket"); }}>groceries@paytm</button>
               </div>
             </Card>
             <Btn type="submit">Find & Pay →</Btn>
@@ -160,9 +166,19 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
 
         {step === "amount" && (
           <div className="animate-fadeUp">
-            <Card className="p-4 mb-4 flex items-center gap-3">
-              <div className="w-11 h-11 rounded-[13px] bg-accent/[.28] flex items-center justify-center text-xl glow-icon">👤</div>
-              <div><p className="font-bold text-[15px] text-textLight">{resolvedName}</p><p className="text-muted text-xs">{vpa}</p></div>
+            <Card className="p-4 mb-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-11 h-11 rounded-[13px] bg-accent/[.28] flex items-center justify-center text-xl glow-icon shrink-0">👤</div>
+                <div className="min-w-0">
+                  <p className="font-bold text-[15px] text-textLight truncate">{resolvedName}</p>
+                  <p className="text-muted text-xs font-mono truncate">{vpa}</p>
+                </div>
+              </div>
+              {payeeApp && (
+                <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-card border border-line text-textLight shrink-0">
+                  {payeeApp}
+                </span>
+              )}
             </Card>
 
             {/* ── Payment Mode Toggle ── */}
