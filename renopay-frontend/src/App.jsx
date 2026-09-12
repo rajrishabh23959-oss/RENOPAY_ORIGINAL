@@ -46,12 +46,12 @@ function AppShell() {
   return (
     <div className="max-w-[430px] mx-auto relative">
       {screen === "home"          && <HomeScreen onNavigate={go} />}
-      {screen === "pay"           && <PayScreen onBack={() => go("home")} onNavigate={go} prefillVpa={payPrefill?.vpa} prefillAmount={payPrefill?.amount} prefillNote={payPrefill?.note} />}
+      {screen === "pay"           && <PayScreen onBack={() => go("home")} onNavigate={go} prefillVpa={payPrefill?.vpa || (typeof payPrefill === "string" ? payPrefill : "")} prefillAmount={payPrefill?.amount} prefillNote={payPrefill?.note} />}
       {screen === "expenses"      && <ExpensesScreen onBack={() => go("home")} />}
       {screen === "history"       && <HistoryScreen onBack={() => go("home")} />}
       {screen === "addmoney"      && <AddMoneyScreen onBack={() => go("home")} />}
       {screen === "qr"            && <QRScreen onBack={() => go("home")} />}
-      {screen === "scan"          && <ScanScreen onBack={() => go("home")} onSuccess={(v) => go("pay", v)} />}
+      {screen === "scan"          && <ScanScreen onBack={() => go("home")} onSuccess={(data) => go("pay", typeof data === "string" ? { vpa: data } : data)} />}
       {screen === "profile"       && <ProfileScreen onBack={() => go("home")} onLoggedOut={() => go("login")} />}
       {screen === "requests"      && <RequestScreen onBack={() => go("home")} />}
       {screen === "split"         && <SplitScreen onBack={() => go("home")} />}

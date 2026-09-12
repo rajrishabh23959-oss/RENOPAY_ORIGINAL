@@ -13,7 +13,7 @@ const CATS = [
   { id: "Education", icon: "📚" }, { id: "Other", icon: "📦" },
 ];
 
-export function PayScreen({ onBack, onNavigate, prefillVpa }) {
+export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefillNote }) {
   let refreshProfile = null;
   try {
     const auth = useAuth();
@@ -25,8 +25,8 @@ export function PayScreen({ onBack, onNavigate, prefillVpa }) {
   const [step, setStep] = useState(prefillVpa ? "amount" : "vpa");
   const [vpa, setVpa] = useState(prefillVpa || "");
   const [resolvedName, setResolvedName] = useState("");
-  const [amount, setAmount] = useState("");
-  const [desc, setDesc] = useState("");
+  const [amount, setAmount] = useState(prefillAmount ? String(prefillAmount) : "");
+  const [desc, setDesc] = useState(prefillNote || "");
   const [category, setCategory] = useState("Other");
   const [useLite, setUseLite] = useState(false);
   const [payMode, setPayMode] = useState("classic");
@@ -39,8 +39,10 @@ export function PayScreen({ onBack, onNavigate, prefillVpa }) {
 
   useEffect(() => {
     if (prefillVpa) resolveVpa(prefillVpa);
+    if (prefillAmount) setAmount(String(prefillAmount));
+    if (prefillNote) setDesc(prefillNote);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prefillVpa]);
+  }, [prefillVpa, prefillAmount, prefillNote]);
 
   const resolveVpa = async (v) => {
     setErr("");
