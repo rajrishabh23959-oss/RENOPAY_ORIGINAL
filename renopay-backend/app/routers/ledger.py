@@ -123,24 +123,31 @@ async def generate_report(
             entries_dict = {}
             for entry, line, coa in all_rows:
                 if entry.id not in entries_dict:
+                    entry_date = entry.created_at.strftime("%Y-%m-%d") if entry.created_at else ""
                     entries_dict[entry.id] = {
-                        "entry_no": entry.entry_no,
-                        "date": entry.created_at.strftime("%Y-%m-%d"),
-                        "narration": entry.narration,
+                        "entry_no": entry.entry_no or "",
+                        "date": entry_date,
+                        "narration": entry.narration or "",
                         "created_at": entry.created_at,
                         "lines": [],
                     }
                 d = line.debit_paise or 0
                 c = line.credit_paise or 0
                 entries_dict[entry.id]["lines"].append({
-                    "account_name": coa.name,
+                    "account_name": getattr(coa, "name", "Account") or "Account",
                     "debit": f"₹{d / 100:.2f}" if d else "",
                     "credit": f"₹{c / 100:.2f}" if c else "",
                 })
 
+            def _je_sort_key(x):
+                dt = x.get("created_at")
+                if dt is None:
+                    return ""
+                return dt.isoformat() if hasattr(dt, "isoformat") else str(dt)
+
             journal_entries_data = sorted(
                 entries_dict.values(),
-                key=lambda x: x["created_at"],
+                key=_je_sort_key,
                 reverse=True
             )[:200]
 
@@ -150,15 +157,17 @@ async def generate_report(
                 gl = gl_map[coa.id]
                 d = line.debit_paise or 0
                 c = line.credit_paise or 0
-                if coa.account_type in (accounting_engine.AccountType.ASSET, accounting_engine.AccountType.EXPENSE):
+                coa_type = getattr(coa, "account_type", None)
+                if coa_type in (accounting_engine.AccountType.ASSET, accounting_engine.AccountType.EXPENSE):
                     gl["running_balance"] += (d - c)
                 else:
                     gl["running_balance"] += (c - d)
 
+                entry_date = entry.created_at.strftime("%Y-%m-%d") if entry.created_at else ""
                 gl["lines"].append({
-                    "date": entry.created_at.strftime("%Y-%m-%d"),
-                    "entry_no": entry.entry_no,
-                    "narration": entry.narration,
+                    "date": entry_date,
+                    "entry_no": entry.entry_no or "",
+                    "narration": entry.narration or "",
                     "payee": line.payee_vpa or line.payee_name or "—",
                     "debit": f"₹{d / 100:.2f}" if d else "",
                     "credit": f"₹{c / 100:.2f}" if c else "",
@@ -166,12 +175,14 @@ async def generate_report(
                 })
 
             general_ledgers = []
-            for coa in sorted(coas.values(), key=lambda c: c.code):
+            for coa in sorted(coas.values(), key=lambda c: getattr(c, "code", "") or ""):
                 gl = gl_map.get(coa.id)
                 if gl and gl["lines"]:
+                    code_val = getattr(coa, "code", "") or ""
+                    clean_code = code_val.split('-')[1] if '-' in code_val else code_val
                     general_ledgers.append({
-                        "code": coa.code.split('-')[1] if '-' in coa.code else coa.code,
-                        "name": coa.name,
+                        "code": clean_code,
+                        "name": getattr(coa, "name", "Account") or "Account",
                         "lines": gl["lines"],
                         "closing_balance": f"₹{gl['running_balance'] / 100:.2f}",
                     })
@@ -185,11 +196,12 @@ async def generate_report(
                     c = line.credit_paise or 0
                     p["total_debit"] += d
                     p["total_credit"] += c
+                    entry_date = entry.created_at.strftime("%Y-%m-%d") if entry.created_at else ""
                     p["lines"].append({
-                        "date": entry.created_at.strftime("%Y-%m-%d"),
-                        "entry_no": entry.entry_no,
-                        "narration": entry.narration,
-                        "account_name": coa.name,
+                        "date": entry_date,
+                        "entry_no": entry.entry_no or "",
+                        "narration": entry.narration or "",
+                        "account_name": getattr(coa, "name", "Account") or "Account",
                         "debit": f"₹{d / 100:.2f}" if d else "",
                         "credit": f"₹{c / 100:.2f}" if c else "",
                     })
@@ -207,54 +219,54 @@ async def generate_report(
             # Trial Balance
             tb_data = await accounting_engine.get_trial_balance(db, account.id, dt_to)
             trial_balance = {
-                "balanced": tb_data["balanced"],
-                "total_debit": f"₹{tb_data['total_debit'] / 100:.2f}",
-                "total_credit": f"₹{tb_data['total_credit'] / 100:.2f}",
+                "balanced": tb_data.get("balanced", True),
+                "total_debit": f"₹{(tb_data.get('total_debit') or 0) / 100:.2f}",
+                "total_credit": f"₹{(tb_data.get('total_credit') or 0) / 100:.2f}",
                 "rows": [{
-                    "code": r["code"],
-                    "name": r["name"],
-                    "debit": f"₹{r['debit'] / 100:.2f}" if r["debit"] else "",
-                    "credit": f"₹{r['credit'] / 100:.2f}" if r["credit"] else ""
-                } for r in tb_data["rows"]]
+                    "code": r.get("code") or "",
+                    "name": r.get("name") or "",
+                    "debit": f"₹{float(r['debit']) / 100:.2f}" if r.get("debit") else "",
+                    "credit": f"₹{float(r['credit']) / 100:.2f}" if r.get("credit") else ""
+                } for r in tb_data.get("rows", [])]
             }
 
             # Balance Sheet v2
             bs_data = await accounting_engine.get_balance_sheet_v2(db, account.id, dt_to)
-            total_assets = float(bs_data["total_assets"]) / 100
-            total_liabilities = float(bs_data["total_liabilities"]) / 100
-            total_equity = float(bs_data["total_equity"]) / 100
+            total_assets = float(bs_data.get("total_assets") or 0) / 100
+            total_liabilities = float(bs_data.get("total_liabilities") or 0) / 100
+            total_equity = float(bs_data.get("total_equity") or 0) / 100
             balance_sheet = {
-                "balanced": bs_data["balanced"],
+                "balanced": bs_data.get("balanced", True),
                 "total_assets": total_assets,
                 "total_liabilities": total_liabilities,
                 "total_equity": total_equity,
                 "total_liab_equity": total_liabilities + total_equity,
-                "assets": [{"name": a["name"], "balance": f"₹{float(a['balance']) / 100:.2f}"} for a in bs_data["assets"]],
-                "liabilities": [{"name": line["name"], "balance": f"₹{float(line['balance']) / 100:.2f}"} for line in bs_data["liabilities"]],
-                "equity": [{"name": e["name"], "balance": f"₹{float(e['balance']) / 100:.2f}"} for e in bs_data["equity"]],
+                "assets": [{"name": a.get("name") or "", "balance": f"₹{float(a.get('balance') or 0) / 100:.2f}"} for a in bs_data.get("assets", [])],
+                "liabilities": [{"name": l.get("name") or "", "balance": f"₹{float(l.get('balance') or 0) / 100:.2f}"} for l in bs_data.get("liabilities", [])],
+                "equity": [{"name": e.get("name") or "", "balance": f"₹{float(e.get('balance') or 0) / 100:.2f}"} for e in bs_data.get("equity", [])],
             }
 
             # Cash flow
             cf_data = await accounting_engine.get_cash_flow(db, account.id, dt_from, dt_to)
             cash_flow = {
-                "net_change": (cf_data.get("net_change") or 0) / 100,
+                "net_change": float(cf_data.get("net_change") or 0) / 100,
                 "operating": {
                     "total": f"₹{(cf_data.get('operating', {}).get('total') or 0) / 100:.2f}",
-                    "items": [{"name": i["name"], "amount": f"₹{(i.get('amount') or 0) / 100:.2f}"} for i in cf_data.get("operating", {}).get("items", [])]
+                    "items": [{"name": i.get("name") or "", "amount": f"₹{float(i.get('amount') or 0) / 100:.2f}"} for i in cf_data.get("operating", {}).get("items", [])]
                 },
                 "investing": {
                     "total": f"₹{(cf_data.get('investing', {}).get('total') or 0) / 100:.2f}",
-                    "items": [{"name": i["name"], "amount": f"₹{(i.get('amount') or 0) / 100:.2f}"} for i in cf_data.get("investing", {}).get("items", [])]
+                    "items": [{"name": i.get("name") or "", "amount": f"₹{float(i.get('amount') or 0) / 100:.2f}"} for i in cf_data.get("investing", {}).get("items", [])]
                 },
                 "financing": {
                     "total": f"₹{(cf_data.get('financing', {}).get('total') or 0) / 100:.2f}",
-                    "items": [{"name": i["name"], "amount": f"₹{(i.get('amount') or 0) / 100:.2f}"} for i in cf_data.get("financing", {}).get("items", [])]
+                    "items": [{"name": i.get("name") or "", "amount": f"₹{float(i.get('amount') or 0) / 100:.2f}"} for i in cf_data.get("financing", {}).get("items", [])]
                 }
             }
 
             data = {
-                "account_name": user.full_name or "Account Holder",
-                "generated_at": datetime.utcnow().strftime("%d %b %Y %H:%M UTC"),
+                "account_name": getattr(user, "full_name", None) or "Account Holder",
+                "generated_at": datetime.now(timezone.utc).strftime("%d %b %Y %H:%M UTC"),
                 "journal_entries": journal_entries_data,
                 "general_ledgers": general_ledgers,
                 "payee_ledgers": payee_ledgers,

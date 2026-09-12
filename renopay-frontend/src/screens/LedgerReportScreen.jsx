@@ -60,7 +60,7 @@ export function LedgerReportScreen({ onBack }) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      const ext = blob.type === "application/pdf" ? "pdf" : "html";
+      const ext = blob.type?.includes("html") ? "html" : "pdf";
       a.download = `RenoPay_${reportType}_${fromDate}.${ext}`;
       document.body.appendChild(a);
       a.click();
@@ -69,7 +69,21 @@ export function LedgerReportScreen({ onBack }) {
       setSuccess(true);
       setTimeout(() => setSuccess(false), 4000);
     } catch (e) {
-      setError(e?.response?.data?.detail || "Failed to generate report. Try again.");
+      console.error("Download report failed:", e);
+      let msg = "Failed to generate report. Try again.";
+      if (e?.response?.data instanceof Blob) {
+        try {
+          const text = await e.response.data.text();
+          const json = JSON.parse(text);
+          if (json?.detail) msg = json.detail;
+          else if (text) msg = text.slice(0, 150);
+        } catch (_) {}
+      } else if (e?.response?.data?.detail) {
+        msg = e.response.data.detail;
+      } else if (e?.message) {
+        msg = e.message;
+      }
+      setError(msg);
     } finally {
       setDownloading(false);
     }
