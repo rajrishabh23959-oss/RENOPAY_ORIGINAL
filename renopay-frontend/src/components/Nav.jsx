@@ -1,9 +1,10 @@
 import { useAuth } from "../context/AuthContext";
+import iconAccounting from "../assets/actions/accounting.png";
 
 const ITEMS = [
   { id: "home", icon: "🏠", l: "Home" },
   { id: "pay", icon: "💸", l: "Pay" },
-  { id: "accounting", icon: "🧮", l: "Accounting" },
+  { id: "accounting", icon: iconAccounting, l: "Accounting" },
   { id: "history", icon: "📋", l: "History" },
   { id: "profile", icon: "👤", l: "Profile" },
 ];
@@ -30,6 +31,18 @@ export function Nav({ active, onNavigate }) {
                 alt="Profile"
                 className={`w-full h-full object-cover rounded-full border-2 transition-all ${
                   active === "profile" ? "border-accent shadow-[0_0_8px_#FF6A1A]" : "border-white/30"
+                }`}
+              />
+            </div>
+          ) : n.id === "accounting" ? (
+            <div className="w-[26px] h-[26px] flex items-center justify-center mt-0.5">
+              <img
+                src={iconAccounting}
+                alt="Accounting"
+                className={`w-full h-full object-contain rounded-full transition-all ${
+                  active === "accounting"
+                    ? "scale-110 drop-shadow-[0_0_8px_#FF6A1A] ring-2 ring-accent"
+                    : "opacity-80 hover:opacity-100"
                 }`}
               />
             </div>
