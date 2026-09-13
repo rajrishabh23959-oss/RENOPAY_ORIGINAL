@@ -6,14 +6,6 @@ import { getDeviceFingerprint, getDeviceLabel, fmt } from "../lib/format";
 import { Btn, Badge, Card } from "../components/ui";
 import { PINPad } from "../components/PINPad";
 
-const PROFILE_LANGUAGES = [
-  { code: "en", label: "English", native: "English", flag: "🌐" },
-  { code: "hi", label: "Hindi", native: "हिंदी", flag: "🇮🇳" },
-  { code: "ta", label: "Tamil", native: "தமிழ்", flag: "🇮🇳" },
-  { code: "te", label: "Telugu", native: "తెలుగు", flag: "🇮🇳" },
-  { code: "ml", label: "Malayalam", native: "മലയാളം", flag: "🇮🇳" },
-];
-
 export function ProfileScreen({ onBack, onLoggedOut }) {
   const { profile, logout, refreshProfile } = useAuth();
   const [busy, setBusy] = useState(false);
@@ -27,10 +19,6 @@ export function ProfileScreen({ onBack, onLoggedOut }) {
   const [downloadingQr, setDownloadingQr] = useState(false);
   const [qrErr, setQrErr] = useState("");
   const qrCanvasRef = useRef(null);
-
-  // Language state
-  const [savingLang, setSavingLang] = useState(false);
-  const [langErr, setLangErr] = useState("");
 
   // Gold vault withdrawal states
   const [goldWithdrawStep, setGoldWithdrawStep] = useState(null); // null | "confirm" | "pin" | "success"
@@ -230,19 +218,6 @@ export function ProfileScreen({ onBack, onLoggedOut }) {
     onLoggedOut?.();
   };
 
-  const handleLanguageChange = async (code) => {
-    setSavingLang(true);
-    setLangErr("");
-    try {
-      await AccountAPI.updatePreferences({ language_code: code });
-      await refreshProfile();
-    } catch {
-      setLangErr("Could not update preferred language");
-    } finally {
-      setSavingLang(false);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-bg pb-[100px]">
       {/* Gold Vault Confirmation Modal */}
@@ -394,51 +369,6 @@ export function ProfileScreen({ onBack, onLoggedOut }) {
               </div>
             </div>
           )}
-        </Card>
-
-        {/* Preferred Language Selector Card */}
-        <Card className="p-4 mb-3.5 border-accent/[.2]">
-          <div className="flex justify-between items-center mb-2.5">
-            <div>
-              <p className="font-bold text-sm text-textLight flex items-center gap-1.5">
-                <span>🌐</span> Preferred Language / भाषा
-              </p>
-              <p className="text-muted text-[11px] mt-0.5">
-                Controls app context, Saathi AI response & voice language
-              </p>
-            </div>
-            {savingLang && (
-              <span className="text-[10px] text-accent font-semibold animate-pulse">
-                Saving...
-              </span>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-2">
-            {PROFILE_LANGUAGES.map((lang) => {
-              const isSelected = (profile.language_code || "en") === lang.code;
-              return (
-                <button
-                  key={lang.code}
-                  type="button"
-                  onClick={() => handleLanguageChange(lang.code)}
-                  disabled={savingLang}
-                  className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
-                    isSelected
-                      ? "border-accent bg-accent/20 text-white shadow-sm ring-1 ring-accent/40"
-                      : "border-line bg-card/60 text-muted hover:text-textLight hover:border-accent/40"
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-0.5">
-                    <span className="text-xs font-bold text-textLight">{lang.label}</span>
-                    <span className="text-sm">{lang.flag}</span>
-                  </div>
-                  <span className="text-[11px] text-accent font-medium">{lang.native}</span>
-                </button>
-              );
-            })}
-          </div>
-          {langErr && <p className="text-danger text-[11px] mt-2">{langErr}</p>}
         </Card>
 
         {/* Unique Personal QR Code Card */}
