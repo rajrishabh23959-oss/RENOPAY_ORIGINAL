@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { VaultAPI } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
+import { useRenoSocket } from "../hooks/useRenoSocket";
 import { Btn, Badge, Card } from "../components/ui";
 import { PINPad } from "../components/PINPad";
 import { fmt, ago } from "../lib/format";
@@ -8,6 +9,7 @@ import { fmt, ago } from "../lib/format";
 function VaultCard({ vault, onRefresh }) {
   const { profile, refreshProfile } = useAuth();
   const pct = Math.min(100, (vault.balance / vault.target) * 100);
+  const isFull = vault.balance >= vault.target;
 
   // Modals & action states
   const [contributeOpen, setContributeOpen] = useState(false);
@@ -21,10 +23,7 @@ function VaultCard({ vault, onRefresh }) {
   const [withdrawMyPinOpen, setWithdrawMyPinOpen] = useState(false);
   const [myContributedAmount, setMyContributedAmount] = useState(0);
 
-  const [vaultWithdrawOpen, setVaultWithdrawOpen] = useState(false);
-  const [vaultWithdrawAmount, setVaultWithdrawAmount] = useState(String(vault.balance));
   const [vaultWithdrawPinOpen, setVaultWithdrawPinOpen] = useState(false);
-
   const [approvePinOpen, setApprovePinOpen] = useState(false);
 
   const [err, setErr] = useState("");
@@ -40,8 +39,18 @@ function VaultCard({ vault, onRefresh }) {
 
   // 1. Contribute Flow
   const startContribute = () => {
-    if (!Number(contributeAmount) || Number(contributeAmount) < 1) {
+    if (isFull) {
+      setErr("Vault is 100% full! No more money can be added.");
+      return;
+    }
+    const amt = Number(contributeAmount);
+    if (!amt || amt < 1) {
       setErr("Please enter a valid contribution amount");
+      return;
+    }
+    const maxAdd = vault.target - vault.balance;
+    if (amt > maxAdd) {
+      setErr(`Contribution exceeds target! Maximum you can add is ${fmt(maxAdd)}`);
       return;
     }
     setErr("");
@@ -58,7 +67,7 @@ function VaultCard({ vault, onRefresh }) {
       await onRefresh();
       await refreshProfile?.();
     } catch (e) {
-      const msg = e.response?.data?.detail?.message || e.response?.data?.message || "Contribution failed — check your PIN";
+      const msg = e.response?.data?.detail?.message || e.response?.data?.detail || e.response?.data?.message || "Contribution failed — check your PIN";
       setErr(typeof msg === "string" ? msg : JSON.stringify(msg));
       setContributePinOpen(false);
     }
@@ -84,42 +93,31 @@ function VaultCard({ vault, onRefresh }) {
     }
   };
 
-  // 3. Conflict / Exit Withdrawal Flow (Withdraw My Contribution)
+  // 3. Personal Contribution Refund (NO request to other members needed)
   const confirmWithdrawMyContribution = async (pin) => {
     try {
       await VaultAPI.withdrawMyContribution(vault.id, pin);
       setWithdrawMyPinOpen(false);
-      setSuccessMsg(`Withdrew your contribution of ${fmt(myContributedAmount)} back to your main balance!`);
+      setSuccessMsg(`Withdrew your contribution of ${fmt(myContributedAmount)} directly to your main balance!`);
       await onRefresh();
       await refreshProfile?.();
     } catch (e) {
-      const msg = e.response?.data?.detail || e.response?.data?.message || "Withdrawal failed — check your PIN";
+      const msg = e.response?.data?.detail?.message || e.response?.data?.detail || e.response?.data?.message || "Withdrawal failed — check your PIN";
       setErr(typeof msg === "string" ? msg : JSON.stringify(msg));
       setWithdrawMyPinOpen(false);
     }
   };
 
-  // 4. Request Vault Withdrawal (Consensus)
-  const startVaultWithdraw = () => {
-    const amt = Number(vaultWithdrawAmount);
-    if (!amt || amt <= 0 || amt > vault.balance) {
-      setErr(`Enter an amount up to available vault balance of ${fmt(vault.balance)}`);
-      return;
-    }
-    setErr("");
-    setVaultWithdrawOpen(false);
-    setVaultWithdrawPinOpen(true);
-  };
-
+  // 4. Full Vault Withdrawal Request (REQUIRES all other members' approval)
   const confirmRequestVaultWithdrawPin = async (pin) => {
     try {
-      await VaultAPI.requestWithdrawal(vault.id, Number(vaultWithdrawAmount), pin);
+      await VaultAPI.requestWithdrawal(vault.id, vault.balance, pin);
       setVaultWithdrawPinOpen(false);
-      setSuccessMsg(`Withdrawal request initiated! Waiting for members to approve.`);
+      setSuccessMsg(`Withdrawal request sent to all vault members! Once they accept & pay, funds will be released.`);
       await onRefresh();
       await refreshProfile?.();
     } catch (e) {
-      const msg = e.response?.data?.detail || e.response?.data?.message || "Failed to initiate vault withdrawal";
+      const msg = e.response?.data?.detail?.message || e.response?.data?.detail || e.response?.data?.message || "Failed to initiate vault withdrawal";
       setErr(typeof msg === "string" ? msg : JSON.stringify(msg));
       setVaultWithdrawPinOpen(false);
     }
@@ -130,11 +128,11 @@ function VaultCard({ vault, onRefresh }) {
     try {
       await VaultAPI.approveWithdrawal(vault.id, pin);
       setApprovePinOpen(false);
-      setSuccessMsg("You approved the withdrawal request with your UPI PIN!");
+      setSuccessMsg("You accepted and approved the full vault withdrawal with your UPI PIN!");
       await onRefresh();
       await refreshProfile?.();
     } catch (e) {
-      const msg = e.response?.data?.detail || e.response?.data?.message || "Approval failed — check your PIN";
+      const msg = e.response?.data?.detail?.message || e.response?.data?.detail || e.response?.data?.message || "Approval failed — check your PIN";
       setErr(typeof msg === "string" ? msg : JSON.stringify(msg));
       setApprovePinOpen(false);
     }
@@ -180,9 +178,13 @@ function VaultCard({ vault, onRefresh }) {
           </p>
         </div>
         <div className="text-right">
-          <Badge color="#FF6A1A" size={10}>{pct.toFixed(0)}% Saved</Badge>
-          {vault.balance >= vault.target && (
-            <p className="text-[10px] font-bold text-success mt-1">🎯 100% Target Reached!</p>
+          <Badge color={isFull ? "#22C55E" : "#FF6A1A"} size={10}>
+            {pct.toFixed(0)}% {isFull ? "COMPLETED" : "SAVED"}
+          </Badge>
+          {isFull && (
+            <p className="text-[10px] font-extrabold text-success mt-1 flex items-center justify-end gap-1">
+              <span>🎯</span> 100% Target Reached!
+            </p>
           )}
         </div>
       </div>
@@ -190,57 +192,78 @@ function VaultCard({ vault, onRefresh }) {
       {/* Progress Bar */}
       <div className="bg-bg rounded-lg h-2.5 overflow-hidden mb-3.5 border border-line">
         <div
-          className="h-full rounded-lg transition-[width] duration-700 bg-gradient-to-r from-[#FF6A1A] to-[#FFA000] shadow-[0_0_10px_#FF6A1A88]"
+          className={`h-full rounded-lg transition-[width] duration-700 shadow-lg ${
+            isFull
+              ? "bg-gradient-to-r from-success to-emerald-400 shadow-[0_0_10px_#22C55E88]"
+              : "bg-gradient-to-r from-[#FF6A1A] to-[#FFA000] shadow-[0_0_10px_#FF6A1A88]"
+          }`}
           style={{ width: `${pct}%` }}
         />
       </div>
 
-      {/* ACTIVE MULTI-PARTY WITHDRAWAL REQUEST BANNER */}
+      {/* 100% Target Reached Notice */}
+      {isFull && (
+        <div className="p-2.5 mb-3.5 rounded-xl bg-success/10 border border-success/30 text-success text-xs font-bold text-center">
+          🎉 Vault is 100% full! Goal has been achieved — no more contributions can be added.
+        </div>
+      )}
+
+      {/* ACTIVE FULL VAULT WITHDRAWAL REQUEST BANNER */}
       {activeReq && (
-        <div className="p-3.5 mb-4 rounded-2xl bg-[#2D1B12] border border-accent/50 shadow-inner">
-          <div className="flex items-start gap-2.5">
-            <span className="text-2xl animate-bounce">🔔</span>
+        <div className="p-4 mb-4 rounded-2xl bg-gradient-to-r from-[#3A1E11] to-[#25150E] border-2 border-accent shadow-xl animate-fadeUp">
+          <div className="flex items-start gap-3">
+            <span className="text-3xl animate-bounce">🔔</span>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-extrabold text-white">
-                Withdrawal Requested by <span className="text-accent">{activeReq.requester_name}</span>
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                <span className="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-warn text-black font-mono">
+                  ACTION REQUIRED
+                </span>
+                <span className="text-[10px] text-muted">{ago(activeReq.created_at)}</span>
+              </div>
+              <p className="text-xs font-bold text-white">
+                <span className="text-accent font-extrabold">{activeReq.requester_name}</span> has requested to withdraw the full vault:
               </p>
-              <p className="text-sm font-mono font-black text-[#FF9E66] my-0.5">
+              <p className="text-2xl font-mono font-black text-white my-1 tracking-tight">
                 {fmt(activeReq.amount)}
               </p>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-[10px] text-muted">
-                  Approvals: <strong className="text-white">{activeReq.approvals.length}</strong> of {activeReq.total_members} members approved
-                </span>
-              </div>
+              <p className="text-[11px] text-muted">
+                Approvals received: <strong className="text-accent">{activeReq.approvals.length}</strong> of {activeReq.total_members} members
+              </p>
             </div>
           </div>
 
-          {/* Approval Buttons for Current User */}
-          <div className="mt-3 pt-2.5 border-t border-accent/20 flex items-center justify-between gap-2">
+          <div className="mt-3.5 pt-3 border-t border-accent/30">
             {activeReq.has_approved ? (
-              <span className="text-[11px] font-bold text-success flex items-center gap-1">
-                <span>✓</span> You approved. Waiting for other members to enter UPI PIN.
-              </span>
+              <div className="p-2.5 rounded-xl bg-success/15 border border-success/30 text-success text-xs font-bold flex items-center gap-2">
+                <span>✓</span>
+                <span>You have accepted this withdrawal request. Waiting for other members to enter UPI PIN.</span>
+              </div>
             ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setErr("");
-                    setApprovePinOpen(true);
-                  }}
-                  className="btn flex-1 py-2 px-3 rounded-xl bg-accent hover:brightness-110 text-white font-bold text-xs shadow-accentGlow cursor-pointer"
-                >
-                  ✓ Allow (Enter PIN)
-                </button>
-                <button
-                  type="button"
-                  onClick={handleRejectWithdrawal}
-                  className="btn py-2 px-3 rounded-xl bg-surf border border-line text-muted hover:text-white font-bold text-xs cursor-pointer"
-                >
-                  Reject
-                </button>
-              </>
+              <div>
+                <p className="text-[11px] text-textLight mb-2 font-semibold">
+                  Accept & confirm with your UPI PIN to release full vault funds to {activeReq.requester_name}:
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setErr("");
+                      setApprovePinOpen(true);
+                    }}
+                    className="btn flex-1 py-2.5 px-3 rounded-xl bg-accent hover:brightness-110 text-white font-extrabold text-xs shadow-accentGlow cursor-pointer flex items-center justify-center gap-1.5"
+                  >
+                    <span>✓</span>
+                    <span>Accept & Pay (Enter PIN)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleRejectWithdrawal}
+                    className="btn py-2.5 px-3 rounded-xl bg-surf border border-line text-muted hover:text-white font-bold text-xs cursor-pointer"
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -295,12 +318,13 @@ function VaultCard({ vault, onRefresh }) {
           ))}
         </div>
 
-        {/* CONFLICT / INDIVIDUAL CONTRIBUTION WITHDRAWAL ("Withdraw My Contribution") */}
+        {/* PERSONAL CONTRIBUTION REFUND (No other member's request needed) */}
         {myContributedAmount > 0 && (
           <div className="mt-2.5 p-2.5 rounded-xl bg-[#2A1D16] border border-warn/30 flex items-center justify-between gap-2">
             <div>
-              <p className="text-[11px] font-bold text-textLight">Your Contributed Stake</p>
+              <p className="text-[11px] font-bold text-textLight">Your Personal Contribution</p>
               <p className="font-mono text-xs font-bold text-[#FFA000]">{fmt(myContributedAmount)}</p>
+              <p className="text-[9px] text-muted">You can withdraw your own money anytime</p>
             </div>
             <button
               type="button"
@@ -316,7 +340,7 @@ function VaultCard({ vault, onRefresh }) {
         )}
       </div>
 
-      {/* Main Action Buttons: Contribute & Withdraw Full Vault */}
+      {/* ACTION BUTTONS: Contribute & Withdraw Full Vault */}
       <div className="pt-2 border-t border-line">
         {contributeOpen ? (
           <div>
@@ -328,8 +352,12 @@ function VaultCard({ vault, onRefresh }) {
                 value={contributeAmount}
                 onChange={(e) => setContributeAmount(e.target.value)}
                 className="flex-1 text-base font-semibold"
+                max={vault.target - vault.balance}
               />
             </div>
+            <p className="text-[10px] text-muted mb-2">
+              Remaining to reach 100%: {fmt(Math.max(0, vault.target - vault.balance))}
+            </p>
             <div className="flex gap-2">
               <Btn variant="dark" className="flex-1 py-2" onClick={() => setContributeOpen(false)}>
                 Cancel
@@ -341,20 +369,25 @@ function VaultCard({ vault, onRefresh }) {
           </div>
         ) : (
           <div className="flex gap-2">
-            <Btn className="flex-1 py-2.5" onClick={() => setContributeOpen(true)}>
-              + Contribute
-            </Btn>
+            {!isFull && (
+              <Btn className="flex-1 py-2.5" onClick={() => setContributeOpen(true)}>
+                + Contribute
+              </Btn>
+            )}
             {vault.balance > 0 && !activeReq && (
               <button
                 type="button"
                 onClick={() => {
                   setErr("");
-                  setVaultWithdrawAmount(String(vault.balance));
-                  setVaultWithdrawOpen(true);
+                  setVaultWithdrawPinOpen(true);
                 }}
-                className="btn flex-1 py-2.5 rounded-xl bg-card border border-accent/40 text-accent hover:border-accent font-bold text-xs transition-all cursor-pointer"
+                className={`btn py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                  isFull
+                    ? "flex-1 bg-accent hover:brightness-110 text-white shadow-accentGlow font-extrabold"
+                    : "flex-1 bg-card border-accent/40 text-accent hover:border-accent"
+                }`}
               >
-                Withdraw Vault Funds 🏧
+                Withdraw Full Vault ({fmt(vault.balance)}) 🏧
               </button>
             )}
           </div>
@@ -369,7 +402,7 @@ function VaultCard({ vault, onRefresh }) {
             {vault.logs.slice(0, 5).map((l, i) => (
               <div key={i} className="flex justify-between items-center text-[11px] py-0.5 border-b border-line/40 last:border-0">
                 <span className="text-muted truncate">
-                  {l.user_name} · {l.log_type === "refund" ? "withdrew contribution" : l.log_type === "withdrawal" ? "vault payout" : "contributed"} ({ago(l.created_at)})
+                  {l.user_name} · {l.log_type === "refund" ? "withdrew contribution" : l.log_type === "withdrawal" ? "full vault payout" : "contributed"} ({ago(l.created_at)})
                 </span>
                 <span className={`font-mono font-bold shrink-0 ${l.log_type === "contribution" ? "text-success" : "text-warn"}`}>
                   {l.log_type === "contribution" ? "+" : "-"}{fmt(l.amount)}
@@ -401,7 +434,7 @@ function VaultCard({ vault, onRefresh }) {
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[999] p-4 animate-fadeUp">
           <Card className="p-5 max-w-[340px] w-full border-accent/40 shadow-2xl">
             <h4 className="font-extrabold text-base text-white mb-1">Add Member to Vault</h4>
-            <p className="text-xs text-muted mb-3">Enter the user's UPI ID or phone number</p>
+            <p className="text-xs text-muted mb-3">Enter the member's UPI ID or 10-digit phone number</p>
             <form onSubmit={handleAddMember}>
               <input
                 placeholder="e.g. ambrish@renopay or 9876543210"
@@ -423,7 +456,7 @@ function VaultCard({ vault, onRefresh }) {
         </div>
       )}
 
-      {/* MODAL 3: Conflict Withdrawal PIN Confirmation */}
+      {/* MODAL 3: Personal Contribution Withdrawal (No one else's approval needed) */}
       {withdrawMyPinOpen && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[999] p-4 animate-fadeUp">
           <Card className="p-6 max-w-[320px] w-full border-warn/40 shadow-2xl">
@@ -439,47 +472,15 @@ function VaultCard({ vault, onRefresh }) {
         </div>
       )}
 
-      {/* MODAL 4: Specify Vault Withdrawal Amount */}
-      {vaultWithdrawOpen && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[999] p-4 animate-fadeUp">
-          <Card className="p-5 max-w-[340px] w-full border-accent/40 shadow-2xl">
-            <h4 className="font-extrabold text-base text-white mb-1">Request Vault Withdrawal</h4>
-            <p className="text-xs text-muted mb-3">
-              All vault members will be asked to approve with their UPI PIN before funds are released.
-            </p>
-            <div className="mb-3">
-              <label className="text-[10px] text-muted uppercase font-bold tracking-wider block mb-1">Withdrawal Amount (₹)</label>
-              <input
-                type="number"
-                value={vaultWithdrawAmount}
-                onChange={(e) => setVaultWithdrawAmount(e.target.value)}
-                placeholder="Amount"
-                max={vault.balance}
-                className="text-base font-semibold"
-              />
-              <p className="text-[10px] text-muted mt-1">Available in vault: {fmt(vault.balance)}</p>
-            </div>
-            <div className="flex gap-2">
-              <Btn variant="dark" className="flex-1 py-2 text-xs" onClick={() => setVaultWithdrawOpen(false)}>
-                Cancel
-              </Btn>
-              <Btn className="flex-1 py-2 text-xs" onClick={startVaultWithdraw}>
-                Next: Enter PIN →
-              </Btn>
-            </div>
-          </Card>
-        </div>
-      )}
-
-      {/* MODAL 5: PIN for Requesting Vault Withdrawal */}
+      {/* MODAL 4: Request Full Vault Withdrawal (Requires other members' consent) */}
       {vaultWithdrawPinOpen && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[999] p-4 animate-fadeUp">
           <Card className="p-6 max-w-[320px] w-full border-accent/40 shadow-2xl">
-            <p className="text-center font-bold text-white text-sm mb-1">Sign Withdrawal Request</p>
-            <p className="text-center text-muted text-xs mb-4">
-              Enter your UPI PIN to initiate request for <strong className="text-accent">{fmt(Number(vaultWithdrawAmount))}</strong>
+            <p className="text-center font-extrabold text-white text-base mb-1">Withdraw Full Vault</p>
+            <p className="text-center text-xs text-muted mb-4">
+              A withdrawal request for <strong className="text-accent">{fmt(vault.balance)}</strong> will be sent to all vault members. Once all members accept with their UPI PIN, funds will be transferred to your account.
             </p>
-            <PINPad onComplete={confirmRequestVaultWithdrawPin} label="Enter 6-digit UPI PIN" actionType="withdraw" actionLabel="Submit" />
+            <PINPad onComplete={confirmRequestVaultWithdrawPin} label="Enter 6-digit UPI PIN to Request" actionType="withdraw" actionLabel="Send Request" />
             <button className="btn w-full mt-3 text-muted text-xs cursor-pointer" onClick={() => setVaultWithdrawPinOpen(false)}>
               Cancel
             </button>
@@ -487,16 +488,16 @@ function VaultCard({ vault, onRefresh }) {
         </div>
       )}
 
-      {/* MODAL 6: Member Approval PIN */}
+      {/* MODAL 5: Member Approval PIN (Accept & Pay) */}
       {approvePinOpen && activeReq && (
         <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[999] p-4 animate-fadeUp">
           <Card className="p-6 max-w-[320px] w-full border-accent/40 shadow-2xl">
             <p className="text-center font-bold text-white text-sm mb-1">Allow Vault Withdrawal</p>
             <p className="text-center text-muted text-xs mb-4">
-              Allowing <strong className="text-white">{activeReq.requester_name}</strong> to withdraw{" "}
+              Allowing <strong className="text-white">{activeReq.requester_name}</strong> to withdraw full vault{" "}
               <strong className="text-accent">{fmt(activeReq.amount)}</strong>
             </p>
-            <PINPad onComplete={confirmApprovePin} label="Enter 6-digit UPI PIN to Allow" actionType="withdraw" actionLabel="Allow" />
+            <PINPad onComplete={confirmApprovePin} label="Enter 6-digit UPI PIN to Allow" actionType="withdraw" actionLabel="Accept & Pay" />
             <button className="btn w-full mt-3 text-muted text-xs cursor-pointer" onClick={() => setApprovePinOpen(false)}>
               Cancel
             </button>
@@ -522,7 +523,6 @@ export function VaultScreen({ onBack }) {
 
   const load = async () => {
     try {
-      setLoading(true);
       const res = await VaultAPI.list();
       setVaults(res.data || res);
     } catch (e) {
@@ -534,7 +534,25 @@ export function VaultScreen({ onBack }) {
 
   useEffect(() => {
     load();
+    // 3-second background polling while on Vault screen so multi-party requests stay in sync
+    const timer = setInterval(() => {
+      load();
+    }, 3000);
+    return () => clearInterval(timer);
   }, []);
+
+  // Real-time WebSocket listener
+  useRenoSocket((evt) => {
+    if (
+      evt.type === "vault_withdrawal_request" ||
+      evt.type === "vault_updated" ||
+      evt.type === "vault_invite" ||
+      evt.type === "vault_payout" ||
+      evt.type === "balance_update"
+    ) {
+      load();
+    }
+  });
 
   const createVault = async () => {
     if (!form.name || !Number(form.target)) {

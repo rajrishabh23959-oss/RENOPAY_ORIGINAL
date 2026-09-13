@@ -1,14 +1,16 @@
+import re
 import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.api.deps import get_current_user, get_current_account
 from app.core.money import rupees_to_paise, paise_to_rupees, generate_txn_ref
 from app.db.session import get_db
-from app.models.user import User
+from app.models.user import User, KYCStatus
 from app.models.account import Account
 from app.models.savings import SharedVault, SharedVaultMember, SharedVaultLog, SharedVaultWithdrawalRequest
 from app.models.transaction import Transaction, TxnType, TxnStatus, TxnCategory
@@ -31,6 +33,65 @@ from app.services import accounting_engine
 from app.ws.manager import manager as ws_manager
 
 router = APIRouter()
+
+
+async def _resolve_or_create_user(db: AsyncSession, identifier: str) -> User | None:
+    ident = identifier.strip()
+    if not ident:
+        return None
+
+    # 1. Check if UPI ID / VPA
+    if "@" in ident:
+        clean_vpa = ident.lower()
+        acc_res = await db.execute(select(Account).where(Account.vpa == clean_vpa))
+        acc = acc_res.scalar_one_or_none()
+        if acc:
+            return await db.get(User, acc.user_id)
+        # External VPA: auto-create virtual user & account
+        from app.services.upi_directory import get_or_create_external_account
+
+        ext_acc = await get_or_create_external_account(db, clean_vpa)
+        return await db.get(User, ext_acc.user_id)
+
+    # 2. Check if Phone number
+    digits = re.sub(r"[^\d]", "", ident)
+    digits_10 = digits[-10:] if len(digits) >= 10 else digits
+    if len(digits_10) == 10:
+        u_res = await db.execute(
+            select(User).where(
+                (User.phone_number == digits_10)
+                | (User.phone_number == f"+91{digits_10}")
+                | (User.phone_number == ident)
+            )
+        )
+        u = u_res.scalar_one_or_none()
+        if u:
+            return u
+
+        # Auto-provision RenoPay user account so they can participate immediately
+        from app.core.security import hash_pin
+        from app.core.money import generate_virtual_acc_no
+
+        new_user = User(
+            full_name=f"User {digits_10[-4:]}",
+            phone_number=digits_10,
+            pin_hash=hash_pin("123456"),
+            kyc_status=KYCStatus.VERIFIED,
+        )
+        db.add(new_user)
+        await db.flush()
+
+        new_acc = Account(
+            user_id=new_user.id,
+            virtual_acc_no=generate_virtual_acc_no(),
+            vpa=f"{digits_10}@renopay",
+            current_balance_paise=100000,
+        )
+        db.add(new_acc)
+        await db.flush()
+        return new_user
+
+    return None
 
 
 async def _serialize_vault(db: AsyncSession, vault: SharedVault, current_user_id: uuid.UUID) -> SharedVaultOut:
@@ -156,19 +217,17 @@ async def create_vault(
 
     # Add by phone numbers
     if payload.member_phone_numbers:
-        clean_phones = [p.strip() for p in payload.member_phone_numbers if p.strip()]
-        if clean_phones:
-            res_phones = await db.execute(select(User).where(User.phone_number.in_(clean_phones)))
-            for u in res_phones.scalars().all():
+        for p in payload.member_phone_numbers:
+            u = await _resolve_or_create_user(db, p)
+            if u:
                 member_user_ids.add(u.id)
 
     # Add by UPI IDs
     if payload.member_vpas:
-        clean_vpas = [v.strip().lower() for v in payload.member_vpas if v.strip()]
-        if clean_vpas:
-            res_vpas = await db.execute(select(Account).where(Account.vpa.in_(clean_vpas)))
-            for acc in res_vpas.scalars().all():
-                member_user_ids.add(acc.user_id)
+        for v in payload.member_vpas:
+            u = await _resolve_or_create_user(db, v)
+            if u:
+                member_user_ids.add(u.id)
 
     for uid in member_user_ids:
         db.add(SharedVaultMember(vault_id=vault.id, user_id=uid))
@@ -196,24 +255,10 @@ async def add_vault_member(
     if not caller_check.scalar_one_or_none():
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Only vault members can add other members")
 
-    identifier = payload.identifier.strip()
-    target_user = None
-
-    if "@" in identifier:
-        # Search by UPI ID
-        clean_vpa = identifier.lower()
-        acc_res = await db.execute(select(Account).where(Account.vpa == clean_vpa))
-        acc = acc_res.scalar_one_or_none()
-        if acc:
-            target_user = await db.get(User, acc.user_id)
-    else:
-        # Search by phone number
-        user_res = await db.execute(select(User).where(User.phone_number == identifier))
-        target_user = user_res.scalar_one_or_none()
-
+    target_user = await _resolve_or_create_user(db, payload.identifier)
     if not target_user:
         raise HTTPException(
-            status.HTTP_404_NOT_FOUND, f"No RenoPay user found matching '{identifier}'"
+            status.HTTP_404_NOT_FOUND, f"Could not find or add user for '{payload.identifier}'"
         )
 
     # Check if already a member
@@ -254,6 +299,26 @@ async def contribute(
     if member_check.scalar_one_or_none() is None:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not a member of this vault")
 
+    vault_result = await db.execute(select(SharedVault).where(SharedVault.id == vault_id).with_for_update())
+    vault = vault_result.scalar_one_or_none()
+    if vault is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Vault not found")
+
+    # RULE: Once vault is 100% full, no more money can be added!
+    if vault.balance_paise >= vault.target_paise:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Vault is 100% full! The target has already been achieved, no more money can be added.",
+        )
+
+    amount_paise = rupees_to_paise(payload.amount)
+    if vault.balance_paise + amount_paise > vault.target_paise:
+        max_allowed = paise_to_rupees(vault.target_paise - vault.balance_paise)
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"Contribution exceeds 100% target! Maximum you can add to complete the vault is ₹{max_allowed:.2f}.",
+        )
+
     try:
         await verify_user_pin(db, user, payload.pin)
     except PinError as e:
@@ -262,12 +327,6 @@ async def contribute(
     acc_result = await db.execute(select(Account).where(Account.id == account.id).with_for_update())
     locked_account = acc_result.scalar_one()
 
-    vault_result = await db.execute(select(SharedVault).where(SharedVault.id == vault_id).with_for_update())
-    vault = vault_result.scalar_one_or_none()
-    if vault is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Vault not found")
-
-    amount_paise = rupees_to_paise(payload.amount)
     if locked_account.current_balance_paise < amount_paise:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Insufficient balance")
 
@@ -316,7 +375,7 @@ async def withdraw_my_contribution(
     account: Account = Depends(get_current_account),
     db: AsyncSession = Depends(get_db),
 ):
-    """Conflict resolution / Individual exit: Allows any member to withdraw their exact net contribution back to their bank balance."""
+    """Personal stake refund: A member can withdraw their personally contributed money anytime with their own UPI PIN without requiring anyone else's approval."""
     try:
         await verify_user_pin(db, user, payload.pin)
     except PinError as e:
@@ -349,7 +408,7 @@ async def withdraw_my_contribution(
     net_paise = contributed_paise - refunded_paise
 
     if net_paise <= 0:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "You have no contributed balance in this vault to withdraw")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "You have no personal contribution in this vault to withdraw")
 
     if vault.balance_paise < net_paise:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Vault does not have sufficient balance to refund contribution")
@@ -405,7 +464,9 @@ async def request_vault_withdrawal(
     account: Account = Depends(get_current_account),
     db: AsyncSession = Depends(get_db),
 ):
-    """Initiates a multi-party consensus withdrawal request for full or partial vault balance."""
+    """
+    Withdrawing the FULL vault amount requires all other vault members to accept and approve with their UPI PIN.
+    """
     try:
         await verify_user_pin(db, user, payload.pin)
     except PinError as e:
@@ -435,9 +496,8 @@ async def request_vault_withdrawal(
     if existing_req.scalar_one_or_none():
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "A withdrawal request is already pending for this vault")
 
-    withdraw_paise = rupees_to_paise(payload.amount) if payload.amount and payload.amount > 0 else vault.balance_paise
-    if withdraw_paise > vault.balance_paise:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Requested amount exceeds vault balance")
+    # Withdrawing full vault balance
+    withdraw_paise = vault.balance_paise
 
     # Get total member count
     members_count = await db.scalar(
@@ -454,8 +514,8 @@ async def request_vault_withdrawal(
     db.add(req)
     await db.flush()
 
-    # If only 1 member in vault (creator), auto-complete immediately!
-    if members_count == 1:
+    # If vault only has 1 member (creator alone), auto-complete immediately
+    if members_count <= 1:
         locked_vault = (
             await db.execute(select(SharedVault).where(SharedVault.id == vault_id).with_for_update())
         ).scalar_one()
@@ -494,7 +554,7 @@ async def request_vault_withdrawal(
     await db.commit()
     await db.refresh(vault)
 
-    # Broadcast notification
+    # Broadcast notification to all other members so it appears in their vaults immediately!
     all_members = (
         await db.execute(select(SharedVaultMember.user_id).where(SharedVaultMember.vault_id == vault_id))
     ).scalars().all()
@@ -521,7 +581,7 @@ async def approve_vault_withdrawal(
     user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):
-    """Allows a member to approve a pending vault withdrawal with their UPI PIN."""
+    """Allows a member to accept & approve a pending full vault withdrawal with their UPI PIN."""
     try:
         await verify_user_pin(db, user, payload.pin)
     except PinError as e:
@@ -551,6 +611,7 @@ async def approve_vault_withdrawal(
     if str(user.id) not in approvals:
         approvals.append(str(user.id))
         req.approvals = approvals
+        flag_modified(req, "approvals")
 
     # Check total members
     members_count = await db.scalar(
@@ -567,16 +628,17 @@ async def approve_vault_withdrawal(
             await db.execute(select(Account).where(Account.user_id == req.requester_id).with_for_update())
         ).scalar_one()
 
-        vault.balance_paise = max(0, vault.balance_paise - req.amount_paise)
+        payout_amount = req.amount_paise
+        vault.balance_paise = max(0, vault.balance_paise - payout_amount)
         orig_bal = requester_acc.current_balance_paise
-        requester_acc.current_balance_paise += req.amount_paise
+        requester_acc.current_balance_paise += payout_amount
         requester_acc.cash_denominations = add_denominations(
-            requester_acc.cash_denominations, int(paise_to_rupees(req.amount_paise)), orig_bal
+            requester_acc.cash_denominations, int(paise_to_rupees(payout_amount)), orig_bal
         )
 
         db.add(
             SharedVaultLog(
-                vault_id=vault.id, user_id=req.requester_id, amount_paise=req.amount_paise, log_type="withdrawal"
+                vault_id=vault.id, user_id=req.requester_id, amount_paise=payout_amount, log_type="withdrawal"
             )
         )
         req.status = "completed"
@@ -589,8 +651,8 @@ async def approve_vault_withdrawal(
             type=TxnType.CREDIT,
             status=TxnStatus.SUCCESS,
             category=TxnCategory.INCOME,
-            amount_paise=req.amount_paise,
-            description=f"Vault Payout: {vault.name} (Approved by all members)",
+            amount_paise=payout_amount,
+            description=f"Full Vault Payout: {vault.name} (Approved by all members)",
             trust_score=99,
         )
         db.add(txn)
@@ -610,6 +672,17 @@ async def approve_vault_withdrawal(
 
     await db.commit()
     await db.refresh(vault)
+
+    # Push real-time event to all members so their screens update immediately
+    all_members = (
+        await db.execute(select(SharedVaultMember.user_id).where(SharedVaultMember.vault_id == vault_id))
+    ).scalars().all()
+    for mid in all_members:
+        await ws_manager.push(
+            mid,
+            "vault_updated",
+            {"vault_id": str(vault.id), "vault_name": vault.name},
+        )
 
     return await _serialize_vault(db, vault, user.id)
 
