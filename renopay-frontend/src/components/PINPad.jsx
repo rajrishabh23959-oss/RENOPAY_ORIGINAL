@@ -45,7 +45,14 @@ export function PINPad({ onComplete, label, accent = "#FF6A1A", shuffled = false
             {d}
           </button>
         ))}
-        <div />
+        <button
+          className="btn py-[15px] rounded-[13px] bg-surf border border-line text-muted hover:text-white text-xs font-bold uppercase tracking-wider hover:bg-[#1a1714] active:bg-accent/20 transition-colors"
+          onClick={() => setPin("")}
+          type="button"
+          aria-label="Clear PIN"
+        >
+          Clear
+        </button>
         <button className="btn py-[15px] rounded-[13px] bg-surf border border-line text-textLight text-xl font-mono font-bold hover:bg-[#1a1714] active:bg-accent/20 transition-colors" onClick={() => add("0")} aria-label="Digit 0">0</button>
         <button className="btn py-[15px] rounded-[13px] bg-surf border border-line text-warn text-lg hover:bg-[#1a1714] transition-colors" onClick={del} aria-label="Backspace">⌫</button>
       </div>
