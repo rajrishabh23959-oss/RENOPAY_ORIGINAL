@@ -20,6 +20,21 @@ export function ProfileScreen({ onBack, onLoggedOut }) {
   const [qrErr, setQrErr] = useState("");
   const qrCanvasRef = useRef(null);
 
+  // Profile Photo states
+  const [showPhotoSheet, setShowPhotoSheet] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoErr, setPhotoErr] = useState("");
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [selectedImageSrc, setSelectedImageSrc] = useState(null);
+  const [cropScale, setCropScale] = useState(1);
+  const [cropOffset, setCropOffset] = useState({ x: 0, y: 0 });
+  const [isPanningCrop, setIsPanningCrop] = useState(false);
+  const panStartRef = useRef({ x: 0, y: 0, offX: 0, offY: 0 });
+
+  const cameraInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
+  const previewImgRef = useRef(null);
+
   // Gold vault withdrawal states
   const [goldWithdrawStep, setGoldWithdrawStep] = useState(null); // null | "confirm" | "pin" | "success"
   const [goldWithdrawErr, setGoldWithdrawErr] = useState("");
@@ -213,6 +228,114 @@ export function ProfileScreen({ onBack, onLoggedOut }) {
     }
   };
 
+  const handleFileSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Please choose an image under 2MB.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setSelectedImageSrc(event.target?.result);
+      setCropScale(1);
+      setCropOffset({ x: 0, y: 0 });
+      setCropModalOpen(true);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const handleCropPanStart = (clientX, clientY) => {
+    setIsPanningCrop(true);
+    panStartRef.current = {
+      x: clientX,
+      y: clientY,
+      offX: cropOffset.x,
+      offY: cropOffset.y,
+    };
+  };
+
+  const handleCropPanMove = (clientX, clientY) => {
+    if (!isPanningCrop) return;
+    const deltaX = clientX - panStartRef.current.x;
+    const deltaY = clientY - panStartRef.current.y;
+    setCropOffset({
+      x: panStartRef.current.offX + deltaX,
+      y: panStartRef.current.offY + deltaY,
+    });
+  };
+
+  const handleCropPanEnd = () => {
+    setIsPanningCrop(false);
+  };
+
+  const handleSaveCroppedPhoto = async () => {
+    if (!previewImgRef.current) return;
+    setUploadingPhoto(true);
+    setPhotoErr("");
+
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = 500;
+      canvas.height = 500;
+      const ctx = canvas.getContext("2d");
+
+      const img = previewImgRef.current;
+      const aspect = img.naturalWidth / img.naturalHeight;
+
+      let drawW, drawH;
+      if (aspect >= 1) {
+        drawH = 500 * cropScale;
+        drawW = drawH * aspect;
+      } else {
+        drawW = 500 * cropScale;
+        drawH = drawW / aspect;
+      }
+
+      const drawX = (500 - drawW) / 2 + cropOffset.x;
+      const drawY = (500 - drawH) / 2 + cropOffset.y;
+
+      ctx.fillStyle = "#181412";
+      ctx.fillRect(0, 0, 500, 500);
+      ctx.drawImage(img, drawX, drawY, drawW, drawH);
+
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/webp", 0.9));
+      if (!blob) throw new Error("Could not process image");
+
+      const formData = new FormData();
+      formData.append("file", blob, "avatar.webp");
+
+      await AccountAPI.uploadProfilePhoto(formData);
+      await refreshProfile();
+      setCropModalOpen(false);
+      setSelectedImageSrc(null);
+    } catch (err) {
+      console.error("Photo upload error:", err);
+      setPhotoErr(err?.response?.data?.detail || "Could not upload photo. Please try again.");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    if (!confirm("Are you sure you want to remove your profile photo?")) return;
+    setShowPhotoSheet(false);
+    setUploadingPhoto(true);
+    setPhotoErr("");
+    try {
+      await AccountAPI.deleteProfilePhoto();
+      await refreshProfile();
+    } catch (err) {
+      console.error("Photo delete error:", err);
+      alert("Could not remove photo. Please try again.");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   const handleLogout = async () => {
     await logout();
     onLoggedOut?.();
@@ -307,9 +430,55 @@ export function ProfileScreen({ onBack, onLoggedOut }) {
       <div className="px-[22px]">
         <Card className="p-7 mb-3.5 text-center border-accent/[.2] relative glow-hero">
           <div className="relative z-10">
-            <div className="w-20 h-20 rounded-full mx-auto mb-3.5 bg-gradient-to-br from-accent to-[#B8420E] flex items-center justify-center text-3xl font-extrabold border-2 border-accent/[.33]">
-              {profile.avatar_url ? <img src={profile.avatar_url} alt="" className="w-full h-full rounded-full object-cover" /> : profile.full_name[0]}
+            {/* Clickable Profile Avatar with Edit Affordance */}
+            <div className="relative w-24 h-24 mx-auto mb-3.5 group">
+              <button
+                type="button"
+                onClick={() => setShowPhotoSheet(true)}
+                disabled={uploadingPhoto}
+                className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-accent to-[#B8420E] flex items-center justify-center text-4xl font-extrabold border-2 border-accent/[.45] shadow-lg hover:scale-105 active:scale-95 transition-all cursor-pointer relative"
+                title="Tap to change profile photo"
+              >
+                {profile.avatar_url ? (
+                  <img
+                    src={profile.avatar_url}
+                    alt={profile.full_name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-white drop-shadow font-black">
+                    {profile.full_name ? profile.full_name[0].toUpperCase() : "U"}
+                  </span>
+                )}
+
+                {/* Uploading Spinner Overlay */}
+                {uploadingPhoto && (
+                  <div className="absolute inset-0 bg-black/75 backdrop-blur-xs flex flex-col items-center justify-center text-accent">
+                    <span className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin mb-1" />
+                    <span className="text-[9px] font-bold text-white">Saving...</span>
+                  </div>
+                )}
+              </button>
+
+              {/* Edit Affordance Camera Icon */}
+              {!uploadingPhoto && (
+                <button
+                  type="button"
+                  onClick={() => setShowPhotoSheet(true)}
+                  className="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-accent text-white flex items-center justify-center text-xs shadow-md border-2 border-[#120F0D] hover:scale-110 active:scale-95 transition-all cursor-pointer"
+                  title="Change photo"
+                >
+                  📷
+                </button>
+              )}
             </div>
+
+            {photoErr && (
+              <p className="text-danger text-xs text-center mb-2 font-semibold">
+                {photoErr}
+              </p>
+            )}
+
             <h3 className="text-[22px] font-extrabold text-textLight">{profile.full_name}</h3>
             <p className="text-accent mt-1 text-sm">{acc.vpa}</p>
             <div className="mt-2.5 flex gap-2 justify-center flex-wrap">
@@ -498,6 +667,179 @@ export function ProfileScreen({ onBack, onLoggedOut }) {
         )}
         <div className="mt-2.5"><Btn variant="danger" onClick={handleLogout}>Logout</Btn></div>
       </div>
+
+      {/* Hidden File Inputs for Camera and Gallery */}
+      <input
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        capture="environment"
+        ref={cameraInputRef}
+        className="hidden"
+        onChange={handleFileSelect}
+      />
+      <input
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        ref={galleryInputRef}
+        className="hidden"
+        onChange={handleFileSelect}
+      />
+
+      {/* ── Photo Option Bottom-Sheet Modal ────────────────────────────── */}
+      {showPhotoSheet && (
+        <div
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[999] flex items-end sm:items-center justify-center p-3 animate-fade-in"
+          onClick={() => setShowPhotoSheet(false)}
+        >
+          <div
+            className="w-full max-w-sm bg-[#171310] border border-line rounded-3xl p-5 shadow-2xl animate-slide-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-4 sm:hidden" />
+            <h3 className="text-base font-extrabold text-white text-center mb-1">
+              Profile Photo
+            </h3>
+            <p className="text-xs text-muted text-center mb-5">
+              Choose an option to update your photo
+            </p>
+
+            <div className="space-y-2.5">
+              {/* Take Photo */}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPhotoSheet(false);
+                  cameraInputRef.current?.click();
+                }}
+                className="w-full py-3 px-4 rounded-2xl bg-card border border-line hover:border-accent/40 text-left flex items-center gap-3 text-sm font-bold text-textLight hover:text-white transition-all cursor-pointer"
+              >
+                <span className="text-lg">📸</span>
+                <span>Take Photo</span>
+              </button>
+
+              {/* Choose from Gallery */}
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPhotoSheet(false);
+                  galleryInputRef.current?.click();
+                }}
+                className="w-full py-3 px-4 rounded-2xl bg-card border border-line hover:border-accent/40 text-left flex items-center gap-3 text-sm font-bold text-textLight hover:text-white transition-all cursor-pointer"
+              >
+                <span className="text-lg">🖼️</span>
+                <span>Choose from Gallery</span>
+              </button>
+
+              {/* Remove Photo (only if avatar exists) */}
+              {profile.avatar_url && (
+                <button
+                  type="button"
+                  onClick={handleRemovePhoto}
+                  className="w-full py-3 px-4 rounded-2xl bg-danger/10 border border-danger/25 hover:bg-danger/20 text-left flex items-center gap-3 text-sm font-bold text-danger transition-all cursor-pointer"
+                >
+                  <span className="text-lg">🗑️</span>
+                  <span>Remove Photo</span>
+                </button>
+              )}
+
+              {/* Cancel Button */}
+              <button
+                type="button"
+                onClick={() => setShowPhotoSheet(false)}
+                className="w-full py-2.5 rounded-2xl text-center text-xs font-bold text-muted hover:text-white transition-colors cursor-pointer mt-1"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Circular Crop / Preview Modal ─────────────────────────────── */}
+      {cropModalOpen && selectedImageSrc && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md z-[1000] flex items-center justify-center p-4 animate-fade-in">
+          <Card className="p-6 max-w-sm w-full border-accent/40 bg-[#14100E] shadow-2xl text-center">
+            <h3 className="text-base font-extrabold text-white mb-1">
+              Adjust Profile Photo
+            </h3>
+            <p className="text-xs text-muted mb-4">
+              Drag to position and adjust zoom slider
+            </p>
+
+            {/* Circular Viewport with Mask */}
+            <div
+              className="relative w-56 h-56 mx-auto rounded-full overflow-hidden border-2 border-accent shadow-inner bg-black/50 cursor-grab active:cursor-grabbing touch-none select-none mb-4"
+              onMouseDown={(e) => handleCropPanStart(e.clientX, e.clientY)}
+              onMouseMove={(e) => handleCropPanMove(e.clientX, e.clientY)}
+              onMouseUp={handleCropPanEnd}
+              onMouseLeave={handleCropPanEnd}
+              onTouchStart={(e) => {
+                if (e.touches[0]) handleCropPanStart(e.touches[0].clientX, e.touches[0].clientY);
+              }}
+              onTouchMove={(e) => {
+                if (e.touches[0]) handleCropPanMove(e.touches[0].clientX, e.touches[0].clientY);
+              }}
+              onTouchEnd={handleCropPanEnd}
+            >
+              <img
+                ref={previewImgRef}
+                src={selectedImageSrc}
+                alt="Crop preview"
+                draggable={false}
+                style={{
+                  transform: `translate(${cropOffset.x}px, ${cropOffset.y}px) scale(${cropScale})`,
+                  transformOrigin: "center center",
+                  maxWidth: "100%",
+                  maxHeight: "100%",
+                  objectFit: "contain",
+                }}
+                className="w-full h-full pointer-events-none transition-transform duration-75"
+              />
+              {/* Circular guide ring */}
+              <div className="absolute inset-0 rounded-full border border-white/20 pointer-events-none" />
+            </div>
+
+            {/* Zoom Slider */}
+            <div className="mb-5 px-4">
+              <div className="flex justify-between text-xs text-muted font-bold mb-1.5">
+                <span>Zoom</span>
+                <span>{cropScale.toFixed(1)}x</span>
+              </div>
+              <input
+                type="range"
+                min="1"
+                max="3"
+                step="0.05"
+                value={cropScale}
+                onChange={(e) => setCropScale(Number(e.target.value))}
+                className="w-full accent-accent cursor-pointer"
+              />
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-2.5">
+              <Btn
+                variant="dark"
+                className="flex-1 py-2.5 text-xs font-bold"
+                onClick={() => {
+                  setCropModalOpen(false);
+                  setSelectedImageSrc(null);
+                }}
+                disabled={uploadingPhoto}
+              >
+                Cancel
+              </Btn>
+              <Btn
+                className="flex-1 py-2.5 text-xs font-bold"
+                onClick={handleSaveCroppedPhoto}
+                disabled={uploadingPhoto}
+              >
+                {uploadingPhoto ? "Saving..." : "Save Photo"}
+              </Btn>
+            </div>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

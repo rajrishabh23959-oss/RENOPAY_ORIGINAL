@@ -60,12 +60,111 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
   // Voice state: STT (Speech-to-Text) and TTS (Text-to-Speech)
   const [isListening, setIsListening] = useState(false);
   const [speakingMessageId, setSpeakingMessageId] = useState(null);
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isSpeechPaused, setIsSpeechPaused] = useState(false);
+  const [speechStatus, setSpeechStatus] = useState("idle"); // "idle" | "playing" | "paused" | "ended"
+  const isSpeaking = speechStatus === "playing";
+  const isSpeechPaused = speechStatus === "paused";
+  const isSpeechEnded = speechStatus === "ended";
+
+  const activeSpeechRef = useRef({
+    msgId: null,
+    text: "",
+    cleanText: "",
+    charIndex: 0,
+  });
+  const currentUtteranceRef = useRef(null);
+  const resumeTimerRef = useRef(null);
 
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
   const modalRef = useRef(null);
+
+  // Movable / Draggable Button State
+  const [position, setPosition] = useState(() => {
+    try {
+      const saved = localStorage.getItem("saathi_btn_pos");
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // ignore
+    }
+    return null; // null means default centered bottom
+  });
+
+  const dragRef = useRef({
+    isDragging: false,
+    hasMoved: false,
+    startX: 0,
+    startY: 0,
+    elemStartX: 0,
+    elemStartY: 0,
+  });
+
+  const handleDragStart = (clientX, clientY, targetRect) => {
+    dragRef.current = {
+      isDragging: true,
+      hasMoved: false,
+      startX: clientX,
+      startY: clientY,
+      elemStartX: targetRect.left,
+      elemStartY: targetRect.top,
+    };
+  };
+
+  const handleDragMove = (clientX, clientY) => {
+    if (!dragRef.current.isDragging) return;
+    const deltaX = clientX - dragRef.current.startX;
+    const deltaY = clientY - dragRef.current.startY;
+    if (Math.abs(deltaX) > 6 || Math.abs(deltaY) > 6) {
+      dragRef.current.hasMoved = true;
+    }
+
+    const btnWidth = 64;
+    const btnHeight = 64;
+    const newX = Math.max(10, Math.min(window.innerWidth - btnWidth - 10, dragRef.current.elemStartX + deltaX));
+    const newY = Math.max(10, Math.min(window.innerHeight - btnHeight - 80, dragRef.current.elemStartY + deltaY));
+
+    setPosition({ x: newX, y: newY });
+  };
+
+  const handleDragEnd = () => {
+    if (!dragRef.current.isDragging) return;
+    const wasMoved = dragRef.current.hasMoved;
+    dragRef.current.isDragging = false;
+
+    if (!wasMoved) {
+      setIsOpen(true);
+    } else {
+      if (position) {
+        try {
+          localStorage.setItem("saathi_btn_pos", JSON.stringify(position));
+        } catch {
+          // ignore
+        }
+      }
+    }
+  };
+
+  useEffect(() => {
+    const onMouseMove = (e) => handleDragMove(e.clientX, e.clientY);
+    const onMouseUp = () => handleDragEnd();
+    const onTouchMove = (e) => {
+      if (dragRef.current.isDragging && e.touches[0]) {
+        handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    };
+    const onTouchEnd = () => handleDragEnd();
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("touchend", onTouchEnd);
+
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [position]);
 
   // Sync language with user profile
   useEffect(() => {
@@ -218,68 +317,141 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
     }
   };
 
-  // Text-to-Speech (TTS)
-  const toggleSpeechSynthesis = (msgId, text) => {
+  // Text-to-Speech (TTS) with Robust Pause/Resume & Replay
+  const startSpeechUtterance = (textToSpeak, msgId, fullOriginalText, offset = 0) => {
     if (!window.speechSynthesis) return;
 
-    if (speakingMessageId === msgId) {
-      stopSpeech();
-      return;
+    if (resumeTimerRef.current) {
+      clearTimeout(resumeTimerRef.current);
+      resumeTimerRef.current = null;
     }
 
     window.speechSynthesis.cancel();
-    const cleanText = text.replace(/[*#_`]/g, "");
-    const utterance = new SpeechSynthesisUtterance(cleanText);
 
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
     const langObj = LANGUAGES.find((l) => l.code === currentLang) || LANGUAGES[0];
     utterance.lang = langObj.locale;
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
 
+    currentUtteranceRef.current = utterance;
+    window.__saathiUtterance = utterance;
+
     utterance.onstart = () => {
       setSpeakingMessageId(msgId);
-      setIsSpeaking(true);
-      setIsSpeechPaused(false);
+      setSpeechStatus("playing");
+    };
+
+    utterance.onboundary = (e) => {
+      if (typeof e.charIndex === "number") {
+        activeSpeechRef.current.charIndex = offset + e.charIndex;
+      }
     };
 
     utterance.onend = () => {
-      setSpeakingMessageId(null);
-      setIsSpeaking(false);
-      setIsSpeechPaused(false);
+      // Keep speakingMessageId so replay button appears in place of pause/play!
+      setSpeechStatus("ended");
+      currentUtteranceRef.current = null;
+      window.__saathiUtterance = null;
     };
 
-    utterance.onerror = () => {
-      setSpeakingMessageId(null);
-      setIsSpeaking(false);
-      setIsSpeechPaused(false);
+    utterance.onerror = (e) => {
+      if (e.error === "canceled" || e.error === "interrupted") return;
+      setSpeechStatus("ended");
+      currentUtteranceRef.current = null;
+      window.__saathiUtterance = null;
     };
 
     setSpeakingMessageId(msgId);
-    setIsSpeaking(true);
-    setIsSpeechPaused(false);
+    setSpeechStatus("playing");
     window.speechSynthesis.speak(utterance);
+  };
+
+  const toggleSpeechSynthesis = (msgId, text) => {
+    if (!window.speechSynthesis) return;
+
+    if (speakingMessageId === msgId && speechStatus !== "idle") {
+      stopSpeech();
+      return;
+    }
+
+    const cleanText = text.replace(/[*#_`]/g, "");
+    activeSpeechRef.current = {
+      msgId,
+      text,
+      cleanText,
+      charIndex: 0,
+    };
+
+    startSpeechUtterance(cleanText, msgId, text, 0);
+  };
+
+  const replaySpeech = (e) => {
+    e?.stopPropagation();
+    if (!activeSpeechRef.current.cleanText || !activeSpeechRef.current.msgId) return;
+
+    activeSpeechRef.current.charIndex = 0;
+    startSpeechUtterance(
+      activeSpeechRef.current.cleanText,
+      activeSpeechRef.current.msgId,
+      activeSpeechRef.current.text,
+      0
+    );
   };
 
   const toggleSpeechPause = (e) => {
     e?.stopPropagation();
     if (!window.speechSynthesis) return;
-    if (isSpeechPaused) {
+
+    if (speechStatus === "paused") {
+      // RESUME / PLAY
+      setSpeechStatus("playing");
       window.speechSynthesis.resume();
-      setIsSpeechPaused(false);
-    } else {
+
+      // Chromium safeguard: if browser resume hangs or cancels utterance silently, re-speak from charIndex:
+      if (resumeTimerRef.current) clearTimeout(resumeTimerRef.current);
+      resumeTimerRef.current = setTimeout(() => {
+        if (window.speechSynthesis.paused || !window.speechSynthesis.speaking) {
+          const idx = activeSpeechRef.current.charIndex || 0;
+          const remainingText = activeSpeechRef.current.cleanText.slice(idx);
+          startSpeechUtterance(
+            remainingText || activeSpeechRef.current.cleanText,
+            activeSpeechRef.current.msgId,
+            activeSpeechRef.current.text,
+            idx
+          );
+        }
+      }, 150);
+    } else if (speechStatus === "playing") {
+      // PAUSE
+      if (resumeTimerRef.current) {
+        clearTimeout(resumeTimerRef.current);
+        resumeTimerRef.current = null;
+      }
       window.speechSynthesis.pause();
-      setIsSpeechPaused(true);
+      setSpeechStatus("paused");
     }
   };
 
   const stopSpeech = (e) => {
     e?.stopPropagation();
+    if (resumeTimerRef.current) {
+      clearTimeout(resumeTimerRef.current);
+      resumeTimerRef.current = null;
+    }
     if (window.speechSynthesis) {
       window.speechSynthesis.cancel();
     }
+    currentUtteranceRef.current = null;
+    window.__saathiUtterance = null;
     setSpeakingMessageId(null);
-    setIsSpeaking(false);
-    setIsSpeechPaused(false);
+    setSpeechStatus("idle");
+    activeSpeechRef.current = {
+      msgId: null,
+      text: "",
+      cleanText: "",
+      charIndex: 0,
+    };
   };
 
   const currentPrompts = SCREEN_PROMPTS[currentScreen] || SCREEN_PROMPTS["home"];
@@ -287,23 +459,39 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
 
   return (
     <>
-      {/* ── 1. Floating Saathi Button (Centered Circle Launcher) ────────── */}
+      {/* ── 1. Floating Saathi Button (Movable / Draggable Circle Launcher) ── */}
       {!isOpen && (
-        <div className="fixed bottom-[74px] left-1/2 -translate-x-1/2 z-[90] flex flex-col items-center pointer-events-auto">
+        <div
+          style={
+            position
+              ? { left: `${position.x}px`, top: `${position.y}px`, transform: "none" }
+              : { left: "50%", bottom: "74px", transform: "translateX(-50%)" }
+          }
+          className="fixed z-[90] flex flex-col items-center pointer-events-auto select-none"
+        >
           <button
             type="button"
-            onClick={() => setIsOpen(true)}
-            className={`group relative flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#151210] shadow-[0_10px_35px_rgba(0,0,0,0.85),0_0_25px_rgba(255,106,26,0.55)] border-2 transition-all duration-300 cursor-pointer ${
-              isSpeaking
+            onMouseDown={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              handleDragStart(e.clientX, e.clientY, rect);
+            }}
+            onTouchStart={(e) => {
+              if (e.touches[0]) {
+                const rect = e.currentTarget.getBoundingClientRect();
+                handleDragStart(e.touches[0].clientX, e.touches[0].clientY, rect);
+              }
+            }}
+            className={`group relative flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#151210] shadow-[0_10px_35px_rgba(0,0,0,0.85),0_0_25px_rgba(255,106,26,0.55)] border-2 transition-all duration-150 cursor-grab active:cursor-grabbing touch-none select-none ${
+              speechStatus !== "idle"
                 ? "border-teal ring-4 ring-teal/30 scale-105 shadow-[0_0_30px_rgba(20,184,166,0.5)]"
-                : "border-accent hover:border-[#FF5500] hover:scale-110 active:scale-95"
+                : "border-accent hover:border-[#FF5500] hover:scale-105 active:scale-95"
             }`}
-            title="Open Saathi - Your RenoPay Assistant"
+            title="Drag to move • Tap to open Saathi"
           >
             {/* Ambient radial pulse glow */}
             <span
               className={`absolute inset-0 rounded-full blur-md -z-10 transition-all animate-pulse ${
-                isSpeaking ? "bg-teal/50" : "bg-accent/40 group-hover:blur-lg group-hover:bg-accent/60"
+                speechStatus !== "idle" ? "bg-teal/50" : "bg-accent/40 group-hover:blur-lg group-hover:bg-accent/60"
               }`}
             />
 
@@ -315,9 +503,17 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
             />
 
             {/* Speaking audio animation badge or online indicator */}
-            {isSpeaking ? (
+            {speechStatus === "playing" ? (
               <span className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full bg-teal text-black text-[10px] font-black shadow-md flex items-center gap-0.5 animate-bounce">
                 <span>🔊</span>
+              </span>
+            ) : speechStatus === "paused" ? (
+              <span className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full bg-amber-500 text-black text-[10px] font-black shadow-md flex items-center gap-0.5">
+                <span>⏸️</span>
+              </span>
+            ) : speechStatus === "ended" ? (
+              <span className="absolute -top-1 -right-1 px-1.5 py-0.5 rounded-full bg-accent text-white text-[10px] font-black shadow-md flex items-center gap-0.5 animate-pulse">
+                <span>🔁</span>
               </span>
             ) : (
               <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 rounded-full bg-teal border-2 border-[#151210] shadow-sm flex items-center justify-center">
@@ -327,17 +523,29 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
           </button>
 
           {/* Docked Audio Controller under circle (Handwritten diagram layout) */}
-          {isSpeaking && (
+          {speakingMessageId && speechStatus !== "idle" && (
             <div className="mt-2.5 flex items-center gap-2 bg-[#171310]/95 backdrop-blur-xl border border-teal/50 px-3 py-1.5 rounded-full shadow-[0_12px_30px_rgba(0,0,0,0.95)] animate-fade-in z-[95]">
-              {/* Pause / Play Button */}
-              <button
-                type="button"
-                onClick={toggleSpeechPause}
-                className="btn px-2.5 py-1 rounded-full text-xs font-bold bg-white/10 hover:bg-white/20 text-white flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
-                title={isSpeechPaused ? "Resume Saathi Voice" : "Pause Saathi Voice"}
-              >
-                <span>{isSpeechPaused ? "▶️ Play" : "⏸️ Pause"}</span>
-              </button>
+              {speechStatus === "ended" ? (
+                /* Replay Button (shown when voice finishes) */
+                <button
+                  type="button"
+                  onClick={replaySpeech}
+                  className="btn px-2.5 py-1 rounded-full text-xs font-bold bg-accent/30 hover:bg-accent/50 text-white flex items-center gap-1 transition-all active:scale-95 cursor-pointer border border-accent/40"
+                  title="Replay Saathi voice"
+                >
+                  <span>🔁 Replay</span>
+                </button>
+              ) : (
+                /* Pause / Play Button */
+                <button
+                  type="button"
+                  onClick={toggleSpeechPause}
+                  className="btn px-2.5 py-1 rounded-full text-xs font-bold bg-white/10 hover:bg-white/20 text-white flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                  title={speechStatus === "paused" ? "Resume Saathi Voice" : "Pause Saathi Voice"}
+                >
+                  <span>{speechStatus === "paused" ? "▶️ Play" : "⏸️ Pause"}</span>
+                </button>
+              )}
 
               <span className="w-px h-3.5 bg-white/20" />
 
@@ -500,19 +708,33 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
                         {!isUser && !m.isError && (
                           <div className="mt-2.5 pt-2 border-t border-white/[0.08] flex items-center justify-between text-[11px] text-muted">
                             <span className="text-[10px]">{m.time}</span>
-                            {speakingMessageId === m.id ? (
+                            {speakingMessageId === m.id && speechStatus !== "idle" ? (
                               <div className="flex items-center gap-1.5">
-                                <button
-                                  type="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    toggleSpeechPause();
-                                  }}
-                                  className="text-white hover:text-accent font-bold transition-colors flex items-center gap-1 cursor-pointer bg-white/10 px-2 py-0.5 rounded-md border border-white/10 text-[10px]"
-                                  title={isSpeechPaused ? "Resume voice" : "Pause voice"}
-                                >
-                                  <span>{isSpeechPaused ? "▶️ Resume" : "⏸️ Pause"}</span>
-                                </button>
+                                {speechStatus === "ended" ? (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      replaySpeech();
+                                    }}
+                                    className="text-white hover:text-accent font-bold transition-colors flex items-center gap-1 cursor-pointer bg-accent/25 hover:bg-accent/40 px-2 py-0.5 rounded-md border border-accent/40 text-[10px]"
+                                    title="Replay voice from start"
+                                  >
+                                    <span>🔁 Replay</span>
+                                  </button>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      toggleSpeechPause();
+                                    }}
+                                    className="text-white hover:text-accent font-bold transition-colors flex items-center gap-1 cursor-pointer bg-white/10 px-2 py-0.5 rounded-md border border-white/10 text-[10px]"
+                                    title={speechStatus === "paused" ? "Resume voice" : "Pause voice"}
+                                  >
+                                    <span>{speechStatus === "paused" ? "▶️ Play" : "⏸️ Pause"}</span>
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   onClick={(e) => {
@@ -522,7 +744,7 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
                                   className="text-danger hover:text-danger/80 font-bold transition-colors flex items-center gap-1 cursor-pointer bg-danger/15 px-2 py-0.5 rounded-md border border-danger/30 text-[10px]"
                                   title="Stop voice"
                                 >
-                                  <span className="w-1.5 h-1.5 rounded-full bg-danger animate-ping" />
+                                  {speechStatus === "playing" && <span className="w-1.5 h-1.5 rounded-full bg-danger animate-ping" />}
                                   <span>⏹️ Stop</span>
                                 </button>
                               </div>

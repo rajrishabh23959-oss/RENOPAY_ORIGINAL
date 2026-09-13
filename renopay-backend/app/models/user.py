@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import String, Enum, ForeignKey, Boolean, DateTime
+from sqlalchemy import String, Enum, ForeignKey, Boolean, DateTime, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, UUIDPKMixin, TimestampMixin
@@ -37,7 +37,7 @@ class User(Base, UUIDPKMixin, TimestampMixin):
     aadhaar_ref_encrypted: Mapped[str | None] = mapped_column(String(512), nullable=True)
     pan_number: Mapped[str | None] = mapped_column(String(10), nullable=True)
 
-    avatar_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    avatar_url: Mapped[str | None] = mapped_column(Text, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     language_code: Mapped[str] = mapped_column(String(10), default="en", nullable=False)
 

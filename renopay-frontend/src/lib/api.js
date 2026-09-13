@@ -51,6 +51,14 @@ export const AccountAPI = {
   updateBudget: (monthly_budget) => http.patch("/accounts/budget", { monthly_budget }).then((r) => r.data),
 
   updatePreferences: (preferences) => http.patch("/accounts/preferences", preferences).then((r) => r.data),
+
+  uploadProfilePhoto: (formData) =>
+    http.post("/accounts/profile-photo", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }).then((r) => r.data),
+
+  deleteProfilePhoto: () =>
+    http.delete("/accounts/profile-photo").then((r) => r.data),
 };
 
 // ---------- Payments ----------

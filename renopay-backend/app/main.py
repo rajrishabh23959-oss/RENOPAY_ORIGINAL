@@ -32,6 +32,10 @@ async def lifespan(app: FastAPI):
                 await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS language_code VARCHAR(10) DEFAULT 'en';"))
             except Exception as e:
                 print(f"Could not alter users table for language_code: {e}")
+            try:
+                await conn.execute(text("ALTER TABLE users ALTER COLUMN avatar_url TYPE TEXT;"))
+            except Exception as e:
+                print(f"Could not alter users table for avatar_url TYPE TEXT: {e}")
 
         async with AsyncSessionLocal() as session:
             res = await session.execute(select(User).where(User.phone_number == "9876543210"))
@@ -160,6 +164,25 @@ async def user_preferences_alias(
     db=accounts.Depends(accounts.get_db),
 ):
     return await accounts.update_preferences(payload, user, account, db)
+
+
+@app.post("/user/profile-photo", tags=["user-profile"])
+async def user_upload_photo_alias(
+    file: accounts.UploadFile = accounts.File(...),
+    user=accounts.Depends(accounts.get_current_user),
+    account=accounts.Depends(accounts.get_current_account),
+    db=accounts.Depends(accounts.get_db),
+):
+    return await accounts.upload_profile_photo(file, user, account, db)
+
+
+@app.delete("/user/profile-photo", tags=["user-profile"])
+async def user_delete_photo_alias(
+    user=accounts.Depends(accounts.get_current_user),
+    account=accounts.Depends(accounts.get_current_account),
+    db=accounts.Depends(accounts.get_db),
+):
+    return await accounts.delete_profile_photo(user, account, db)
 
 
 

@@ -7,19 +7,38 @@ import { HeartbeatGauge } from "../components/HeartbeatGauge";
 import { Badge, TrustBadge, Card } from "../components/ui";
 import { fmt, ago } from "../lib/format";
 
+import iconPay from "../assets/actions/pay.png";
+import iconRequests from "../assets/actions/requests.png";
+import iconSplit from "../assets/actions/split.png";
+import iconSubs from "../assets/actions/subscriptions.png";
+import iconSavings from "../assets/actions/savings.png";
+import iconAddMoney from "../assets/actions/addmoney.png";
+import iconExpenses from "../assets/actions/expenses.png";
+import iconRewards from "../assets/actions/rewards.png";
+import iconHistory from "../assets/actions/history.png";
+import iconUpilite from "../assets/actions/upilite.png";
+import iconGold from "../assets/actions/gold.png";
+import iconLedger from "../assets/actions/ledger.png";
+import iconVaults from "../assets/actions/vaults.png";
+
 const QUICK_ACTIONS_1 = [
-  { icon: "💸", l: "Pay", s: "pay" }, { icon: "💌", l: "Request", s: "requests" },
-  { icon: "✂️", l: "Split", s: "split" }, { icon: "📋", l: "Subs", s: "subscriptions" },
-  { icon: "🗺️", l: "Goals", s: "savings" },
+  { icon: iconPay, l: "Pay", s: "pay" },
+  { icon: iconRequests, l: "Request", s: "requests" },
+  { icon: iconSplit, l: "Split", s: "split" },
+  { icon: iconSubs, l: "Subs", s: "subscriptions" },
+  { icon: iconSavings, l: "Goals", s: "savings" },
 ];
 const QUICK_ACTIONS_2 = [
-  { icon: "➕", l: "Add ₹", s: "addmoney" }, { icon: "📊", l: "Tracker", s: "expenses" },
-  { icon: "🎰", l: "Rewards", s: "rewards" }, { icon: "📋", l: "History", s: "history" },
-  { icon: "📲", l: "UPI Lite", s: "upilite" },
+  { icon: iconAddMoney, l: "Add ₹", s: "addmoney" },
+  { icon: iconExpenses, l: "Tracker", s: "expenses" },
+  { icon: iconRewards, l: "Rewards", s: "rewards" },
+  { icon: iconHistory, l: "History", s: "history" },
+  { icon: iconUpilite, l: "UPI Lite", s: "upilite" },
 ];
 const QUICK_ACTIONS_3 = [
-  { icon: "🪙", l: "Gold", s: "gold" },
-  { icon: "📄", l: "Reports", s: "ledger" }, { icon: "🏖️", l: "Vaults", s: "vaults" },
+  { icon: iconGold, l: "Gold", s: "gold" },
+  { icon: iconLedger, l: "Reports", s: "ledger" },
+  { icon: iconVaults, l: "Vaults", s: "vaults" },
 ];
 
 export function HomeScreen({ onNavigate }) {
@@ -224,22 +243,25 @@ export function HomeScreen({ onNavigate }) {
 
         <div className="grid grid-cols-5 gap-2">
           {QUICK_ACTIONS_1.map((a) => (
-            <button key={a.s} className="btn bg-card border border-line rounded-[20px] py-3 px-1 flex flex-col items-center gap-[5px] hover:border-accent/30 transition-colors" onClick={() => onNavigate(a.s)}>
-              <span className="text-xl">{a.icon}</span><span className="text-[9px] text-muted font-semibold">{a.l}</span>
+            <button key={a.s} className="group btn bg-card border border-line rounded-[20px] py-2.5 px-1 flex flex-col items-center gap-1.5 hover:border-accent/40 hover:bg-card/80 transition-all active:scale-95 cursor-pointer" onClick={() => onNavigate(a.s)}>
+              <img src={a.icon} alt={a.l} className="w-[38px] h-[38px] object-contain drop-shadow-md transition-transform group-hover:scale-105" />
+              <span className="text-[10px] text-textLight font-semibold tracking-tight">{a.l}</span>
             </button>
           ))}
         </div>
         <div className="grid grid-cols-5 gap-2">
           {QUICK_ACTIONS_2.map((a) => (
-            <button key={a.s} className="btn bg-card border border-line rounded-[20px] py-3 px-1 flex flex-col items-center gap-[5px] hover:border-accent/30 transition-colors" onClick={() => onNavigate(a.s)}>
-              <span className="text-xl">{a.icon}</span><span className="text-[9px] text-muted font-semibold">{a.l}</span>
+            <button key={a.s} className="group btn bg-card border border-line rounded-[20px] py-2.5 px-1 flex flex-col items-center gap-1.5 hover:border-accent/40 hover:bg-card/80 transition-all active:scale-95 cursor-pointer" onClick={() => onNavigate(a.s)}>
+              <img src={a.icon} alt={a.l} className="w-[38px] h-[38px] object-contain drop-shadow-md transition-transform group-hover:scale-105" />
+              <span className="text-[10px] text-textLight font-semibold tracking-tight">{a.l}</span>
             </button>
           ))}
         </div>
         <div className="grid grid-cols-3 gap-2">
           {QUICK_ACTIONS_3.map((a) => (
-            <button key={a.s} className="btn bg-card border border-line rounded-[20px] py-3 px-1 flex flex-col items-center gap-[5px] hover:border-accent/30 transition-colors" onClick={() => onNavigate(a.s)}>
-              <span className="text-xl">{a.icon}</span><span className="text-[9px] text-muted font-semibold">{a.l}</span>
+            <button key={a.s} className="group btn bg-card border border-line rounded-[20px] py-2.5 px-1 flex flex-col items-center gap-1.5 hover:border-accent/40 hover:bg-card/80 transition-all active:scale-95 cursor-pointer" onClick={() => onNavigate(a.s)}>
+              <img src={a.icon} alt={a.l} className="w-[38px] h-[38px] object-contain drop-shadow-md transition-transform group-hover:scale-105" />
+              <span className="text-[10px] text-textLight font-semibold tracking-tight">{a.l}</span>
             </button>
           ))}
         </div>
