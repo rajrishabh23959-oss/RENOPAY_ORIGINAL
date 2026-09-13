@@ -13,9 +13,18 @@ Requirements (add to requirements.txt):
     jinja2>=3.1.4
 """
 import io
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import Literal
 from jinja2 import Environment, BaseLoader
+
+IST = timezone(timedelta(hours=5, minutes=30))
+
+def to_ist(dt: datetime | None) -> datetime:
+    if not dt:
+        return datetime.now(IST)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(IST)
 
 try:
     from weasyprint import HTML as WeasyprintHTML
@@ -860,7 +869,7 @@ def build_balance_sheet_data(transactions: list, period: str) -> dict:
 
     txn_rows = [
         {
-            "date": t.created_at.strftime("%d %b %Y %H:%M"),
+            "date": to_ist(t.created_at).strftime("%d %b %Y, %I:%M %p IST"),
             "description": t.description or "—",
             "category": t.category.value if hasattr(t.category, "value") else str(t.category),
             "type": t.type.value if hasattr(t.type, "value") else str(t.type),
@@ -871,7 +880,7 @@ def build_balance_sheet_data(transactions: list, period: str) -> dict:
 
     return {
         "period": period,
-        "generated_at": datetime.utcnow().strftime("%d %b %Y %H:%M UTC"),
+        "generated_at": datetime.now(IST).strftime("%d %b %Y, %I:%M %p IST"),
         "total_income": total_income,
         "total_spent": total_spent,
         "net": net,
@@ -905,7 +914,7 @@ def build_profit_loss_data(transactions: list, period: str) -> dict:
 
     return {
         "period": period,
-        "generated_at": datetime.utcnow().strftime("%d %b %Y %H:%M UTC"),
+        "generated_at": datetime.now(IST).strftime("%d %b %Y, %I:%M %p IST"),
         "total_income": total_income,
         "total_spent": total_spent,
         "net": net,
@@ -915,8 +924,10 @@ def build_profit_loss_data(transactions: list, period: str) -> dict:
 
 
 def build_receipt_data(txn) -> dict:
+    created_ist = to_ist(txn.created_at)
+    now_ist = datetime.now(IST)
     return {
-        "generated_at": datetime.utcnow().strftime("%d %b %Y %H:%M UTC"),
+        "generated_at": now_ist.strftime("%d %b %Y, %I:%M %p IST"),
         "txn_ref": txn.txn_ref,
         "amount": txn.amount_paise / 100,
         "type": txn.type.value if hasattr(txn.type, "value") else str(txn.type),
@@ -924,6 +935,6 @@ def build_receipt_data(txn) -> dict:
         "counterparty_vpa": txn.counterparty_vpa,
         "description": txn.description or "UPI Transfer",
         "category": txn.category.value if hasattr(txn.category, "value") else str(txn.category),
-        "created_at": txn.created_at.strftime("%d %b %Y, %I:%M %p"),
+        "created_at": created_ist.strftime("%d %b %Y, %I:%M %p IST"),
         "round_up": txn.round_up_paise / 100 if txn.round_up_paise else 0,
     }

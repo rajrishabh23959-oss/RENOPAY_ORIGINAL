@@ -7,8 +7,17 @@ GET /analytics/report?from=2026-01-01&to=2026-08-20&type=balance_sheet
 GET /analytics/report?type=transaction_receipt&txn_ref=RENO-TXN-XXX
   -> streams a single-transaction receipt PDF
 """
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Literal
+
+IST = timezone(timedelta(hours=5, minutes=30))
+
+def to_ist(dt: datetime | None) -> datetime:
+    if not dt:
+        return datetime.now(IST)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(IST)
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import StreamingResponse
@@ -133,7 +142,7 @@ async def generate_report(
             entries_dict = {}
             for entry, line, coa in all_rows:
                 if entry.id not in entries_dict:
-                    entry_date = entry.created_at.strftime("%d %b %Y") if entry.created_at else ""
+                    entry_date = to_ist(entry.created_at).strftime("%d %b %Y, %I:%M %p IST") if entry.created_at else ""
                     entries_dict[entry.id] = {
                         "entry_no": entry.entry_no or "",
                         "date": entry_date,
@@ -185,7 +194,7 @@ async def generate_report(
                 else:
                     gl["running_balance"] += (c - d)
 
-                entry_date = entry.created_at.strftime("%d %b") if entry.created_at else ""
+                entry_date = to_ist(entry.created_at).strftime("%d %b, %I:%M %p") if entry.created_at else ""
                 gl["lines"].append({
                     "date": entry_date,
                     "entry_no": entry.entry_no or "",
@@ -218,7 +227,7 @@ async def generate_report(
                     c = line.credit_paise or 0
                     p["total_debit"] += d
                     p["total_credit"] += c
-                    entry_date = entry.created_at.strftime("%d %b") if entry.created_at else ""
+                    entry_date = to_ist(entry.created_at).strftime("%d %b, %I:%M %p") if entry.created_at else ""
                     p["lines"].append({
                         "date": entry_date,
                         "entry_no": entry.entry_no or "",
@@ -254,7 +263,7 @@ async def generate_report(
 
             data = {
                 "account_name": getattr(user, "full_name", None) or "Account Holder",
-                "generated_at": datetime.now(timezone.utc).strftime("%d %b %Y %H:%M UTC"),
+                "generated_at": datetime.now(IST).strftime("%d %b %Y, %I:%M %p IST"),
                 "period_str": f"{from_str or 'Start'} to {to_str or 'Now'}" if (from_str or to_str) else None,
                 "journal_entries": journal_entries_data,
                 "total_journal_amount": total_journal_amount,

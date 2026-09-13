@@ -1,5 +1,14 @@
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import uuid
+
+IST = timezone(timedelta(hours=5, minutes=30))
+
+def to_ist(dt: datetime | None) -> datetime:
+    if not dt:
+        return datetime.now(IST)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(IST)
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel
@@ -92,7 +101,7 @@ async def get_journal(
         
         response.append({
             "entry_no": entry.entry_no,
-            "date": entry.created_at.strftime("%d %b %Y %H:%M"),
+            "date": to_ist(entry.created_at).strftime("%d %b %Y %I:%M %p"),
             "narration": entry.narration,
             "source": entry.source.value,
             "lines": lines
