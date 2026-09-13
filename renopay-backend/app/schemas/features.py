@@ -168,6 +168,11 @@ class CreateVaultRequest(BaseModel):
     icon: str = "🏖️"
     target: float = Field(gt=0)
     member_phone_numbers: list[str] = []
+    member_vpas: list[str] = []
+
+
+class AddVaultMemberRequest(BaseModel):
+    identifier: str  # Phone number or UPI ID
 
 
 class ContributeVaultRequest(BaseModel):
@@ -182,13 +187,52 @@ class VaultLogOut(BaseModel):
     created_at: datetime
 
 
+class VaultMemberOut(BaseModel):
+    user_id: uuid.UUID
+    name: str
+    vpa: str
+    phone_number: str
+    contributed_amount: float
+    is_creator: bool
+    is_current_user: bool
+
+
+class VaultWithdrawalRequestOut(BaseModel):
+    id: uuid.UUID
+    requester_id: uuid.UUID
+    requester_name: str
+    amount: float
+    status: str
+    approvals: list[str] = []
+    total_members: int
+    has_approved: bool
+    created_at: datetime
+
+
 class SharedVaultOut(BaseModel):
     id: uuid.UUID
     name: str
     icon: str
     target: float
     balance: float
+    creator_id: uuid.UUID | None = None
+    is_creator: bool = False
+    members: list[VaultMemberOut] = []
+    active_withdrawal: VaultWithdrawalRequestOut | None = None
     logs: list[VaultLogOut] = []
+
+
+class InitiateVaultWithdrawalRequest(BaseModel):
+    amount: float | None = None
+    pin: str = Field(min_length=6, max_length=6)
+
+
+class ApproveVaultWithdrawalRequest(BaseModel):
+    pin: str = Field(min_length=6, max_length=6)
+
+
+class WithdrawMyContributionRequest(BaseModel):
+    pin: str = Field(min_length=6, max_length=6)
 
 
 # ---------- UPI Lite ----------

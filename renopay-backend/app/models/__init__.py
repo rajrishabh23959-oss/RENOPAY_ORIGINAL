@@ -12,7 +12,7 @@ from app.models.money_request import MoneyRequest, RequestStatus   # noqa: F401
 from app.models.mandate import Mandate, MandateFrequency, MandateStatus  # noqa: F401
 from app.models.reward import ScratchCard, RewardType          # noqa: F401
 from app.models.savings import (                                # noqa: F401
-    SavingsGoal, SharedVault, SharedVaultMember, SharedVaultLog,
+    SavingsGoal, SharedVault, SharedVaultMember, SharedVaultLog, SharedVaultWithdrawalRequest,
 )
 from app.models.auth import RefreshToken, OTPChallenge          # noqa: F401
 from app.models.gold import UserGoldPot, GoldLedger              # noqa: F401

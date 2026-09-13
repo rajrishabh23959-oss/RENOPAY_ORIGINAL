@@ -129,10 +129,26 @@ export const GoalAPI = {
 export const VaultAPI = {
   list: () => http.get("/vaults/").then((r) => r.data),
 
-  create: (name, icon, target, member_phone_numbers = []) =>
-    http.post("/vaults/", { name, icon, target, member_phone_numbers }).then((r) => r.data),
+  create: (name, icon, target, member_phone_numbers = [], member_vpas = []) =>
+    http.post("/vaults/", { name, icon, target, member_phone_numbers, member_vpas }).then((r) => r.data),
 
-  contribute: (vaultId, amount, pin) => http.post(`/vaults/${vaultId}/contribute`, { amount, pin }).then((r) => r.data),
+  addMember: (vaultId, identifier) =>
+    http.post(`/vaults/${vaultId}/members`, { identifier }).then((r) => r.data),
+
+  contribute: (vaultId, amount, pin) =>
+    http.post(`/vaults/${vaultId}/contribute`, { amount, pin }).then((r) => r.data),
+
+  withdrawMyContribution: (vaultId, pin) =>
+    http.post(`/vaults/${vaultId}/withdraw-my-contribution`, { pin }).then((r) => r.data),
+
+  requestWithdrawal: (vaultId, amount, pin) =>
+    http.post(`/vaults/${vaultId}/request-withdrawal`, { amount, pin }).then((r) => r.data),
+
+  approveWithdrawal: (vaultId, pin) =>
+    http.post(`/vaults/${vaultId}/approve-withdrawal`, { pin }).then((r) => r.data),
+
+  rejectWithdrawal: (vaultId) =>
+    http.post(`/vaults/${vaultId}/reject-withdrawal`).then((r) => r.data),
 };
 
 // ---------- UPI Lite ----------
