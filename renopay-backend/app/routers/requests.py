@@ -42,7 +42,7 @@ async def create_split(
     account: Account = Depends(get_current_account),
     db: AsyncSession = Depends(get_db),
 ):
-    payers = [p for p in payload.people if p.vpa]
+    payers = [p for p in payload.people if p.vpa and p.vpa.strip()]
     if not payers:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "At least one payer VPA required")
     share_paise = -(-rupees_to_paise(payload.total_bill) // len(payers))  # ceil division, matches mock
@@ -50,16 +50,37 @@ async def create_split(
     split_group_id = uuid.uuid4()
     created = []
     for person in payers:
+        clean_vpa = person.vpa.strip().lower()
         req = MoneyRequest(
-            from_vpa=account.vpa, to_vpa=person.vpa, amount_paise=share_paise,
+            from_vpa=account.vpa,
+            to_vpa=clean_vpa,
+            amount_paise=share_paise,
             note=f"{payload.description or 'Bill split'} - {person.name}'s share",
             split_group_id=split_group_id,
         )
         db.add(req)
         created.append(req)
+
     await db.commit()
     for r in created:
         await db.refresh(r)
+
+    # Broadcast real-time push to all recipients
+    from app.ws.manager import manager as ws_manager
+    for r in created:
+        recipient_acc = (await db.execute(select(Account).where(Account.vpa == r.to_vpa))).scalar_one_or_none()
+        if recipient_acc:
+            await ws_manager.push(
+                recipient_acc.user_id,
+                "money_request_received",
+                {
+                    "from_vpa": r.from_vpa,
+                    "to_vpa": r.to_vpa,
+                    "amount": paise_to_rupees(r.amount_paise),
+                    "note": r.note,
+                },
+            )
+
     return [MoneyRequestOut.from_model(r) for r in created]
 
 
@@ -93,6 +114,18 @@ async def pay_request(
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Request not found or already resolved")
     if req.to_vpa != account.vpa:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not authorized to pay this request")
+
+    # If paying user's own split share
+    if req.from_vpa == req.to_vpa:
+        from app.services.pin_auth import verify_user_pin, PinError
+        try:
+            await verify_user_pin(db, user, pin)
+        except PinError as e:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, {"code": e.code, "message": e.message})
+        req.status = RequestStatus.PAID
+        await db.commit()
+        return {"success": True, "txn_ref": "SELF-SETTLED"}
+
     try:
         pay_result = await payment_engine.send_money(
             db, sender_user_id=user.id, receiver_vpa=req.from_vpa, amount_paise=req.amount_paise,

@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select, func
+from sqlalchemy import select, func, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.attributes import flag_modified
 
@@ -439,8 +439,26 @@ async def withdraw_my_contribution(
     await db.flush()
     await accounting_engine.post_transaction_to_journal(db, txn)
 
+    # Remove user as a member from this vault since they withdrew their entire share
+    await db.execute(
+        delete(SharedVaultMember).where(
+            SharedVaultMember.vault_id == vault_id,
+            SharedVaultMember.user_id == user.id,
+        )
+    )
+
+    remaining_members = await db.scalar(
+        select(func.count()).select_from(SharedVaultMember).where(SharedVaultMember.vault_id == vault_id)
+    )
+
+    # If no members remain or vault balance is exhausted, automatically delete the vault
+    if (remaining_members is None or remaining_members <= 0) or vault.balance_paise <= 0:
+        await db.execute(delete(SharedVaultWithdrawalRequest).where(SharedVaultWithdrawalRequest.vault_id == vault_id))
+        await db.execute(delete(SharedVaultLog).where(SharedVaultLog.vault_id == vault_id))
+        await db.execute(delete(SharedVaultMember).where(SharedVaultMember.vault_id == vault_id))
+        await db.delete(vault)
+
     await db.commit()
-    await db.refresh(vault)
     await db.refresh(locked_account)
 
     await ws_manager.push(
@@ -453,7 +471,30 @@ async def withdraw_my_contribution(
         },
     )
 
-    return await _serialize_vault(db, vault, user.id)
+    # Notify remaining members if vault still exists
+    if remaining_members and remaining_members > 0 and vault.balance_paise > 0:
+        other_members = (
+            await db.execute(select(SharedVaultMember.user_id).where(SharedVaultMember.vault_id == vault_id))
+        ).scalars().all()
+        for mid in other_members:
+            await ws_manager.push(
+                mid,
+                "vault_updated",
+                {"vault_id": str(vault_id), "vault_name": vault.name},
+            )
+
+    return SharedVaultOut(
+        id=vault_id,
+        name=vault.name,
+        icon=vault.icon,
+        target=0,
+        balance=0,
+        creator_id=vault.creator_id,
+        is_creator=False,
+        members=[],
+        active_withdrawal=None,
+        logs=[],
+    )
 
 
 @router.post("/{vault_id}/request-withdrawal", response_model=SharedVaultOut)
@@ -550,6 +591,28 @@ async def request_vault_withdrawal(
         db.add(txn)
         await db.flush()
         await accounting_engine.post_transaction_to_journal(db, txn)
+
+        # Full payout completed -> Auto-delete vault!
+        await db.execute(delete(SharedVaultWithdrawalRequest).where(SharedVaultWithdrawalRequest.vault_id == vault_id))
+        await db.execute(delete(SharedVaultLog).where(SharedVaultLog.vault_id == vault_id))
+        await db.execute(delete(SharedVaultMember).where(SharedVaultMember.vault_id == vault_id))
+        await db.delete(locked_vault)
+
+        await db.commit()
+        await db.refresh(locked_account)
+
+        return SharedVaultOut(
+            id=vault.id,
+            name=vault.name,
+            icon=vault.icon,
+            target=0,
+            balance=0,
+            creator_id=vault.creator_id,
+            is_creator=True,
+            members=[],
+            active_withdrawal=None,
+            logs=[],
+        )
 
     await db.commit()
     await db.refresh(vault)
@@ -668,6 +731,39 @@ async def approve_vault_withdrawal(
                 "denominations": requester_acc.cash_denominations,
                 "reason": "vault_payout",
             },
+        )
+
+        # Fetch all members to push update before deleting
+        all_members = (
+            await db.execute(select(SharedVaultMember.user_id).where(SharedVaultMember.vault_id == vault_id))
+        ).scalars().all()
+
+        # Delete the vault and all related rows upon 100% full withdrawal payout
+        await db.execute(delete(SharedVaultWithdrawalRequest).where(SharedVaultWithdrawalRequest.vault_id == vault_id))
+        await db.execute(delete(SharedVaultLog).where(SharedVaultLog.vault_id == vault_id))
+        await db.execute(delete(SharedVaultMember).where(SharedVaultMember.vault_id == vault_id))
+        await db.delete(vault)
+
+        await db.commit()
+
+        for mid in all_members:
+            await ws_manager.push(
+                mid,
+                "vault_updated",
+                {"vault_id": str(vault_id), "vault_name": vault.name},
+            )
+
+        return SharedVaultOut(
+            id=vault_id,
+            name=vault.name,
+            icon=vault.icon,
+            target=0,
+            balance=0,
+            creator_id=vault.creator_id,
+            is_creator=(vault.creator_id == user.id),
+            members=[],
+            active_withdrawal=None,
+            logs=[],
         )
 
     await db.commit()

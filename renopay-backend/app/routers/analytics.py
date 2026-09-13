@@ -1,16 +1,19 @@
 from datetime import datetime, timedelta, timezone
 from calendar import monthrange
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_account
+from app.api.deps import get_current_account, get_current_user
 from app.core.money import paise_to_rupees
 from app.db.session import get_db
+from app.models.user import User
 from app.models.account import Account
 from app.models.transaction import Transaction, TxnType
 from app.schemas.features import BudgetPredictionOut, ExpenseSummaryOut, ExpenseByCategory
+from app.services.pdf_generator import generate_pdf, build_expense_report_data
 
 router = APIRouter()
 
@@ -61,19 +64,33 @@ async def budget_prediction(account: Account = Depends(get_current_account), db:
 
 @router.get("/expenses", response_model=ExpenseSummaryOut)
 async def expense_summary(
-    period: str = "month",  # week | month | all
+    period: str = "month",  # week | month | all | custom
+    start_date: str | None = None,
+    end_date: str | None = None,
     account: Account = Depends(get_current_account),
     db: AsyncSession = Depends(get_db),
 ):
-    cutoff = None
+    base_filter = [Transaction.account_id == account.id]
+
     if period == "week":
         cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+        base_filter.append(Transaction.created_at >= cutoff)
     elif period == "month":
         cutoff = datetime.now(timezone.utc) - timedelta(days=30)
-
-    base_filter = [Transaction.account_id == account.id]
-    if cutoff:
         base_filter.append(Transaction.created_at >= cutoff)
+    elif period == "custom" or start_date or end_date:
+        if start_date:
+            try:
+                s_dt = datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                base_filter.append(Transaction.created_at >= s_dt)
+            except Exception:
+                pass
+        if end_date:
+            try:
+                e_dt = datetime.strptime(end_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+                base_filter.append(Transaction.created_at <= e_dt)
+            except Exception:
+                pass
 
     debit_result = await db.execute(
         select(Transaction.category, func.sum(Transaction.amount_paise))
@@ -105,4 +122,57 @@ async def expense_summary(
         budget=paise_to_rupees(account.monthly_budget_paise),
         budget_used_percent=round(min(100, (total_spent_paise / account.monthly_budget_paise) * 100), 1),
         by_category=by_category,
+    )
+
+
+@router.get("/expenses/pdf")
+async def download_expense_pdf(
+    period: str = "month",
+    start_date: str | None = None,
+    end_date: str | None = None,
+    account: Account = Depends(get_current_account),
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Generate and return a certified 2-page visual PDF expense report."""
+    base_filter = [Transaction.account_id == account.id]
+
+    if period == "week":
+        cutoff = datetime.now(timezone.utc) - timedelta(days=7)
+        base_filter.append(Transaction.created_at >= cutoff)
+    elif period == "month":
+        cutoff = datetime.now(timezone.utc) - timedelta(days=30)
+        base_filter.append(Transaction.created_at >= cutoff)
+    elif period == "custom" or start_date or end_date:
+        if start_date:
+            try:
+                s_dt = datetime.strptime(start_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                base_filter.append(Transaction.created_at >= s_dt)
+            except Exception:
+                pass
+        if end_date:
+            try:
+                e_dt = datetime.strptime(end_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+                base_filter.append(Transaction.created_at <= e_dt)
+            except Exception:
+                pass
+
+    txns_res = await db.execute(
+        select(Transaction)
+        .where(*base_filter)
+        .order_by(Transaction.created_at.desc())
+    )
+    transactions = txns_res.scalars().all()
+
+    report_context = build_expense_report_data(account, user, transactions, period, start_date, end_date)
+    pdf_stream = await generate_pdf("expense_report", report_context)
+    filename = f"renopay-expense-statement-{period}.pdf"
+
+    return StreamingResponse(
+        pdf_stream,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"inline; filename={filename}",
+            "Cache-Control": "no-cache",
+        },
     )

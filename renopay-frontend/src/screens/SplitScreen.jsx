@@ -1,11 +1,16 @@
 import { useState } from "react";
 import { RequestAPI } from "../lib/api";
+import { useAuth } from "../context/AuthContext";
 import { Btn, Badge, Card } from "../components/ui";
 import { fmt } from "../lib/format";
 
 export function SplitScreen({ onBack }) {
+  const { profile } = useAuth();
   const [totalBill, setTotalBill] = useState("");
-  const [people, setPeople] = useState([{ name: "", vpa: "" }, { name: "", vpa: "" }]);
+  const [people, setPeople] = useState([
+    { name: profile?.full_name || "Myself", vpa: profile?.account?.vpa || "" },
+    { name: "", vpa: "" },
+  ]);
   const [desc, setDesc] = useState("");
   const [sentResult, setSentResult] = useState(null);
   const [err, setErr] = useState("");
@@ -14,11 +19,16 @@ export function SplitScreen({ onBack }) {
   const split = totalBill ? Math.ceil(Number(totalBill) / namedCount) : 0;
 
   const addPerson = () => setPeople((p) => [...p, { name: "", vpa: "" }]);
+  const addMyself = () => {
+    if (!profile?.account?.vpa) return;
+    if (people.some((p) => p.vpa === profile.account.vpa)) return;
+    setPeople((p) => [{ name: profile.full_name || "Myself", vpa: profile.account.vpa }, ...p]);
+  };
   const removePerson = (i) => setPeople((p) => p.filter((_, idx) => idx !== i));
   const updatePerson = (i, k, v) => setPeople((p) => p.map((x, idx) => (idx === i ? { ...x, [k]: v } : x)));
 
   const sendRequests = async () => {
-    const payers = people.filter((p) => p.name && p.vpa);
+    const payers = people.filter((p) => p.name && p.vpa.trim()).map(p => ({ ...p, vpa: p.vpa.trim() }));
     if (payers.length === 0) { setErr("Add at least one person with a UPI ID"); return; }
     setErr("");
     try {

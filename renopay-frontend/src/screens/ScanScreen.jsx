@@ -6,12 +6,37 @@ import { Btn, Badge, Card } from "../components/ui";
 // Universal UPI QR Parser: Handles Paytm, PhonePe, Google Pay, BharatPe, BHIM, Bank QRs, bare VPAs & dynamic bills
 export function parseUniversalUpiQr(rawText) {
   if (!rawText || typeof rawText !== "string") return null;
-  const text = rawText.trim();
+  let text = rawText.trim();
 
-  // 1. Helper to extract parameter irrespective of case or encoding
+  // 1. URL Decode if encoded (Google Pay QRs are often URL encoded e.g. upi%3A%2F%2Fpay%3Fpa%3D...)
+  try {
+    if (text.includes("%") || text.includes("%3A") || text.includes("%2F") || text.includes("%3F")) {
+      const decoded = decodeURIComponent(text);
+      if (decoded.includes("pa=") || decoded.includes("@")) {
+        text = decoded;
+      }
+    }
+  } catch (e) {
+    // Keep text if decoding fails
+  }
+
+  // 1b. Support Tez & GPay custom URI schemes and Android intents
+  if (text.startsWith("intent://")) {
+    text = text.replace(/^intent:\/\//i, "upi://");
+  }
+  if (/^(tez|gpay|googlepay):\/\//i.test(text)) {
+    text = text.replace(/^(tez|gpay|googlepay):\/\//i, "upi://");
+  }
+
+  // 2. Helper to extract parameter irrespective of case or encoding
   const getParam = (key) => {
     const match = text.match(new RegExp(`[?&]${key}=([^&#\\s]+)`, "i"));
-    return match ? decodeURIComponent(match[1].replace(/\+/g, " ")) : null;
+    if (!match) return null;
+    try {
+      return decodeURIComponent(match[1].replace(/\+/g, " "));
+    } catch {
+      return match[1].replace(/\+/g, " ");
+    }
   };
 
   const pa = getParam("pa");
@@ -23,9 +48,9 @@ export function parseUniversalUpiQr(rawText) {
 
   let vpa = pa;
 
-  // 2. If no pa param, search for bare VPA pattern (e.g. user@paytm, 9876543210@ybl)
+  // 3. If no pa param, search for bare VPA pattern (e.g. user@okaxis, 9876543210@ybl, merchant@okbizaxis)
   if (!vpa) {
-    const bareMatch = text.match(/([a-zA-Z0-9.\-_+]+@[a-zA-Z0-9]+)/);
+    const bareMatch = text.match(/([a-zA-Z0-9.\-_+]+@[a-zA-Z0-9.\-_]+)/);
     if (bareMatch) {
       vpa = bareMatch[1];
     }
@@ -34,9 +59,10 @@ export function parseUniversalUpiQr(rawText) {
   if (!vpa || !vpa.includes("@")) return null;
 
   vpa = vpa.trim().toLowerCase();
+  vpa = vpa.replace(/[./]+$/, ""); // Clean trailing periods/slashes
 
-  // 3. Identify UPI App and styling badge
-  const handle = vpa.split("@")[1] || "";
+  // 4. Identify UPI App and styling badge
+  const handle = (vpa.split("@")[1] || "").toLowerCase();
   let app = "UPI";
   let appIcon = "📲";
   let badgeColor = "#22C55E";
@@ -49,7 +75,7 @@ export function parseUniversalUpiQr(rawText) {
     app = "PhonePe";
     appIcon = "🟣";
     badgeColor = "#5F259F";
-  } else if (["okaxis", "okhdfcbank", "okicici", "oksbi"].includes(handle)) {
+  } else if (handle.startsWith("ok") || ["gpay", "googlepay"].includes(handle)) {
     app = "Google Pay";
     appIcon = "🟢";
     badgeColor = "#4285F4";
@@ -79,7 +105,7 @@ export function parseUniversalUpiQr(rawText) {
     badgeColor = "#FFA000";
   }
 
-  // 4. Map merchant category code (mc) to RenoPay TxnCategory
+  // 5. Map merchant category code (mc) to RenoPay TxnCategory
   let category = "Other";
   if (mc) {
     const num = parseInt(mc, 10);
@@ -179,7 +205,7 @@ export function ScanScreen({ onBack, onSuccess }) {
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
+    const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "attemptBoth" });
 
     if (code?.data) {
       const parsed = parseUniversalUpiQr(code.data);
@@ -239,7 +265,7 @@ export function ScanScreen({ onBack, onSuccess }) {
         const ctx = oc.getContext("2d");
         ctx.drawImage(img, 0, 0);
         const imgData = ctx.getImageData(0, 0, img.width, img.height);
-        const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: "dontInvert" });
+        const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: "attemptBoth" });
 
         setProcessingImage(false);
         if (code?.data) {

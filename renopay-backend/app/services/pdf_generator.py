@@ -49,6 +49,7 @@ ReportType = Literal[
     "general_ledger",
     "payee_ledger",
     "trial_balance",
+    "expense_report",
 ]
 
 # ── Shared CSS ─────────────────────────────────────────────────────────────────
@@ -806,6 +807,297 @@ body {
 </div>
 </body>
 </html>""",
+
+    "expense_report": """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>RenoPay &mdash; Expense & Financial Statement</title>
+<style>
+{{ css }}
+@page {
+    size: A4 portrait;
+    margin: 10mm 12mm;
+}
+body {
+    background-color: #ffffff;
+    font-family: Helvetica, Arial, sans-serif;
+    color: #1e293b;
+    font-size: 11px;
+}
+.page-wrapper {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+.card-metric {
+    border: 1px solid #e2e8f0;
+    background-color: #f8fafc;
+    padding: 8px 10px;
+    text-align: left;
+}
+.metric-title {
+    font-size: 8.5px;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 3px;
+}
+.metric-value {
+    font-size: 15px;
+    font-weight: bold;
+    font-family: Courier, monospace;
+}
+.bar-container {
+    background-color: #e2e8f0;
+    height: 10px;
+    width: 100%;
+    position: relative;
+}
+.bar-fill {
+    height: 10px;
+}
+.pill {
+    padding: 2px 6px;
+    font-size: 8.5px;
+    font-weight: bold;
+}
+</style>
+</head>
+<body>
+
+<!-- ================= PAGE 1: VISUAL GRAPHS & SUMMARY KPIS ================= -->
+<div class="page-wrapper">
+    <!-- Header -->
+    <table class="header-table" cellpadding="0" cellspacing="0" style="margin-bottom: 6px;">
+        <tr>
+            <td width="58%" valign="top">
+                <div class="logo-title">Reno<span class="logo-accent">Pay</span> <span style="font-size: 14px; font-weight: bold; color: #64748b;">Analytics</span></div>
+                <div class="logo-sub">Smart Expense Tracker & Financial Intelligence</div>
+                <div style="margin-top: 4px; font-size: 9.5px; color: #334155;">
+                    <strong>Account Holder:</strong> {{ user_name }} &bull; <span style="font-family: Courier, monospace; color: #0284c7;">{{ vpa }}</span>
+                </div>
+            </td>
+            <td width="42%" align="right" valign="top" class="meta-box">
+                <div style="font-size: 13px; font-weight: bold; color: #162a45;">EXPENSE REPORT</div>
+                <div style="color: #e06a10; font-weight: bold; font-size: 10.5px; margin-top: 2px;">{{ period_label }}</div>
+                <div style="margin-top: 2px;">Generated: {{ generated_at }}</div>
+                <div style="margin-top: 1px; color: #16a34a; font-weight: bold;">Certified Digital Record</div>
+            </td>
+        </tr>
+    </table>
+    <div class="accent-line-navy"></div>
+    <div class="accent-line-orange" style="margin-bottom: 12px;"></div>
+
+    <!-- 4 KPI Cards -->
+    <table width="100%" cellpadding="0" cellspacing="6" style="margin-bottom: 10px;">
+        <tr>
+            <td width="25%">
+                <div class="card-metric" style="border-left: 3px solid #dc2626;">
+                    <div class="metric-title">Total Spent</div>
+                    <div class="metric-value" style="color: #dc2626;">Rs. {{ total_spent_fmt }}</div>
+                    <div style="font-size: 8.5px; color: #94a3b8; margin-top: 2px;">{{ debit_count }} Expenses</div>
+                </div>
+            </td>
+            <td width="25%">
+                <div class="card-metric" style="border-left: 3px solid #16a34a;">
+                    <div class="metric-title">Total Inflow</div>
+                    <div class="metric-value" style="color: #16a34a;">Rs. {{ total_income_fmt }}</div>
+                    <div style="font-size: 8.5px; color: #94a3b8; margin-top: 2px;">{{ credit_count }} Credits</div>
+                </div>
+            </td>
+            <td width="25%">
+                <div class="card-metric" style="border-left: 3px solid #2563eb;">
+                    <div class="metric-title">Net Savings</div>
+                    <div class="metric-value" style="color: {{ '#16a34a' if net >= 0 else '#dc2626' }};">Rs. {{ net_fmt }}</div>
+                    <div style="font-size: 8.5px; color: #94a3b8; margin-top: 2px;">{{ 'Surplus' if net >= 0 else 'Deficit' }}</div>
+                </div>
+            </td>
+            <td width="25%">
+                <div class="card-metric" style="border-left: 3px solid #7c3aed;">
+                    <div class="metric-title">Monthly Budget</div>
+                    <div class="metric-value" style="color: #7c3aed;">Rs. {{ budget_fmt }}</div>
+                    <div style="font-size: 8.5px; color: {{ '#dc2626' if budget_used_percent > 85 else '#16a34a' }}; margin-top: 2px;">
+                        {{ budget_used_percent }}% Used
+                    </div>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Budget Gauge Section -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border: 1px solid #e2e8f0; margin-bottom: 12px; padding: 8px 10px;">
+        <tr>
+            <td>
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td style="font-size: 10.5px; font-weight: bold; color: #1e293b;">
+                            Monthly Budget Adherence Gauge
+                        </td>
+                        <td align="right" style="font-size: 10px; font-weight: bold; color: {{ '#dc2626' if budget_used_percent > 85 else '#d97706' if budget_used_percent > 65 else '#16a34a' }};">
+                            Rs. {{ total_spent_fmt }} / Rs. {{ budget_fmt }} ({{ budget_used_percent }}%)
+                        </td>
+                    </tr>
+                </table>
+                <div class="bar-container" style="margin-top: 6px;">
+                    <div class="bar-fill" style="width: {{ budget_bar_width }}%; background-color: {{ '#dc2626' if budget_used_percent > 85 else '#d97706' if budget_used_percent > 65 else '#16a34a' }};"></div>
+                </div>
+                <div style="font-size: 8.5px; color: #64748b; margin-top: 4px;">
+                    Status: <strong>{{ budget_status_text }}</strong> &bull; Remaining: Rs. {{ budget_remaining_fmt }}
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Visual Category Breakdown Chart -->
+    <div class="sub-section-title" style="margin-top: 4px; margin-bottom: 6px;">
+        Spending Breakdown by Category (Visual Graph)
+    </div>
+
+    <table width="100%" cellpadding="0" cellspacing="0" class="report-table" style="margin-bottom: 10px;">
+        <thead>
+            <tr>
+                <th width="22%">Category</th>
+                <th width="44%">Visual Distribution Graph</th>
+                <th width="12%" align="center">Txns</th>
+                <th width="22%" align="right">Amount (Rs.)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cat in by_category %}
+            <tr class="{{ 'even' if loop.index is even else 'odd' }}">
+                <td style="font-weight: bold;">
+                    <span style="display: inline-block; width: 8px; height: 8px; background-color: {{ cat.color }}; margin-right: 4px;"></span>
+                    {{ cat.category }}
+                </td>
+                <td style="padding: 4px 6px;">
+                    <table width="100%" cellpadding="0" cellspacing="0">
+                        <tr>
+                            <td width="80%">
+                                <div class="bar-container">
+                                    <div class="bar-fill" style="width: {{ cat.percent_clamped }}%; background-color: {{ cat.color }};"></div>
+                                </div>
+                            </td>
+                            <td width="20%" align="right" style="font-size: 9px; font-weight: bold; color: #475569; padding-left: 4px;">
+                                {{ cat.percent }}%
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+                <td align="center" style="font-size: 9px; color: #64748b;">{{ cat.count }}</td>
+                <td align="right" style="font-weight: bold; font-family: Courier, monospace; color: #0f172a;">
+                    Rs. {{ cat.amount_fmt }}
+                </td>
+            </tr>
+            {% endfor %}
+            {% if not by_category %}
+            <tr>
+                <td colspan="4" align="center" style="padding: 16px; color: #94a3b8; font-style: italic;">
+                    No categorized expenses during this period.
+                </td>
+            </tr>
+            {% endif %}
+            <tr class="total-row">
+                <td colspan="2" style="font-weight: bold; color: #162a45;">Total Outflow</td>
+                <td align="center" style="font-weight: bold; color: #162a45;">{{ debit_count }}</td>
+                <td align="right" style="font-family: Courier, monospace; font-weight: bold; color: #dc2626;">Rs. {{ total_spent_fmt }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Highlights Box -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #fff7ed; border: 1px solid #fed7aa; padding: 7px 10px; margin-top: 2px;">
+        <tr>
+            <td width="33%" style="font-size: 9px; color: #9a3412;">
+                <strong>Top Category:</strong> {{ top_category or 'N/A' }}
+            </td>
+            <td width="33%" style="font-size: 9px; color: #9a3412;" align="center">
+                <strong>Avg. Expense:</strong> Rs. {{ avg_spend_fmt }}
+            </td>
+            <td width="33%" style="font-size: 9px; color: #9a3412;" align="right">
+                <strong>Financial Health:</strong> {{ health_label }}
+            </td>
+        </tr>
+    </table>
+
+    <div class="footer-text" style="margin-top: 10px;">
+        Page 1 of 2 &bull; Visual Analytics & Summary &bull; Turn over for Page 2 itemized transaction records
+    </div>
+</div>
+
+<!-- ================= PAGE 2: ITEMIZED TRANSACTIONS TABLE ================= -->
+<div style="page-break-before: always;" class="page-wrapper">
+    <!-- Header -->
+    <table class="header-table" cellpadding="0" cellspacing="0" style="margin-bottom: 6px;">
+        <tr>
+            <td width="60%" valign="top">
+                <div class="logo-title">Reno<span class="logo-accent">Pay</span> <span style="font-size: 14px; font-weight: bold; color: #64748b;">Statement</span></div>
+                <div class="logo-sub">Itemized Ledger & Transaction Destination Records</div>
+            </td>
+            <td width="40%" align="right" valign="top" class="meta-box">
+                <div style="font-size: 11.5px; font-weight: bold; color: #162a45;">PAGE 2 &mdash; ITEMIZED DETAILS</div>
+                <div style="color: #e06a10; font-size: 9.5px; font-weight: bold;">{{ period_label }}</div>
+            </td>
+        </tr>
+    </table>
+    <div class="accent-line-navy"></div>
+    <div class="accent-line-orange" style="margin-bottom: 12px;"></div>
+
+    <div class="sub-section-title" style="margin-top: 4px; margin-bottom: 6px;">
+        Itemized Transactions & Where Spent
+    </div>
+
+    <table width="100%" cellpadding="0" cellspacing="0" class="report-table">
+        <thead>
+            <tr>
+                <th width="5%" align="center">#</th>
+                <th width="21%">Date & Time (IST)</th>
+                <th width="15%">Category</th>
+                <th width="24%">Where Spent / To</th>
+                <th width="21%">Purpose / Remarks</th>
+                <th width="14%" align="right">Amount (Rs.)</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in txns %}
+            <tr class="{{ 'even' if loop.index is even else 'odd' }}">
+                <td align="center" style="color: #64748b; font-size: 8.5px;">{{ loop.index }}</td>
+                <td style="font-size: 9px;">{{ t.date_ist }}</td>
+                <td>
+                    <span class="pill" style="background-color: {{ t.cat_color_bg }}; color: {{ t.cat_color_text }};">
+                        {{ t.category }}
+                    </span>
+                </td>
+                <td style="font-family: Courier, monospace; font-size: 8.5px; word-break: break-all; color: #0284c7;">
+                    {{ t.counterparty_vpa }}
+                </td>
+                <td style="font-size: 9px; color: #334155;">{{ t.description }}</td>
+                <td align="right" style="font-weight: bold; font-family: Courier, monospace; color: {{ '#dc2626' if t.is_debit else '#16a34a' }};">
+                    {{ '-' if t.is_debit else '+' }}Rs. {{ t.amount_fmt }}
+                </td>
+            </tr>
+            {% endfor %}
+            {% if not txns %}
+            <tr>
+                <td colspan="6" align="center" style="padding: 24px; color: #94a3b8; font-style: italic;">
+                    No transactions recorded during this selected period.
+                </td>
+            </tr>
+            {% endif %}
+            <tr class="total-row">
+                <td colspan="5" align="right" style="font-weight: bold; color: #162a45;">Total Debits (Spent)</td>
+                <td align="right" style="font-family: Courier, monospace; font-weight: bold; color: #dc2626;">Rs. {{ total_spent_fmt }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="footer-text" style="margin-top: 16px;">
+        Page 2 of 2 &bull; Certified RenoPay Digital Banking Engine &bull; Generated on {{ generated_at }} &bull; All times in Indian Standard Time (IST)
+    </div>
+</div>
+
+</body>
+</html>""",
 }
 
 
@@ -937,4 +1229,128 @@ def build_receipt_data(txn) -> dict:
         "category": txn.category.value if hasattr(txn.category, "value") else str(txn.category),
         "created_at": created_ist.strftime("%d %b %Y, %I:%M %p IST"),
         "round_up": txn.round_up_paise / 100 if txn.round_up_paise else 0,
+    }
+
+
+def build_expense_report_data(
+    account,
+    user,
+    transactions: list,
+    period: str,
+    start_date: str | None = None,
+    end_date: str | None = None,
+) -> dict:
+    """Prepare context data for the 2-page expense_report PDF template."""
+    now_ist = datetime.now(IST)
+
+    CATEGORY_PALETTE = {
+        "Food": ("#FF6A1A", "#FFF7ED", "#C2410C"),
+        "Shopping": ("#3B82F6", "#EFF6FF", "#1D4ED8"),
+        "Transport": ("#10B981", "#ECFDF5", "#047857"),
+        "Bills": ("#8B5CF6", "#F5F3FF", "#6D28D9"),
+        "Entertainment": ("#EC4899", "#FDF2F8", "#BE185D"),
+        "Health": ("#EF4444", "#FEF2F2", "#B91C1C"),
+        "Education": ("#F59E0B", "#FFFBEB", "#B45309"),
+        "Investment": ("#EAB308", "#FEFCE8", "#A16207"),
+        "Income": ("#059669", "#ECFDF5", "#047857"),
+        "Other": ("#6B7280", "#F3F4F6", "#374151"),
+    }
+
+    debit_txns = [t for t in transactions if (t.type.value if hasattr(t.type, "value") else str(t.type)) == "debit"]
+    credit_txns = [t for t in transactions if (t.type.value if hasattr(t.type, "value") else str(t.type)) == "credit"]
+
+    total_spent = sum(t.amount_paise for t in debit_txns) / 100
+    total_income = sum(t.amount_paise for t in credit_txns) / 100
+    net = total_income - total_spent
+
+    budget = (account.monthly_budget_paise or 1000000) / 100
+    budget_used_percent = round(min(100, (total_spent / budget) * 100), 1) if budget > 0 else 0
+
+    # Group debits by category
+    cat_stats: dict[str, dict] = {}
+    for t in debit_txns:
+        c_name = t.category.value if hasattr(t.category, "value") else str(t.category or "Other")
+        if c_name not in cat_stats:
+            cat_stats[c_name] = {"paise": 0, "count": 0}
+        cat_stats[c_name]["paise"] += t.amount_paise
+        cat_stats[c_name]["count"] += 1
+
+    by_category = []
+    for c_name, info in sorted(cat_stats.items(), key=lambda x: -x[1]["paise"]):
+        c_amt = info["paise"] / 100
+        pct = round((c_amt / total_spent) * 100, 1) if total_spent > 0 else 0
+        palette = CATEGORY_PALETTE.get(c_name, CATEGORY_PALETTE["Other"])
+        by_category.append({
+            "category": c_name,
+            "amount_fmt": f"{c_amt:,.2f}",
+            "count": info["count"],
+            "percent": pct,
+            "percent_clamped": max(3, min(100, pct)),
+            "color": palette[0],
+            "bg_color": palette[1],
+            "text_color": palette[2],
+        })
+
+    top_cat = by_category[0]["category"] if by_category else "None"
+    avg_spend = (total_spent / max(1, len(debit_txns))) if debit_txns else 0
+
+    if period == "custom" and start_date and end_date:
+        period_label = f"Custom: {start_date} to {end_date}"
+    elif period == "week":
+        period_label = "Past 7 Days"
+    elif period == "month":
+        period_label = "Past 30 Days"
+    else:
+        period_label = "All Recorded Activity"
+
+    budget_status_text = (
+        "Critical — Over Budget" if budget_used_percent > 85
+        else "Moderate Utilization" if budget_used_percent > 65
+        else "Healthy & On Track"
+    )
+
+    health_label = (
+        "Safe & Thriving" if budget_used_percent <= 65
+        else "Moderate" if budget_used_percent <= 85
+        else "Needs Attention"
+    )
+
+    # Prepare itemized list for Page 2
+    itemized_txns = []
+    for t in transactions:
+        is_debit = (t.type.value if hasattr(t.type, "value") else str(t.type)) == "debit"
+        c_name = t.category.value if hasattr(t.category, "value") else str(t.category or "Other")
+        palette = CATEGORY_PALETTE.get(c_name, CATEGORY_PALETTE["Other"])
+        itemized_txns.append({
+            "date_ist": to_ist(t.created_at).strftime("%d %b %Y, %I:%M %p"),
+            "category": c_name,
+            "cat_color_bg": palette[1],
+            "cat_color_text": palette[2],
+            "counterparty_vpa": t.counterparty_vpa or "—",
+            "description": t.description or ("Debit Transfer" if is_debit else "Credit Received"),
+            "is_debit": is_debit,
+            "amount_fmt": f"{t.amount_paise / 100:,.2f}",
+        })
+
+    return {
+        "user_name": user.full_name or "RenoPay Member",
+        "vpa": account.vpa,
+        "period_label": period_label,
+        "generated_at": now_ist.strftime("%d %b %Y, %I:%M %p IST"),
+        "total_spent_fmt": f"{total_spent:,.2f}",
+        "total_income_fmt": f"{total_income:,.2f}",
+        "net_fmt": f"{abs(net):,.2f}",
+        "net": net,
+        "debit_count": len(debit_txns),
+        "credit_count": len(credit_txns),
+        "budget_fmt": f"{budget:,.2f}",
+        "budget_used_percent": budget_used_percent,
+        "budget_bar_width": min(100, max(2, budget_used_percent)),
+        "budget_remaining_fmt": f"{max(0, budget - total_spent):,.2f}",
+        "budget_status_text": budget_status_text,
+        "by_category": by_category,
+        "top_category": top_cat,
+        "avg_spend_fmt": f"{avg_spend:,.2f}",
+        "health_label": health_label,
+        "txns": itemized_txns,
     }

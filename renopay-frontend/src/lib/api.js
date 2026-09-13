@@ -161,7 +161,20 @@ export const LiteAPI = {
 export const AnalyticsAPI = {
   budgetPrediction: () => http.get("/analytics/budget-prediction").then((r) => r.data),
 
-  expenses: (period = "month") => http.get("/analytics/expenses", { params: { period } }).then((r) => r.data),
+  expenses: (period = "month", startDate = null, endDate = null) => {
+    const params = { period };
+    if (startDate) params.start_date = startDate;
+    if (endDate) params.end_date = endDate;
+    return http.get("/analytics/expenses", { params }).then((r) => r.data);
+  },
+
+  expensePdf: async (period = "month", startDate = null, endDate = null) => {
+    const params = { period };
+    if (startDate) params.start_date = startDate;
+    if (endDate) params.end_date = endDate;
+    const r = await http.get("/analytics/expenses/pdf", { params, responseType: "blob" });
+    return r.data; // Blob
+  },
 
   downloadReport: async ({ type, from, to, txn_ref }) => {
     const params = { type };
