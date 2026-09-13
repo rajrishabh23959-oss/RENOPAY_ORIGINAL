@@ -24,3 +24,4 @@ class ScratchCard(Base, UUIDPKMixin, TimestampMixin):
     # Which transaction earned this card — for audit/analytics
     source_txn_group_id: Mapped[uuid.UUID | None] = mapped_column(nullable=True)
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    is_withdrawn: Mapped[bool] = mapped_column(Boolean, default=False)

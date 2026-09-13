@@ -18,7 +18,6 @@ import { UPILiteScreen } from "./screens/UPILiteScreen";
 import { ExpensesScreen } from "./screens/ExpensesScreen";
 import { ScanScreen } from "./screens/ScanScreen";
 import { QRScreen } from "./screens/QRScreen";
-import { VoiceUPIScreen } from "./screens/VoiceUPIScreen";
 import { DigitalGoldScreen } from "./screens/DigitalGoldScreen";
 import { LedgerReportScreen } from "./screens/LedgerReportScreen";
 import { AccountingScreen } from "./screens/AccountingScreen";
@@ -71,7 +70,6 @@ function AppShell() {
       {screen === "rewards"       && <RewardsScreen onBack={() => go("home")} />}
       {screen === "savings"       && <SavingsScreen onBack={() => go("home")} onNavigate={go} />}
       {screen === "vaults"        && <VaultScreen onBack={() => go("home")} />}
-      {screen === "voice"         && <VoiceUPIScreen onBack={() => go("home")} onNavigatePay={(data) => go("pay", data)} />}
       {screen === "gold"          && <DigitalGoldScreen onBack={() => go("home")} />}
       {screen === "ledger"        && <LedgerReportScreen onBack={() => go("home")} />}
       {screen === "accounting"    && <AccountingScreen onBack={() => go("home")} />}

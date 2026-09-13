@@ -303,6 +303,27 @@ async def send_money(
     await accounting_engine.post_transaction_to_journal(db, debit_row)
     await accounting_engine.post_transaction_to_journal(db, credit_row)
 
+    # --- Generate reward scratch card if payment is ₹100 or more ---
+    reward_card = None
+    if amount_paise >= 10000:
+        # Random percentage between 1% and 2%
+        pct = random.uniform(0.01, 0.02)
+        raw_reward = (amount_paise / 100.0) * pct
+        # Clamped between ₹1.0 and ₹5.0 max with 1 decimal place (e.g. 1.2, 2.4, etc.)
+        reward_rupees = round(min(5.0, max(1.0, raw_reward)), 1)
+        reward_amount_paise = int(round(reward_rupees * 100))
+        reward_card = ScratchCard(
+            user_id=sender_user_id,
+            reward_type=RewardType.CASHBACK,
+            reward_amount_paise=reward_amount_paise,
+            label=f"₹{reward_rupees:.1f} Cashback",
+            source_txn_group_id=txn_group_id,
+            expires_at=now + timedelta(days=30),
+            scratched=False,
+            is_withdrawn=False,
+        )
+        db.add(reward_card)
+
     # --- Update sender's last known location (for next txn's geo-velocity check) ---
     if current_lat is not None and current_lng is not None:
         sender_user.last_lat = current_lat
@@ -312,6 +333,13 @@ async def send_money(
     await db.commit()
     await db.refresh(sender_account)
     await db.refresh(receiver_account)
+
+    if reward_card:
+        await ws_manager.push(sender_account.user_id, "scratch_card_earned", {
+            "card_id": str(reward_card.id),
+            "label": reward_card.label,
+            "reward_amount": reward_card.reward_amount_paise / 100,
+        })
 
     # --- Push real-time updates to both parties' open sessions ---
     await ws_manager.push(sender_account.user_id, "balance_update", {

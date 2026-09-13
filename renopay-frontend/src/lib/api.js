@@ -105,8 +105,9 @@ export const MandateAPI = {
 // ---------- Rewards ----------
 export const RewardAPI = {
   listScratchCards: () => http.get("/rewards/scratch-cards").then((r) => r.data),
-
   scratch: (cardId) => http.post(`/rewards/scratch-cards/${cardId}/scratch`).then((r) => r.data),
+  summary: () => http.get("/rewards/summary").then((r) => r.data),
+  withdraw: (pin) => http.post("/rewards/withdraw", { pin }).then((r) => r.data),
 };
 
 // ---------- Savings goals ----------

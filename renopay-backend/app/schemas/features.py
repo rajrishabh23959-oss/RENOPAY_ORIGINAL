@@ -81,18 +81,24 @@ class MandateOut(BaseModel):
 class ScratchCardOut(BaseModel):
     id: uuid.UUID
     scratched: bool
+    is_withdrawn: bool = False
     reward_type: str
     reward_amount: float
     label: str
     expires_at: datetime
+    created_at: datetime | None = None
 
     @classmethod
     def from_model(cls, c) -> "ScratchCardOut":
         return cls(
-            id=c.id, scratched=c.scratched,
+            id=c.id,
+            scratched=c.scratched,
+            is_withdrawn=getattr(c, "is_withdrawn", False),
             reward_type=c.reward_type.value if hasattr(c.reward_type, "value") else c.reward_type,
             reward_amount=paise_to_rupees(c.reward_amount_paise),
-            label=c.label, expires_at=c.expires_at,
+            label=c.label,
+            expires_at=c.expires_at,
+            created_at=getattr(c, "created_at", None),
         )
 
 
@@ -102,6 +108,25 @@ class ScratchResultOut(BaseModel):
     reward_amount: float | None = None
     new_balance: float | None = None
     new_digital_gold: float | None = None
+
+
+class RewardSummaryOut(BaseModel):
+    total_received: float
+    available_balance: float
+    withdrawn_total: float
+    unscratched_count: int
+    cards: list[ScratchCardOut]
+
+
+class WithdrawRewardRequest(BaseModel):
+    pin: str = Field(min_length=6, max_length=6)
+
+
+class WithdrawRewardOut(BaseModel):
+    success: bool
+    withdrawn_amount: float
+    new_balance: float
+    message: str
 
 
 # ---------- Savings goals ----------

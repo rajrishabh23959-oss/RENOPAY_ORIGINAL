@@ -52,7 +52,9 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
   const rafRef = useRef(null);
+  const fileInputRef = useRef(null);
   const [cameraStatus, setCameraStatus] = useState("starting"); // starting | active | denied | unsupported
+  const [uploadingQr, setUploadingQr] = useState(false);
 
   const stopCamera = () => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -79,6 +81,48 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
       setErr(`Scanned "${parsed.vpa}" but it's not a valid UPI handle`);
       setVpa(parsed.vpa);
     }
+  };
+
+  const handleQrImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingQr(true);
+    setErr("");
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const oc = document.createElement("canvas");
+        oc.width = img.width;
+        oc.height = img.height;
+        const ctx = oc.getContext("2d");
+        ctx.drawImage(img, 0, 0);
+        const imgData = ctx.getImageData(0, 0, img.width, img.height);
+        const code = jsQR(imgData.data, imgData.width, imgData.height, {
+          inversionAttempts: "dontInvert",
+        });
+
+        setUploadingQr(false);
+        if (code?.data) {
+          const parsed = parseUniversalUpiQr(code.data);
+          if (parsed?.vpa) {
+            handleDetectedQr(parsed);
+          } else {
+            setErr(`Scanned text: "${code.data.slice(0, 45)}..." is not a recognizable UPI QR code.`);
+          }
+        } else {
+          setErr("No QR code detected in this image. Please upload a clear QR code.");
+        }
+      };
+      img.onerror = () => {
+        setUploadingQr(false);
+        setErr("Could not read this image file. Please try another image.");
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
   };
 
   const scanFrame = () => {
@@ -340,6 +384,26 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
                 100% { top: 4%; opacity: 0.7; }
               }
             `}</style>
+
+            {/* Upload QR Code from Gallery */}
+            <div className="mb-4">
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="image/*"
+                className="hidden"
+                onChange={handleQrImageUpload}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingQr}
+                className="w-full py-3 px-4 rounded-2xl bg-[#1D1917] border border-accent/40 hover:border-accent flex items-center justify-center gap-2.5 text-textLight font-semibold text-xs tracking-wide transition-all active:scale-[0.98] shadow-sm hover:shadow-orange-500/10 cursor-pointer"
+              >
+                <span className="text-base">{uploadingQr ? "⏳" : "🖼️"}</span>
+                <span>{uploadingQr ? "Scanning QR Code…" : "Upload QR Code from Gallery"}</span>
+              </button>
+            </div>
 
             {/* Manual UPI ID Card */}
             <form onSubmit={handleResolveSubmit}>

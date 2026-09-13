@@ -20,10 +20,14 @@ async def lifespan(app: FastAPI):
         from app.models.account import Account
         from app.core.security import hash_pin
         from app.core.money import generate_virtual_acc_no
-        from sqlalchemy import select
+        from sqlalchemy import select, text
 
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+            try:
+                await conn.execute(text("ALTER TABLE scratch_cards ADD COLUMN IF NOT EXISTS is_withdrawn BOOLEAN DEFAULT FALSE;"))
+            except Exception as e:
+                logger.warning(f"Could not alter scratch_cards table: {e}")
 
         async with AsyncSessionLocal() as session:
             res = await session.execute(select(User).where(User.phone_number == "9876543210"))
