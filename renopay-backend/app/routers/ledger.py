@@ -33,7 +33,16 @@ router = APIRouter()
 
 @router.get("/report")
 async def generate_report(
-    type: Literal["balance_sheet", "profit_loss", "transaction_receipt", "full_accounting_pack"] = Query("balance_sheet"),
+    type: Literal[
+        "balance_sheet",
+        "profit_loss",
+        "transaction_receipt",
+        "full_accounting_pack",
+        "journal",
+        "general_ledger",
+        "payee_ledger",
+        "trial_balance",
+    ] = Query("balance_sheet"),
     from_date: str = Query(None, alias="from", description="YYYY-MM-DD"),
     to_date: str = Query(None, alias="to", description="YYYY-MM-DD"),
     txn_ref: str | None = Query(None, description="Required when type=transaction_receipt"),
@@ -93,7 +102,7 @@ async def generate_report(
             data = build_profit_loss_data(transactions, period_str)
             template = "profit_loss"
             filename = f"profit_loss_{from_str or 'all'}_{to_str or 'now'}.{filename_ext}"
-        elif type == "full_accounting_pack":
+        elif type in ("full_accounting_pack", "journal", "general_ledger", "payee_ledger", "trial_balance"):
             from app.services import accounting_engine
             from collections import defaultdict
 
@@ -246,15 +255,28 @@ async def generate_report(
             data = {
                 "account_name": getattr(user, "full_name", None) or "Account Holder",
                 "generated_at": datetime.now(timezone.utc).strftime("%d %b %Y %H:%M UTC"),
-                "period_str": f"{from_str} to {to_str}" if (from_str or to_str) else None,
+                "period_str": f"{from_str or 'Start'} to {to_str or 'Now'}" if (from_str or to_str) else None,
                 "journal_entries": journal_entries_data,
                 "total_journal_amount": total_journal_amount,
                 "general_ledgers": general_ledgers,
                 "payee_ledgers": payee_ledgers,
                 "trial_balance": trial_balance,
             }
-            template = "full_accounting_pack"
-            filename = f"accounting_pack_{from_str or 'all'}_{to_str or 'now'}.{filename_ext}"
+            if type == "journal":
+                template = "journal"
+                filename = f"journal_{from_str or 'all'}_{to_str or 'now'}.{filename_ext}"
+            elif type == "general_ledger":
+                template = "general_ledger"
+                filename = f"general_ledger_{from_str or 'all'}_{to_str or 'now'}.{filename_ext}"
+            elif type == "payee_ledger":
+                template = "payee_ledger"
+                filename = f"payee_ledger_{from_str or 'all'}_{to_str or 'now'}.{filename_ext}"
+            elif type == "trial_balance":
+                template = "trial_balance"
+                filename = f"trial_balance_{to_str or 'now'}.{filename_ext}"
+            else:
+                template = "full_accounting_pack"
+                filename = f"accounting_pack_{from_str or 'all'}_{to_str or 'now'}.{filename_ext}"
 
         buf = await generate_pdf(template, data)
 

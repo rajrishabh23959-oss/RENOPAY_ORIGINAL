@@ -191,18 +191,24 @@ async def post_transaction_to_journal(db: AsyncSession, txn: Transaction) -> Jou
     return entry
 
 
-async def get_ledger_for_account(db: AsyncSession, chart_account_id: uuid.UUID):
+async def get_ledger_for_account(db: AsyncSession, chart_account_id: uuid.UUID, from_date: datetime = None, to_date: datetime = None):
     """Returns T-account structure for a given ledger head."""
     coa = await db.get(ChartOfAccount, chart_account_id)
     if not coa:
         return None
         
-    result = await db.execute(
+    query = (
         select(JournalLine, JournalEntry)
         .join(JournalEntry, JournalLine.journal_entry_id == JournalEntry.id)
         .where(JournalLine.chart_account_id == chart_account_id)
-        .order_by(JournalEntry.created_at)
     )
+    if from_date:
+        query = query.where(JournalEntry.created_at >= from_date)
+    if to_date:
+        query = query.where(JournalEntry.created_at <= to_date)
+    query = query.order_by(JournalEntry.created_at)
+    
+    result = await db.execute(query)
     
     lines = []
     running_balance = 0
@@ -231,15 +237,21 @@ async def get_ledger_for_account(db: AsyncSession, chart_account_id: uuid.UUID):
     }
 
 
-async def get_ledger_for_payee(db: AsyncSession, account_id: uuid.UUID, payee_vpa: str):
+async def get_ledger_for_payee(db: AsyncSession, account_id: uuid.UUID, payee_vpa: str, from_date: datetime = None, to_date: datetime = None):
     """Returns T-account structure scoped to one payee."""
-    result = await db.execute(
+    query = (
         select(JournalLine, JournalEntry, ChartOfAccount)
         .join(JournalEntry, JournalLine.journal_entry_id == JournalEntry.id)
         .join(ChartOfAccount, JournalLine.chart_account_id == ChartOfAccount.id)
         .where(JournalEntry.account_id == account_id, JournalLine.payee_vpa == payee_vpa)
-        .order_by(JournalEntry.created_at)
     )
+    if from_date:
+        query = query.where(JournalEntry.created_at >= from_date)
+    if to_date:
+        query = query.where(JournalEntry.created_at <= to_date)
+    query = query.order_by(JournalEntry.created_at)
+
+    result = await db.execute(query)
     
     lines = []
     # For a payee ledger, we typically look at Accounts Payable / Receivable.

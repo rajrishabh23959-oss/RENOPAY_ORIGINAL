@@ -163,8 +163,8 @@ export const GoldAPI = {
 export const AccountingAPI = {
   getChartOfAccounts: () => http.get("/accounting/chart-of-accounts").then((r) => r.data),
   getJournal: (from, to) => http.get("/accounting/journal", { params: { from, to } }).then((r) => r.data),
-  getLedger: (chart_account_id) => http.get(`/accounting/ledger/${chart_account_id}`).then((r) => r.data),
-  getPayeeLedger: (payee_vpa) => http.get(`/accounting/ledger/payee/${payee_vpa}`).then((r) => r.data),
+  getLedger: (chart_account_id, from, to) => http.get(`/accounting/ledger/${chart_account_id}`, { params: { from, to } }).then((r) => r.data),
+  getPayeeLedger: (payee_vpa, from, to) => http.get(`/accounting/ledger/payee/${payee_vpa}`, { params: { from, to } }).then((r) => r.data),
   getTrialBalance: (as_of) => http.get("/accounting/trial-balance", { params: { as_of } }).then((r) => r.data),
   toggleDevMode: (enabled) => http.patch("/accounting/dev-mode", { enabled }).then((r) => r.data),
   getGstReport: (from, to) => http.get("/accounting/reports/gst", { params: { from, to } }).then((r) => r.data),

@@ -51,14 +51,26 @@ async def get_journal(
     account: Account = Depends(get_current_account),
     db: AsyncSession = Depends(get_db)
 ):
-    query = (
-        select(JournalEntry)
-        .where(JournalEntry.account_id == account.id)
-        .order_by(JournalEntry.created_at.desc())
-        .limit(500)
-    )
-    # Date filters can be applied here
-    # To keep it simple, we just return the recent ones like get_transactions
+    dt_from = None
+    dt_to = None
+    if from_date:
+        try:
+            dt_from = datetime.strptime(from_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        except ValueError:
+            pass
+    if to_date:
+        try:
+            dt_to = datetime.strptime(to_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+        except ValueError:
+            pass
+
+    query = select(JournalEntry).where(JournalEntry.account_id == account.id)
+    if dt_from:
+        query = query.where(JournalEntry.created_at >= dt_from)
+    if dt_to:
+        query = query.where(JournalEntry.created_at <= dt_to)
+    query = query.order_by(JournalEntry.created_at.desc()).limit(500)
+
     result = await db.execute(query)
     entries = result.scalars().all()
     
@@ -90,10 +102,25 @@ async def get_journal(
 @router.get("/ledger/{chart_account_id}")
 async def get_ledger(
     chart_account_id: uuid.UUID,
+    from_date: str = Query(None, alias="from"),
+    to_date: str = Query(None, alias="to"),
     account: Account = Depends(get_current_account),
     db: AsyncSession = Depends(get_db)
 ):
-    data = await accounting_engine.get_ledger_for_account(db, chart_account_id)
+    dt_from = None
+    dt_to = None
+    if from_date:
+        try:
+            dt_from = datetime.strptime(from_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        except ValueError:
+            pass
+    if to_date:
+        try:
+            dt_to = datetime.strptime(to_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+        except ValueError:
+            pass
+
+    data = await accounting_engine.get_ledger_for_account(db, chart_account_id, dt_from, dt_to)
     if not data:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Account not found")
         
@@ -120,10 +147,25 @@ async def get_ledger(
 @router.get("/ledger/payee/{payee_vpa}")
 async def get_payee_ledger(
     payee_vpa: str,
+    from_date: str = Query(None, alias="from"),
+    to_date: str = Query(None, alias="to"),
     account: Account = Depends(get_current_account),
     db: AsyncSession = Depends(get_db)
 ):
-    data = await accounting_engine.get_ledger_for_payee(db, account.id, payee_vpa)
+    dt_from = None
+    dt_to = None
+    if from_date:
+        try:
+            dt_from = datetime.strptime(from_date, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        except ValueError:
+            pass
+    if to_date:
+        try:
+            dt_to = datetime.strptime(to_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+        except ValueError:
+            pass
+
+    data = await accounting_engine.get_ledger_for_payee(db, account.id, payee_vpa, dt_from, dt_to)
     
     lines = []
     for line in data["lines"]:

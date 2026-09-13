@@ -31,7 +31,16 @@ except ImportError:
 
 PDF_AVAILABLE = WEASYPRINT_AVAILABLE or XHTML2PDF_AVAILABLE
 
-ReportType = Literal["transaction_receipt", "balance_sheet", "profit_loss", "full_accounting_pack"]
+ReportType = Literal[
+    "transaction_receipt",
+    "balance_sheet",
+    "profit_loss",
+    "full_accounting_pack",
+    "journal",
+    "general_ledger",
+    "payee_ledger",
+    "trial_balance",
+]
 
 # ── Shared CSS ─────────────────────────────────────────────────────────────────
 BASE_CSS = """
@@ -525,6 +534,269 @@ body {
 </table>
 <div class="footer-text">RenoPay Immutable Ledger &mdash; Generated {{ generated_at }}</div>
 </div></body></html>""",
+
+    "journal": """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>RenoPay — Journal Entries</title>
+<style>
+{{ css }}
+</style>
+</head>
+<body>
+<div class="page">
+    <table class="header-table" cellpadding="0" cellspacing="0">
+        <tr>
+            <td valign="middle">
+                <div class="logo-title">Reno<span class="logo-accent">Pay</span></div>
+                <div class="logo-sub">Official Double-Entry Journal Statement</div>
+            </td>
+            <td valign="middle" class="meta-box">
+                <div><strong>{{ account_name }}</strong></div>
+                <div>Generated: {{ generated_at }}</div>
+                {% if period_str %}<div>Period: <strong style="color: #e06a10;">{{ period_str }}</strong></div>{% endif %}
+            </td>
+        </tr>
+    </table>
+    <div class="accent-line-navy"></div>
+    <div class="accent-line-orange"></div>
+
+    <div class="section-title">Journal Entries</div>
+    <table class="report-table" cellpadding="6" cellspacing="0">
+        <thead>
+            <tr>
+                <th width="15%" align="left">Entry No</th>
+                <th width="15%" align="left">Date</th>
+                <th width="22%" align="left">Narration</th>
+                <th width="18%" align="left">Debit Account</th>
+                <th width="18%" align="left">Credit Account</th>
+                <th width="12%" align="right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for je in journal_entries %}
+            <tr class="{{ 'even' if loop.index is even else 'odd' }}">
+                <td style="font-weight: bold; font-family: Courier, monospace;">{{ je.entry_no }}</td>
+                <td>{{ je.date }}</td>
+                <td>{{ je.narration }}</td>
+                <td>{{ je.debit_account }}</td>
+                <td>{{ je.credit_account }}</td>
+                <td align="right" style="font-weight: bold;">{{ je.amount }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td colspan="4" style="border-right: none;"></td>
+                <td align="right" style="border-left: none; border-right: none;">Total</td>
+                <td align="right">{{ total_journal_amount }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="footer-text">
+        RenoPay Double-Entry Accounting Engine &mdash; Immutable Journal Record &mdash; Generated {{ generated_at }}
+    </div>
+</div>
+</body>
+</html>""",
+
+    "general_ledger": """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>RenoPay — General Ledger</title>
+<style>
+{{ css }}
+</style>
+</head>
+<body>
+<div class="page">
+    <table class="header-table" cellpadding="0" cellspacing="0">
+        <tr>
+            <td valign="middle">
+                <div class="logo-title">Reno<span class="logo-accent">Pay</span></div>
+                <div class="logo-sub">General Ledger Statement</div>
+            </td>
+            <td valign="middle" class="meta-box">
+                <div><strong>{{ account_name }}</strong></div>
+                <div>Generated: {{ generated_at }}</div>
+                {% if period_str %}<div>Period: <strong style="color: #e06a10;">{{ period_str }}</strong></div>{% endif %}
+            </td>
+        </tr>
+    </table>
+    <div class="accent-line-navy"></div>
+    <div class="accent-line-orange"></div>
+
+    <div class="section-title">General Ledger Accounts</div>
+    {% for gl in general_ledgers %}
+    <div class="sub-section-title">{{ gl.code }} &nbsp;-&nbsp; {{ gl.name }}</div>
+    <table class="report-table" cellpadding="6" cellspacing="0">
+        <thead>
+            <tr>
+                <th width="11%" align="left">Date</th>
+                <th width="15%" align="left">Entry No</th>
+                <th width="20%" align="left">Narration</th>
+                <th width="22%" align="left">Payee</th>
+                <th width="11%" align="right">Debit</th>
+                <th width="10%" align="right">Credit</th>
+                <th width="11%" align="right">Balance</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in gl.lines %}
+            <tr class="{{ 'even' if loop.index is even else 'odd' }}">
+                <td>{{ line.date }}</td>
+                <td style="font-family: Courier, monospace;">{{ line.entry_no }}</td>
+                <td>{{ line.narration }}</td>
+                <td>{{ line.payee or '—' }}</td>
+                <td align="right">{{ line.debit }}</td>
+                <td align="right">{{ line.credit }}</td>
+                <td align="right" style="font-weight: bold;">{{ line.balance }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="closing-row">
+                <td colspan="6" align="right" style="border-right: none;">Closing Balance</td>
+                <td align="right">{{ gl.closing_balance }}</td>
+            </tr>
+        </tbody>
+    </table>
+    {% endfor %}
+
+    <div class="footer-text">
+        RenoPay Double-Entry Accounting Engine &mdash; Immutable General Ledger &mdash; Generated {{ generated_at }}
+    </div>
+</div>
+</body>
+</html>""",
+
+    "payee_ledger": """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>RenoPay — Payee Ledgers</title>
+<style>
+{{ css }}
+</style>
+</head>
+<body>
+<div class="page">
+    <table class="header-table" cellpadding="0" cellspacing="0">
+        <tr>
+            <td valign="middle">
+                <div class="logo-title">Reno<span class="logo-accent">Pay</span></div>
+                <div class="logo-sub">Payee-wise Ledger Statement</div>
+            </td>
+            <td valign="middle" class="meta-box">
+                <div><strong>{{ account_name }}</strong></div>
+                <div>Generated: {{ generated_at }}</div>
+                {% if period_str %}<div>Period: <strong style="color: #e06a10;">{{ period_str }}</strong></div>{% endif %}
+            </td>
+        </tr>
+    </table>
+    <div class="accent-line-navy"></div>
+    <div class="accent-line-orange"></div>
+
+    <div class="section-title">Payee Ledgers</div>
+    {% for pl in payee_ledgers %}
+    <div class="sub-section-title">{{ pl.payee_vpa }}</div>
+    <table class="report-table" cellpadding="6" cellspacing="0">
+        <thead>
+            <tr>
+                <th width="12%" align="left">Date</th>
+                <th width="16%" align="left">Entry No</th>
+                <th width="24%" align="left">Narration</th>
+                <th width="24%" align="left">Account</th>
+                <th width="12%" align="right">Debit</th>
+                <th width="12%" align="right">Credit</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in pl.lines %}
+            <tr class="{{ 'even' if loop.index is even else 'odd' }}">
+                <td>{{ line.date }}</td>
+                <td style="font-family: Courier, monospace;">{{ line.entry_no }}</td>
+                <td>{{ line.narration }}</td>
+                <td>{{ line.account_name }}</td>
+                <td align="right">{{ line.debit }}</td>
+                <td align="right">{{ line.credit }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td colspan="4" align="right" style="border-right: none;">Total</td>
+                <td align="right">{{ pl.total_debit }}</td>
+                <td align="right">{{ pl.total_credit }}</td>
+            </tr>
+        </tbody>
+    </table>
+    {% endfor %}
+
+    <div class="footer-text">
+        RenoPay Double-Entry Accounting Engine &mdash; Immutable Payee Record &mdash; Generated {{ generated_at }}
+    </div>
+</div>
+</body>
+</html>""",
+
+    "trial_balance": """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>RenoPay — Trial Balance</title>
+<style>
+{{ css }}
+</style>
+</head>
+<body>
+<div class="page">
+    <table class="header-table" cellpadding="0" cellspacing="0">
+        <tr>
+            <td valign="middle">
+                <div class="logo-title">Reno<span class="logo-accent">Pay</span></div>
+                <div class="logo-sub">Trial Balance Statement</div>
+            </td>
+            <td valign="middle" class="meta-box">
+                <div><strong>{{ account_name }}</strong></div>
+                <div>Generated: {{ generated_at }}</div>
+                {% if period_str %}<div>As of: <strong style="color: #e06a10;">{{ period_str }}</strong></div>{% endif %}
+            </td>
+        </tr>
+    </table>
+    <div class="accent-line-navy"></div>
+    <div class="accent-line-orange"></div>
+
+    <div class="section-title">Trial Balance</div>
+    <table class="report-table" cellpadding="6" cellspacing="0">
+        <thead>
+            <tr>
+                <th width="15%" align="left">Code</th>
+                <th width="45%" align="left">Account Name</th>
+                <th width="20%" align="right">Debit</th>
+                <th width="20%" align="right">Credit</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in trial_balance.rows %}
+            <tr class="{{ 'even' if loop.index is even else 'odd' }}">
+                <td style="font-family: Courier, monospace;">{{ row.code }}</td>
+                <td>{{ row.name }}</td>
+                <td align="right">{{ row.debit if row.debit else '' }}</td>
+                <td align="right">{{ row.credit if row.credit else '' }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td colspan="2" align="right" style="border-right: none;">Totals</td>
+                <td align="right">{{ trial_balance.total_debit }}</td>
+                <td align="right">{{ trial_balance.total_credit }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="footer-text">
+        RenoPay Double-Entry Accounting Engine &mdash; Balanced Books &mdash; Generated {{ generated_at }}
+    </div>
+</div>
+</body>
+</html>""",
 }
 
 
