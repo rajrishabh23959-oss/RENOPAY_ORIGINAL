@@ -113,3 +113,68 @@ async def toggle_auto_save(
     await db.commit()
     await db.refresh(goal)
     return SavingsGoalOut.from_model(goal)
+
+
+class WithdrawSavingsRequest(BaseModel):
+    pin: str = Field(min_length=4, max_length=6)
+    amount: float | None = None
+
+
+@router.post("/{goal_id}/withdraw", response_model=SavingsGoalOut)
+async def withdraw_from_goal(
+    goal_id: uuid.UUID,
+    payload: WithdrawSavingsRequest,
+    user: User = Depends(get_current_user),
+    account: Account = Depends(get_current_account),
+    db: AsyncSession = Depends(get_db),
+):
+    try:
+        await verify_user_pin(db, user, payload.pin)
+    except PinError as e:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, {"code": e.code, "message": e.message})
+
+    acc_result = await db.execute(select(Account).where(Account.id == account.id).with_for_update())
+    locked_account = acc_result.scalar_one()
+
+    goal_result = await db.execute(
+        select(SavingsGoal).where(SavingsGoal.id == goal_id, SavingsGoal.user_id == user.id).with_for_update()
+    )
+    goal = goal_result.scalar_one_or_none()
+    if goal is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Goal not found")
+
+    if goal.saved_paise <= 0:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "No savings available to withdraw")
+
+    if payload.amount is not None and payload.amount > 0:
+        amount_paise = rupees_to_paise(payload.amount)
+        if goal.saved_paise < amount_paise:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Withdrawal amount exceeds saved balance")
+    else:
+        amount_paise = goal.saved_paise
+
+    goal.saved_paise -= amount_paise
+    locked_account.current_balance_paise += amount_paise
+
+    db.add(Transaction(
+        txn_group_id=new_txn_group_id(),
+        txn_ref=generate_txn_ref(),
+        account_id=locked_account.id,
+        counterparty_vpa="savings@vault",
+        type=TxnType.CREDIT,
+        status=TxnStatus.SUCCESS,
+        category=TxnCategory.OTHER,
+        amount_paise=amount_paise,
+        description=f"Savings Withdrawn: {goal.name}",
+        trust_score=99,
+    ))
+    await db.commit()
+    await db.refresh(goal)
+    await db.refresh(locked_account)
+
+    await ws_manager.push(locked_account.user_id, "balance_update", {
+        "balance": paise_to_rupees(locked_account.current_balance_paise),
+        "reason": "savings_withdrawal",
+    })
+    return SavingsGoalOut.from_model(goal)
+

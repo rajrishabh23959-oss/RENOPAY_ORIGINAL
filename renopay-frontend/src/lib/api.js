@@ -116,7 +116,13 @@ export const GoalAPI = {
   create: (name, icon, target) => http.post("/goals/", { name, icon, target }).then((r) => r.data),
 
   addSavings: (goalId, amount, pin) => http.post(`/goals/${goalId}/add`, { amount, pin }).then((r) => r.data),
+
+  withdraw: (goalId, pin, amount = null) => http.post(`/goals/${goalId}/withdraw`, { pin, amount }).then((r) => r.data),
+
+  setAutoSave: (goalId, enabled, daily_amount) =>
+    http.patch(`/goals/${goalId}/auto-save`, { enabled, daily_amount }).then((r) => r.data),
 };
+
 
 // ---------- Shared vaults ----------
 export const VaultAPI = {
@@ -161,7 +167,9 @@ PaymentAPI.voiceParse = (payload) => http.post("/payments/voice-parse", payload)
 // ---------- Digital Gold ----------
 export const GoldAPI = {
   getSummary: () => http.get("/gold/summary").then((r) => r.data),
+  summary: () => http.get("/gold/summary").then((r) => r.data),
   toggleRoundUp: () => http.patch("/gold/toggle-roundup").then((r) => r.data),
+  withdraw: (pin, amount = null) => http.post("/gold/withdraw", { pin, amount }).then((r) => r.data),
 };
 
 // ---------- Accounting ----------

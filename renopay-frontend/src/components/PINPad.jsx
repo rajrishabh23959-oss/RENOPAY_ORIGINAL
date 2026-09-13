@@ -24,7 +24,7 @@ export function PINPad({
 
   const del = () => setPin((p) => p.slice(0, -1));
 
-  const resolvedAction = actionLabel || (actionType === "check" ? "Check" : "Pay");
+  const resolvedAction = actionLabel || (actionType === "check" ? "Check" : actionType === "withdraw" ? "Withdraw" : "Pay");
 
   const handleAction = () => {
     if (pin.length === 6 && onComplete) {

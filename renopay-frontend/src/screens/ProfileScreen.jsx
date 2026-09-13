@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import QRCode from "qrcode";
 import { useAuth } from "../context/AuthContext";
-import { AccountAPI, AuthAPI } from "../lib/api";
+import { AccountAPI, AuthAPI, GoldAPI } from "../lib/api";
 import { getDeviceFingerprint, getDeviceLabel, fmt } from "../lib/format";
 import { Btn, Badge, Card } from "../components/ui";
 import { PINPad } from "../components/PINPad";
@@ -19,6 +19,13 @@ export function ProfileScreen({ onBack, onLoggedOut }) {
   const [downloadingQr, setDownloadingQr] = useState(false);
   const [qrErr, setQrErr] = useState("");
   const qrCanvasRef = useRef(null);
+
+  // Gold vault withdrawal states
+  const [goldWithdrawStep, setGoldWithdrawStep] = useState(null); // null | "confirm" | "pin" | "success"
+  const [goldWithdrawErr, setGoldWithdrawErr] = useState("");
+  const [withdrawnGoldAmount, setWithdrawnGoldAmount] = useState(0);
+  const [goldWithdrawing, setGoldWithdrawing] = useState(false);
+
 
   useEffect(() => {
     if (!profile?.account?.vpa || !qrCanvasRef.current) return;
@@ -171,6 +178,27 @@ export function ProfileScreen({ onBack, onLoggedOut }) {
     setBusy(false);
   };
 
+  const executeGoldWithdraw = async (pin) => {
+    setGoldWithdrawErr("");
+    setGoldWithdrawing(true);
+    try {
+      const amountToWithdraw = acc.digital_gold;
+      await GoldAPI.withdraw(pin);
+      setWithdrawnGoldAmount(amountToWithdraw);
+      await refreshProfile();
+      setGoldWithdrawStep("success");
+    } catch (e) {
+      console.error("Gold withdrawal error:", e);
+      setGoldWithdrawErr(
+        e?.response?.data?.detail?.message ||
+        e?.response?.data?.detail ||
+        "Incorrect UPI PIN or withdrawal failed"
+      );
+    } finally {
+      setGoldWithdrawing(false);
+    }
+  };
+
   const saveBudget = async () => {
     if (!Number(budgetInput) || Number(budgetInput) <= 0) { setBudgetErr("Enter a valid amount"); return; }
     setBusy(true); setBudgetErr("");
@@ -192,6 +220,86 @@ export function ProfileScreen({ onBack, onLoggedOut }) {
 
   return (
     <div className="min-h-screen bg-bg pb-[100px]">
+      {/* Gold Vault Confirmation Modal */}
+      {goldWithdrawStep === "confirm" && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[999] p-4">
+          <Card className="p-6 max-w-[340px] w-full border-line text-center animate-fade-in shadow-2xl">
+            <div className="w-12 h-12 rounded-full bg-accent/15 text-accent text-2xl mx-auto mb-3 flex items-center justify-center">
+              🪙
+            </div>
+            <h3 className="text-base font-extrabold text-white mb-2 leading-tight">
+              Do you want to withdraw from gold vault?
+            </h3>
+            <p className="text-muted text-xs mb-5">
+              Withdraw <span className="text-accent font-bold font-mono">{fmt(acc.digital_gold)}</span> from your Gold Vault directly to your account balance?
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => { setGoldWithdrawStep("pin"); setGoldWithdrawErr(""); }}
+                className="btn py-3 px-4 rounded-xl font-extrabold text-sm text-white bg-[#FF3D60] hover:bg-[#E03450] active:scale-95 shadow-md transition-all cursor-pointer"
+              >
+                YES
+              </button>
+              <button
+                type="button"
+                onClick={() => setGoldWithdrawStep(null)}
+                className="btn py-3 px-4 rounded-xl font-extrabold text-sm text-white bg-[#22C55E] hover:bg-[#1EA850] active:scale-95 shadow-md transition-all cursor-pointer"
+              >
+                NO
+              </button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Gold Vault PIN Modal */}
+      {goldWithdrawStep === "pin" && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[999] p-4">
+          <Card className="p-6 max-w-[340px] w-full border-accent/[.33] shadow-2xl animate-fade-in">
+            <p className="text-center text-textLight font-bold text-sm mb-1">Enter UPI PIN to Withdraw</p>
+            <p className="text-center text-accent font-mono font-bold text-lg mb-4">{fmt(acc.digital_gold)}</p>
+            {goldWithdrawErr && <p className="text-danger text-xs text-center mb-3 font-semibold">{goldWithdrawErr}</p>}
+            {goldWithdrawing && <p className="text-accent text-xs text-center mb-3">Processing withdrawal...</p>}
+            <PINPad
+              onComplete={executeGoldWithdraw}
+              label="6-digit PIN"
+              accent="#FF6A1A"
+              actionLabel="Withdraw"
+              actionType="withdraw"
+            />
+            <button
+              className="btn w-full mt-4 text-muted hover:text-white text-xs py-2 transition-colors cursor-pointer"
+              onClick={() => { setGoldWithdrawStep(null); setGoldWithdrawErr(""); }}
+              disabled={goldWithdrawing}
+            >
+              Cancel
+            </button>
+          </Card>
+        </div>
+      )}
+
+      {/* Gold Vault Success Modal */}
+      {goldWithdrawStep === "success" && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[999] p-4">
+          <Card className="p-6 max-w-[340px] w-full border-teal/40 text-center shadow-2xl animate-fade-in">
+            <div className="w-12 h-12 rounded-full bg-teal/20 text-teal text-2xl mx-auto mb-3 flex items-center justify-center">
+              ✓
+            </div>
+            <h3 className="text-base font-extrabold text-white mb-1">Withdrawal Successful!</h3>
+            <p className="text-muted text-xs mb-4">
+              <span className="text-teal font-bold font-mono">{fmt(withdrawnGoldAmount)}</span> has been credited back to your account balance.
+            </p>
+            <button
+              className="btn w-full py-2.5 rounded-xl bg-accent text-white font-bold text-xs shadow-accentGlow cursor-pointer"
+              onClick={() => setGoldWithdrawStep(null)}
+            >
+              Done
+            </button>
+          </Card>
+        </div>
+      )}
+
       <div className="pt-[50px] pb-[18px] px-[22px] flex items-center gap-3">
         <button className="btn bg-card border border-line text-textLight rounded-xl px-3.5 py-2.5 text-base" onClick={onBack}>←</button>
         <h2 className="text-[22px] font-extrabold text-textLight">Profile</h2>
@@ -216,12 +324,27 @@ export function ProfileScreen({ onBack, onLoggedOut }) {
 
         <Card className="p-4 mb-3.5" style={{ border: `1px solid ${acc.round_up_enabled ? "#FF6A1A55" : "#2A2320"}` }}>
           <div className="flex justify-between items-center">
-            <div><p className="font-bold text-sm text-textLight">🪙 Round-Up to Digital Gold</p><p className="text-muted text-[11px] mt-0.5">Vault: {fmt(acc.digital_gold)}</p></div>
+            <div>
+              <p className="font-bold text-sm text-textLight">🪙 Round-Up to Digital Gold</p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-muted text-[11px]">Vault: {fmt(acc.digital_gold)}</p>
+                {acc.digital_gold > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => { setGoldWithdrawStep("confirm"); setGoldWithdrawErr(""); }}
+                    className="btn px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-accent/15 text-accent border border-accent/30 hover:bg-accent/25 transition-all cursor-pointer"
+                  >
+                    Withdraw
+                  </button>
+                )}
+              </div>
+            </div>
             <button className="btn w-[52px] h-7 rounded-full relative" disabled={busy} style={{ background: acc.round_up_enabled ? "#FF6A1A" : "#5C564F44" }} onClick={toggleRoundUp}>
               <div className="absolute top-[3px] w-[22px] h-[22px] rounded-full bg-white transition-all" style={{ left: acc.round_up_enabled ? 26 : 3 }} />
             </button>
           </div>
         </Card>
+
 
         <Card className="p-4 mb-3.5 border-accent/[.2]">
           {editingBudget ? (

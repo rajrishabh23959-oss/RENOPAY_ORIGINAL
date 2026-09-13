@@ -130,7 +130,7 @@ function TreasureMapSVG({ progress }) {
 }
 
 /* ── Treasure Map Card ────────────────────────────────────────────────────── */
-function TreasureMap({ goal, onAddSavings }) {
+function TreasureMap({ goal, onAddSavings, onWithdrawSavings }) {
   const pct = Math.min(100, (goal.saved / goal.target) * 100);
   const [adding, setAdding] = useState(false);
   const [addAmt, setAddAmt] = useState("");
@@ -141,6 +141,12 @@ function TreasureMap({ goal, onAddSavings }) {
   const [togglingAuto, setTogglingAuto] = useState(false);
   const prevPct = useRef(pct);
   const [celebration, setCelebration] = useState(null);
+
+  // Withdrawal states: null | "confirm1" | "confirm2" | "pin" | "success"
+  const [withdrawStep, setWithdrawStep] = useState(null);
+  const [withdrawErr, setWithdrawErr] = useState("");
+  const [withdrawnAmount, setWithdrawnAmount] = useState(0);
+  const [withdrawing, setWithdrawing] = useState(false);
 
   // Check milestone on progress change
   useEffect(() => {
@@ -179,6 +185,26 @@ function TreasureMap({ goal, onAddSavings }) {
     }
   };
 
+  const executeWithdraw = async (pin) => {
+    setWithdrawErr("");
+    setWithdrawing(true);
+    try {
+      const amountToWithdraw = goal.saved;
+      await onWithdrawSavings(goal.id, pin);
+      setWithdrawnAmount(amountToWithdraw);
+      setWithdrawStep("success");
+    } catch (e) {
+      console.error("Withdrawal error:", e);
+      setWithdrawErr(
+        e?.response?.data?.detail?.message ||
+        e?.response?.data?.detail ||
+        "Incorrect UPI PIN or withdrawal failed"
+      );
+    } finally {
+      setWithdrawing(false);
+    }
+  };
+
   return (
     <>
       <style>{`
@@ -187,6 +213,119 @@ function TreasureMap({ goal, onAddSavings }) {
       `}</style>
 
       {celebration && <MilestoneCelebration milestone={celebration} onDone={() => setCelebration(null)} />}
+
+      {/* Confirmation Step 1: ARE YOU SURE WITHDRAW THIS MONEY */}
+      {withdrawStep === "confirm1" && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[999] p-4">
+          <Card className="p-6 max-w-[340px] w-full border-line text-center animate-fade-in shadow-2xl">
+            <div className="w-12 h-12 rounded-full bg-warn/15 text-warn text-2xl mx-auto mb-3 flex items-center justify-center">
+              ⚠️
+            </div>
+            <h3 className="text-base font-extrabold text-white mb-2 leading-tight">
+              ARE YOU SURE WITHDRAW THIS MONEY
+            </h3>
+            <p className="text-muted text-xs mb-5">
+              You are about to withdraw <span className="text-accent font-bold font-mono">{fmt(goal.saved)}</span> from {goal.icon} {goal.name}.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setWithdrawStep("confirm2")}
+                className="btn py-3 px-4 rounded-xl font-extrabold text-sm text-white bg-[#FF3D60] hover:bg-[#E03450] active:scale-95 shadow-md transition-all cursor-pointer"
+              >
+                YES
+              </button>
+              <button
+                type="button"
+                onClick={() => setWithdrawStep(null)}
+                className="btn py-3 px-4 rounded-xl font-extrabold text-sm text-white bg-[#22C55E] hover:bg-[#1EA850] active:scale-95 shadow-md transition-all cursor-pointer"
+              >
+                NO
+              </button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Confirmation Step 2: You will not be able to purchase ___ */}
+      {withdrawStep === "confirm2" && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[999] p-4">
+          <Card className="p-6 max-w-[340px] w-full border-warn/30 text-center animate-fade-in shadow-2xl">
+            <div className="text-4xl mx-auto mb-3">
+              {goal.icon || "🎯"}
+            </div>
+            <h3 className="text-base font-extrabold text-[#FF3D60] mb-2 leading-tight">
+              You will not be able to purchase {goal.name}!
+            </h3>
+            <p className="text-muted text-xs mb-5">
+              Withdrawing now will reset your savings progress for <span className="text-textLight font-semibold">{goal.name}</span> and return the funds to your main account.
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => { setWithdrawStep("pin"); setWithdrawErr(""); }}
+                className="btn py-3 px-4 rounded-xl font-extrabold text-xs text-white bg-[#FF3D60] hover:bg-[#E03450] active:scale-95 shadow-md transition-all cursor-pointer"
+              >
+                YES
+              </button>
+              <button
+                type="button"
+                onClick={() => setWithdrawStep(null)}
+                className="btn py-3 px-4 rounded-xl font-extrabold text-xs text-white bg-[#22C55E] hover:bg-[#1EA850] active:scale-95 shadow-md transition-all cursor-pointer"
+              >
+                NO
+              </button>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Confirmation Step 3: Enter UPI PIN with Withdraw button */}
+      {withdrawStep === "pin" && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[999] p-4">
+          <Card className="p-6 max-w-[340px] w-full border-accent/[.33] shadow-2xl animate-fade-in">
+            <p className="text-center text-textLight font-bold text-sm mb-1">Enter UPI PIN to Withdraw</p>
+            <p className="text-center text-accent font-mono font-bold text-lg mb-4">{fmt(goal.saved)}</p>
+            {withdrawErr && <p className="text-danger text-xs text-center mb-3 font-semibold">{withdrawErr}</p>}
+            {withdrawing && <p className="text-accent text-xs text-center mb-3">Processing withdrawal...</p>}
+            <PINPad
+              onComplete={executeWithdraw}
+              label="6-digit PIN"
+              accent="#FF6A1A"
+              actionLabel="Withdraw"
+              actionType="withdraw"
+            />
+            <button
+              className="btn w-full mt-4 text-muted hover:text-white text-xs py-2 transition-colors cursor-pointer"
+              onClick={() => { setWithdrawStep(null); setWithdrawErr(""); }}
+              disabled={withdrawing}
+            >
+              Cancel
+            </button>
+          </Card>
+        </div>
+      )}
+
+      {/* Confirmation Step 4: Success Modal */}
+      {withdrawStep === "success" && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[999] p-4">
+          <Card className="p-6 max-w-[340px] w-full border-teal/40 text-center shadow-2xl animate-fade-in">
+            <div className="w-12 h-12 rounded-full bg-teal/20 text-teal text-2xl mx-auto mb-3 flex items-center justify-center">
+              ✓
+            </div>
+            <h3 className="text-base font-extrabold text-white mb-1">Withdrawal Successful!</h3>
+            <p className="text-muted text-xs mb-4">
+              <span className="text-teal font-bold font-mono">{fmt(withdrawnAmount)}</span> has been credited back to your account balance.
+            </p>
+            <button
+              className="btn w-full py-2.5 rounded-xl bg-accent text-white font-bold text-xs shadow-accentGlow cursor-pointer"
+              onClick={() => setWithdrawStep(null)}
+            >
+              Done
+            </button>
+          </Card>
+        </div>
+      )}
 
       <Card className="p-[18px] border-accent/[.27] overflow-hidden mb-4">
         {/* PIN Modal */}
@@ -278,6 +417,23 @@ function TreasureMap({ goal, onAddSavings }) {
         ) : (
           <Btn className="py-2.5" onClick={() => setAdding(true)}>+ Add Savings</Btn>
         )}
+
+        {/* Withdraw Savings Option under + Add Savings */}
+        {goal.saved > 0 && !adding && (
+          <button
+            type="button"
+            className={`btn w-full mt-2.5 py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              pct >= 100
+                ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg hover:brightness-110 active:scale-98"
+                : "bg-surf border border-line text-muted hover:text-white active:scale-98"
+            }`}
+            onClick={() => { setWithdrawStep("confirm1"); setWithdrawErr(""); }}
+          >
+            <span>💸</span>
+            <span>{pct >= 100 ? "Goal Completed! Withdraw Savings" : "Withdraw Savings"}</span>
+            <span className="font-mono font-semibold">({fmt(goal.saved)})</span>
+          </button>
+        )}
       </Card>
     </>
   );
@@ -309,6 +465,11 @@ export function SavingsScreen({ onBack, onNavigate }) {
     await load();
   };
 
+  const handleWithdraw = async (goalId, pin) => {
+    await GoalAPI.withdraw(goalId, pin);
+    await load();
+  };
+
   const ICONS2 = ["📱","✈️","🚗","🏠","💻","📷","🎸","🎓","🌴","🎯"];
 
   return (
@@ -323,7 +484,14 @@ export function SavingsScreen({ onBack, onNavigate }) {
         )}
       </div>
       <div className="px-[22px]">
-        {goals.map((g) => <TreasureMap key={g.id} goal={g} onAddSavings={handleAdd} />)}
+        {goals.map((g) => (
+          <TreasureMap
+            key={g.id}
+            goal={g}
+            onAddSavings={handleAdd}
+            onWithdrawSavings={handleWithdraw}
+          />
+        ))}
         {goals.length === 0 && !showNew && (
           <div className="py-12 text-center">
             <p className="text-4xl mb-3">🗺️</p>
