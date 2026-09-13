@@ -37,6 +37,7 @@ async def generate_report(
     from_date: str = Query(None, alias="from", description="YYYY-MM-DD"),
     to_date: str = Query(None, alias="to", description="YYYY-MM-DD"),
     txn_ref: str | None = Query(None, description="Required when type=transaction_receipt"),
+    disposition: Literal["attachment", "inline"] = Query("attachment", description="attachment or inline"),
     user: User = Depends(get_current_user),
     account: Account = Depends(get_current_account),
     db: AsyncSession = Depends(get_db),
@@ -119,37 +120,49 @@ async def generate_report(
             all_lines_res = await db.execute(je_query)
             all_rows = all_lines_res.all()
 
-            # Group for Journal Entries (display newest first)
+            # Group for Journal Entries
             entries_dict = {}
             for entry, line, coa in all_rows:
                 if entry.id not in entries_dict:
-                    entry_date = entry.created_at.strftime("%Y-%m-%d") if entry.created_at else ""
+                    entry_date = entry.created_at.strftime("%d %b %Y") if entry.created_at else ""
                     entries_dict[entry.id] = {
                         "entry_no": entry.entry_no or "",
                         "date": entry_date,
                         "narration": entry.narration or "",
                         "created_at": entry.created_at,
-                        "lines": [],
+                        "debit_accounts": [],
+                        "credit_accounts": [],
+                        "debit_paise": 0,
+                        "credit_paise": 0,
                     }
                 d = line.debit_paise or 0
                 c = line.credit_paise or 0
-                entries_dict[entry.id]["lines"].append({
-                    "account_name": getattr(coa, "name", "Account") or "Account",
-                    "debit": f"₹{d / 100:.2f}" if d else "",
-                    "credit": f"₹{c / 100:.2f}" if c else "",
-                })
+                coa_name = getattr(coa, "name", "Account") or "Account"
+                if d > 0:
+                    entries_dict[entry.id]["debit_accounts"].append(coa_name)
+                    entries_dict[entry.id]["debit_paise"] += d
+                if c > 0:
+                    entries_dict[entry.id]["credit_accounts"].append(coa_name)
+                    entries_dict[entry.id]["credit_paise"] += c
 
-            def _je_sort_key(x):
-                dt = x.get("created_at")
-                if dt is None:
-                    return ""
-                return dt.isoformat() if hasattr(dt, "isoformat") else str(dt)
-
-            journal_entries_data = sorted(
+            journal_entries_data = []
+            total_je_paise = 0
+            sorted_entries = sorted(
                 entries_dict.values(),
-                key=_je_sort_key,
-                reverse=True
-            )[:200]
+                key=lambda x: x.get("created_at") or datetime.min
+            )
+            for item in sorted_entries:
+                amt_paise = max(item["debit_paise"], item["credit_paise"])
+                total_je_paise += amt_paise
+                journal_entries_data.append({
+                    "entry_no": item["entry_no"],
+                    "date": item["date"],
+                    "narration": item["narration"],
+                    "debit_account": ", ".join(item["debit_accounts"]) if item["debit_accounts"] else "—",
+                    "credit_account": ", ".join(item["credit_accounts"]) if item["credit_accounts"] else "—",
+                    "amount": f"Rs {amt_paise / 100:,.2f}",
+                })
+            total_journal_amount = f"Rs {total_je_paise / 100:,.2f}"
 
             # Group for General Ledgers (calculated in-memory)
             gl_map = defaultdict(lambda: {"lines": [], "running_balance": 0})
@@ -163,15 +176,15 @@ async def generate_report(
                 else:
                     gl["running_balance"] += (c - d)
 
-                entry_date = entry.created_at.strftime("%Y-%m-%d") if entry.created_at else ""
+                entry_date = entry.created_at.strftime("%d %b") if entry.created_at else ""
                 gl["lines"].append({
                     "date": entry_date,
                     "entry_no": entry.entry_no or "",
                     "narration": entry.narration or "",
                     "payee": line.payee_vpa or line.payee_name or "—",
-                    "debit": f"₹{d / 100:.2f}" if d else "",
-                    "credit": f"₹{c / 100:.2f}" if c else "",
-                    "balance": f"₹{gl['running_balance'] / 100:.2f}",
+                    "debit": f"Rs {d / 100:,.2f}" if d else "",
+                    "credit": f"Rs {c / 100:,.2f}" if c else "",
+                    "balance": f"Rs {gl['running_balance'] / 100:,.2f}",
                 })
 
             general_ledgers = []
@@ -184,7 +197,7 @@ async def generate_report(
                         "code": clean_code,
                         "name": getattr(coa, "name", "Account") or "Account",
                         "lines": gl["lines"],
-                        "closing_balance": f"₹{gl['running_balance'] / 100:.2f}",
+                        "closing_balance": f"Rs {gl['running_balance'] / 100:,.2f}",
                     })
 
             # Group for Payee Ledgers (calculated in-memory)
@@ -196,22 +209,22 @@ async def generate_report(
                     c = line.credit_paise or 0
                     p["total_debit"] += d
                     p["total_credit"] += c
-                    entry_date = entry.created_at.strftime("%Y-%m-%d") if entry.created_at else ""
+                    entry_date = entry.created_at.strftime("%d %b") if entry.created_at else ""
                     p["lines"].append({
                         "date": entry_date,
                         "entry_no": entry.entry_no or "",
                         "narration": entry.narration or "",
                         "account_name": getattr(coa, "name", "Account") or "Account",
-                        "debit": f"₹{d / 100:.2f}" if d else "",
-                        "credit": f"₹{c / 100:.2f}" if c else "",
+                        "debit": f"Rs {d / 100:,.2f}" if d else "",
+                        "credit": f"Rs {c / 100:,.2f}" if c else "",
                     })
 
             payee_ledgers = [
                 {
                     "payee_vpa": vpa,
                     "lines": data["lines"],
-                    "total_debit": f"₹{data['total_debit'] / 100:.2f}",
-                    "total_credit": f"₹{data['total_credit'] / 100:.2f}",
+                    "total_debit": f"Rs {data['total_debit'] / 100:,.2f}",
+                    "total_credit": f"Rs {data['total_credit'] / 100:,.2f}",
                 }
                 for vpa, data in payee_map.items()
             ]
@@ -220,59 +233,25 @@ async def generate_report(
             tb_data = await accounting_engine.get_trial_balance(db, account.id, dt_to)
             trial_balance = {
                 "balanced": tb_data.get("balanced", True),
-                "total_debit": f"₹{(tb_data.get('total_debit') or 0) / 100:.2f}",
-                "total_credit": f"₹{(tb_data.get('total_credit') or 0) / 100:.2f}",
+                "total_debit": f"Rs {(tb_data.get('total_debit') or 0) / 100:,.2f}",
+                "total_credit": f"Rs {(tb_data.get('total_credit') or 0) / 100:,.2f}",
                 "rows": [{
                     "code": r.get("code") or "",
                     "name": r.get("name") or "",
-                    "debit": f"₹{float(r['debit']) / 100:.2f}" if r.get("debit") else "",
-                    "credit": f"₹{float(r['credit']) / 100:.2f}" if r.get("credit") else ""
+                    "debit": f"Rs {float(r['debit']) / 100:,.2f}" if r.get("debit") else "",
+                    "credit": f"Rs {float(r['credit']) / 100:,.2f}" if r.get("credit") else ""
                 } for r in tb_data.get("rows", [])]
-            }
-
-            # Balance Sheet v2
-            bs_data = await accounting_engine.get_balance_sheet_v2(db, account.id, dt_to)
-            total_assets = float(bs_data.get("total_assets") or 0) / 100
-            total_liabilities = float(bs_data.get("total_liabilities") or 0) / 100
-            total_equity = float(bs_data.get("total_equity") or 0) / 100
-            balance_sheet = {
-                "balanced": bs_data.get("balanced", True),
-                "total_assets": total_assets,
-                "total_liabilities": total_liabilities,
-                "total_equity": total_equity,
-                "total_liab_equity": total_liabilities + total_equity,
-                "assets": [{"name": a.get("name") or "", "balance": f"₹{float(a.get('balance') or 0) / 100:.2f}"} for a in bs_data.get("assets", [])],
-                "liabilities": [{"name": l.get("name") or "", "balance": f"₹{float(l.get('balance') or 0) / 100:.2f}"} for l in bs_data.get("liabilities", [])],
-                "equity": [{"name": e.get("name") or "", "balance": f"₹{float(e.get('balance') or 0) / 100:.2f}"} for e in bs_data.get("equity", [])],
-            }
-
-            # Cash flow
-            cf_data = await accounting_engine.get_cash_flow(db, account.id, dt_from, dt_to)
-            cash_flow = {
-                "net_change": float(cf_data.get("net_change") or 0) / 100,
-                "operating": {
-                    "total": f"₹{(cf_data.get('operating', {}).get('total') or 0) / 100:.2f}",
-                    "items": [{"name": i.get("name") or "", "amount": f"₹{float(i.get('amount') or 0) / 100:.2f}"} for i in cf_data.get("operating", {}).get("items", [])]
-                },
-                "investing": {
-                    "total": f"₹{(cf_data.get('investing', {}).get('total') or 0) / 100:.2f}",
-                    "items": [{"name": i.get("name") or "", "amount": f"₹{float(i.get('amount') or 0) / 100:.2f}"} for i in cf_data.get("investing", {}).get("items", [])]
-                },
-                "financing": {
-                    "total": f"₹{(cf_data.get('financing', {}).get('total') or 0) / 100:.2f}",
-                    "items": [{"name": i.get("name") or "", "amount": f"₹{float(i.get('amount') or 0) / 100:.2f}"} for i in cf_data.get("financing", {}).get("items", [])]
-                }
             }
 
             data = {
                 "account_name": getattr(user, "full_name", None) or "Account Holder",
                 "generated_at": datetime.now(timezone.utc).strftime("%d %b %Y %H:%M UTC"),
+                "period_str": f"{from_str} to {to_str}" if (from_str or to_str) else None,
                 "journal_entries": journal_entries_data,
+                "total_journal_amount": total_journal_amount,
                 "general_ledgers": general_ledgers,
                 "payee_ledgers": payee_ledgers,
                 "trial_balance": trial_balance,
-                "balance_sheet": balance_sheet,
-                "cash_flow": cash_flow,
             }
             template = "full_accounting_pack"
             filename = f"accounting_pack_{from_str or 'all'}_{to_str or 'now'}.{filename_ext}"
@@ -290,5 +269,5 @@ async def generate_report(
     return Response(
         content=buf.getvalue(),
         media_type=real_content_type,
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={"Content-Disposition": f'{disposition}; filename="{filename}"'},
     )

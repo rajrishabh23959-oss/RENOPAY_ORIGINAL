@@ -3,20 +3,33 @@ import { AccountingAPI, AnalyticsAPI } from "../lib/api";
 import { Card, Btn, Badge } from "../components/ui";
 import { fmt } from "../lib/format";
 import { useAuth } from "../context/AuthContext";
+import { PdfPreviewModal } from "../components/PdfPreviewModal";
+
+function formatDateStr(d) {
+  return d.toISOString().split("T")[0];
+}
 
 export function AccountingScreen({ onBack }) {
   const { profile } = useAuth();
   
-  // Need to read initial dev_mode_enabled from profile or fetch it.
-  // Actually, we don't have it in profile directly unless we added it.
-  // We'll maintain local state, assuming it starts false or true based on some fetch.
-  // We'll assume we start by fetching dev mode status (from /accounts/me or a new endpoint? 
-  // Let's just track it locally for the demo and assume it's initially false, or toggle it and optimistically update)
   const [devMode, setDevMode] = useState(false);
   const [activeTab, setActiveTab] = useState("journal");
   const [downloading, setDownloading] = useState(false);
+  const [viewing, setViewing] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+
+  // Date Range state for Accounting PDF
+  const [datePreset, setDatePreset] = useState("all");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+
+  // PDF Preview Modal state
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [previewBlob, setPreviewBlob] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewTitle, setPreviewTitle] = useState("Accounting Report");
+  const [previewFilename, setPreviewFilename] = useState("RenoPay_Accounting_Pack.pdf");
   
   const [journal, setJournal] = useState([]);
   const [coas, setCoas] = useState([]);
@@ -37,6 +50,29 @@ export function AccountingScreen({ onBack }) {
   const [newInvoiceAmount, setNewInvoiceAmount] = useState(5000);
   const [creatingInvoice, setCreatingInvoice] = useState(false);
   const [payingInvoice, setPayingInvoice] = useState(null);
+
+  const applyDatePreset = (preset) => {
+    setDatePreset(preset);
+    const now = new Date();
+    if (preset === "all") {
+      setFromDate("");
+      setToDate("");
+    } else if (preset === "this_month") {
+      const first = new Date(now.getFullYear(), now.getMonth(), 1);
+      setFromDate(formatDateStr(first));
+      setToDate(formatDateStr(now));
+    } else if (preset === "last_30") {
+      const past = new Date();
+      past.setDate(now.getDate() - 30);
+      setFromDate(formatDateStr(past));
+      setToDate(formatDateStr(now));
+    } else if (preset === "last_month") {
+      const first = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const last = new Date(now.getFullYear(), now.getMonth(), 0);
+      setFromDate(formatDateStr(first));
+      setToDate(formatDateStr(last));
+    }
+  };
 
   useEffect(() => {
     if (devMode) {
@@ -97,11 +133,14 @@ export function AccountingScreen({ onBack }) {
     try {
       const blob = await AnalyticsAPI.downloadReport({
         type: "full_accounting_pack",
+        from: fromDate || undefined,
+        to: toDate || undefined,
       });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "RenoPay_Accounting_Pack.pdf";
+      const filename = `RenoPay_Accounting_Pack${fromDate ? `_${fromDate}` : ""}${toDate ? `_to_${toDate}` : ""}.pdf`;
+      a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -126,6 +165,45 @@ export function AccountingScreen({ onBack }) {
       setError(msg);
     } finally {
       setDownloading(false);
+    }
+  };
+
+  const handleViewPdf = async () => {
+    setError(""); setSuccess(false); setViewing(true);
+    const filename = `RenoPay_Accounting_Pack${fromDate ? `_${fromDate}` : ""}${toDate ? `_to_${toDate}` : ""}.pdf`;
+    setPreviewFilename(filename);
+    setPreviewTitle("RenoPay Accounting Pack");
+    setPreviewBlob(null);
+    setPreviewLoading(true);
+    setPreviewModalOpen(true);
+
+    try {
+      const blob = await AnalyticsAPI.downloadReport({
+        type: "full_accounting_pack",
+        from: fromDate || undefined,
+        to: toDate || undefined,
+      });
+      setPreviewBlob(blob);
+    } catch (e) {
+      console.error("View accounting report failed:", e);
+      let msg = "Failed to generate report for viewing. Try again.";
+      if (e?.response?.data instanceof Blob) {
+        try {
+          const text = await e.response.data.text();
+          const json = JSON.parse(text);
+          if (json?.detail) msg = json.detail;
+          else if (text) msg = text.slice(0, 150);
+        } catch (_) {}
+      } else if (e?.response?.data?.detail) {
+        msg = e.response.data.detail;
+      } else if (e?.message) {
+        msg = e.message;
+      }
+      setError(msg);
+      setPreviewModalOpen(false);
+    } finally {
+      setPreviewLoading(false);
+      setViewing(false);
     }
   };
 
@@ -207,25 +285,133 @@ export function AccountingScreen({ onBack }) {
           </Card>
         ) : (
           <>
-            {/* Download Button */}
-            {error && (
-              <p className="text-danger text-xs text-center bg-danger/5 border border-danger/20 rounded-xl px-4 py-2.5">{error}</p>
-            )}
-            {success && (
-              <div className="bg-success/10 border border-success/30 rounded-xl px-4 py-3 text-center">
-                <p className="text-success font-semibold text-sm">✅ Full Accounting Pack Downloaded!</p>
+            {/* Accounting Report Generator & Date Filter */}
+            <Card className="p-4 border-line/80 shadow-md">
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <div>
+                  <h4 className="text-[14px] font-bold text-textLight flex items-center gap-1.5">
+                    <span>📑</span> Accounting Report & Statement
+                  </h4>
+                  <p className="text-muted text-[11px] mt-0.5">
+                    Official Double-Entry Journal, General Ledger & Payee Ledgers
+                  </p>
+                </div>
+                <Badge variant="gold">Audit Ready</Badge>
               </div>
-            )}
-            <Btn onClick={handleDownload} disabled={downloading} variant="gold">
-              {downloading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                  Generating PDF…
-                </span>
-              ) : (
-                "Generate Full Accounting Report (PDF)"
+
+              {/* Date Filter Section */}
+              <div className="bg-surf/80 border border-line rounded-xl p-3 mb-3.5">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-[11px] font-bold text-textLight uppercase tracking-wider">
+                    Kab se kab tak ka info chahiye?
+                  </label>
+                  <span className="text-[10px] text-muted font-mono">
+                    {datePreset === "all" ? "All Time Records" : `${fromDate || "Start"} → ${toDate || "End"}`}
+                  </span>
+                </div>
+
+                {/* Preset Chips */}
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {[
+                    { id: "all", label: "All Time" },
+                    { id: "this_month", label: "This Month" },
+                    { id: "last_30", label: "Last 30 Days" },
+                    { id: "last_month", label: "Last Month" },
+                    { id: "custom", label: "Custom Range" },
+                  ].map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => applyDatePreset(p.id)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${
+                        datePreset === p.id
+                          ? "bg-accent text-white shadow-sm"
+                          : "bg-card border border-line text-muted hover:text-white"
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Custom Date Inputs */}
+                {datePreset === "custom" && (
+                  <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-line/60">
+                    <div>
+                      <label className="block text-[10px] text-muted font-bold mb-1">From Date</label>
+                      <input
+                        type="date"
+                        value={fromDate}
+                        onChange={(e) => setFromDate(e.target.value)}
+                        className="w-full bg-card border border-line rounded-lg px-2.5 py-1.5 text-[12px] text-textLight focus:border-accent outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-muted font-bold mb-1">To Date</label>
+                      <input
+                        type="date"
+                        value={toDate}
+                        onChange={(e) => setToDate(e.target.value)}
+                        className="w-full bg-card border border-line rounded-lg px-2.5 py-1.5 text-[12px] text-textLight focus:border-accent outline-none"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Error and Success alerts */}
+              {error && (
+                <p className="text-danger text-xs text-center bg-danger/5 border border-danger/20 rounded-xl px-4 py-2 mb-3">
+                  {error}
+                </p>
               )}
-            </Btn>
+              {success && (
+                <div className="bg-success/10 border border-success/30 rounded-xl px-4 py-2.5 mb-3 text-center">
+                  <p className="text-success font-semibold text-xs">✅ Full Accounting Pack Downloaded!</p>
+                </div>
+              )}
+
+              {/* Dual Action Buttons: View and Download */}
+              <div className="grid grid-cols-2 gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleViewPdf}
+                  disabled={viewing || downloading}
+                  className="w-full py-2.5 px-3 rounded-xl text-[12px] font-bold bg-card border border-accent/50 text-accent hover:bg-accent/10 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-40 shadow-sm"
+                >
+                  {viewing ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
+                      <span>Loading…</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>👁</span>
+                      <span>View PDF</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleDownload}
+                  disabled={downloading || viewing}
+                  className="w-full py-2.5 px-3 rounded-xl text-[12px] font-bold bg-accent text-white shadow-accentGlow hover:brightness-110 transition-all flex items-center justify-center gap-1.5 disabled:opacity-40"
+                >
+                  {downloading ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Downloading…</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>⬇</span>
+                      <span>Download PDF</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </Card>
 
             {/* Tabs */}
             <div className="flex gap-2 overflow-x-auto pb-1 mt-2 no-scrollbar">
@@ -571,6 +757,16 @@ export function AccountingScreen({ onBack }) {
           </>
         )}
       </div>
+
+      {/* PDF Preview Modal */}
+      <PdfPreviewModal
+        isOpen={previewModalOpen}
+        onClose={() => setPreviewModalOpen(false)}
+        pdfBlob={previewBlob}
+        title={previewTitle}
+        filename={previewFilename}
+        loading={previewLoading}
+      />
     </div>
   );
 }

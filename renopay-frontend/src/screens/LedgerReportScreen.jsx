@@ -2,13 +2,14 @@ import { useState, useEffect } from "react";
 import { AnalyticsAPI, PaymentAPI } from "../lib/api";
 import { Card, Btn, Badge } from "../components/ui";
 import { fmt, ago } from "../lib/format";
+import { PdfPreviewModal } from "../components/PdfPreviewModal";
 
 /**
  * LedgerReportScreen — PDF Report Generation.
  *
  * Lets the user choose a date range and report type, then
  * fetches /analytics/report which streams a PDF (or HTML if WeasyPrint
- * is not installed). The browser then triggers a native download.
+ * is not installed). The browser then triggers a native download or in-app preview.
  */
 
 const REPORT_TYPES = [
@@ -28,11 +29,16 @@ function monthAgo() {
 }
 
 export function LedgerReportScreen({ onBack }) {
-  const [reportType, setReportType] = useState("balance_sheet");
+  const [reportType, setReportType] = useState("full_accounting_pack");
   const [fromDate, setFromDate] = useState(monthAgo());
   const [toDate, setToDate] = useState(today());
   const [txnRef, setTxnRef] = useState("");
   const [downloading, setDownloading] = useState(false);
+  const [viewing, setViewing] = useState(false);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [previewBlob, setPreviewBlob] = useState(null);
+  const [previewTitle, setPreviewTitle] = useState("Report Preview");
+  const [previewFilename, setPreviewFilename] = useState("report.pdf");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [recentTxns, setRecentTxns] = useState([]);
@@ -86,6 +92,44 @@ export function LedgerReportScreen({ onBack }) {
       setError(msg);
     } finally {
       setDownloading(false);
+    }
+  };
+
+  const handleView = async () => {
+    setError(""); setSuccess(false); setViewing(true);
+    const filename = `RenoPay_${reportType}_${fromDate || "all"}.pdf`;
+    setPreviewFilename(filename);
+    setPreviewTitle(`${selectedType?.label || "Report"} — RenoPay`);
+    setPreviewBlob(null);
+    setPreviewLoading(true);
+    setPreviewModalOpen(true);
+    try {
+      const blob = await AnalyticsAPI.downloadReport({
+        type: reportType,
+        from: fromDate,
+        to: toDate,
+        txn_ref: reportType === "transaction_receipt" ? txnRef : undefined,
+      });
+      setPreviewBlob(blob);
+    } catch (e) {
+      console.error("View report failed:", e);
+      let msg = "Failed to load report for preview. Try again.";
+      if (e?.response?.data instanceof Blob) {
+        try {
+          const text = await e.response.data.text();
+          const json = JSON.parse(text);
+          if (json?.detail) msg = json.detail;
+          else if (text) msg = text.slice(0, 150);
+        } catch (_) {}
+      } else if (e?.response?.data?.detail) {
+        msg = e.response.data.detail;
+      } else if (e?.message) {
+        msg = e.message;
+      }
+      setError(msg);
+      setPreviewModalOpen(false);
+    } finally {
+      setViewing(false);
     }
   };
 
@@ -204,19 +248,44 @@ export function LedgerReportScreen({ onBack }) {
           </div>
         )}
 
-        <Btn
-          onClick={handleDownload}
-          disabled={downloading || (reportType === "transaction_receipt" && !txnRef)}
-        >
-          {downloading ? (
-            <span className="flex items-center justify-center gap-2">
-              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              Generating PDF…
-            </span>
-          ) : (
-            `⬇ Download ${selectedType?.label} PDF`
-          )}
-        </Btn>
+        <div className="grid grid-cols-2 gap-2.5">
+          <button
+            type="button"
+            onClick={handleView}
+            disabled={viewing || downloading || (reportType === "transaction_receipt" && !txnRef)}
+            className="w-full py-2.5 px-3 rounded-xl text-[13px] font-bold bg-card border border-accent/50 text-accent hover:bg-accent/10 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-40 shadow-sm cursor-pointer"
+          >
+            {viewing ? (
+              <>
+                <span className="w-3.5 h-3.5 border-2 border-accent/30 border-t-accent rounded-full animate-spin" />
+                <span>Loading…</span>
+              </>
+            ) : (
+              <>
+                <span>👁</span>
+                <span>View PDF</span>
+              </>
+            )}
+          </button>
+
+          <Btn
+            onClick={handleDownload}
+            disabled={downloading || viewing || (reportType === "transaction_receipt" && !txnRef)}
+            className="flex items-center justify-center gap-1.5"
+          >
+            {downloading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Generating…
+              </span>
+            ) : (
+              <>
+                <span>⬇</span>
+                <span>Download PDF</span>
+              </>
+            )}
+          </Btn>
+        </div>
 
         {/* Category breakdown preview */}
         {preview?.by_category?.length > 0 && reportType !== "transaction_receipt" && (
@@ -245,6 +314,16 @@ export function LedgerReportScreen({ onBack }) {
           </p>
         </div>
       </div>
+
+      {/* PDF Preview Modal */}
+      <PdfPreviewModal
+        isOpen={previewModalOpen}
+        onClose={() => setPreviewModalOpen(false)}
+        pdfBlob={previewBlob}
+        title={previewTitle}
+        filename={previewFilename}
+        loading={viewing}
+      />
     </div>
   );
 }

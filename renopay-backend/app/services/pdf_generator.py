@@ -35,379 +35,496 @@ ReportType = Literal["transaction_receipt", "balance_sheet", "profit_loss", "ful
 
 # ── Shared CSS ─────────────────────────────────────────────────────────────────
 BASE_CSS = """
-@page { size: A4; margin: 15mm 12mm; }
+@page {
+    size: A4 portrait;
+    margin: 12mm 14mm;
+}
 * { margin: 0; padding: 0; }
-body { font-family: Helvetica, Arial, sans-serif; color: #1C2321; background: #fff; font-size: 12px; }
-.page { padding: 15px; }
-.header { border-bottom: 2px solid #F3A833; padding-bottom: 12px; margin-bottom: 18px; }
-.logo { font-size: 20px; font-weight: bold; color: #192926; }
-.logo span { color: #F3A833; }
-.logo-sub { font-size: 10px; color: #888; font-weight: normal; margin-top: 2px; }
-.meta { text-align: right; font-size: 11px; color: #666; }
-.meta strong { font-size: 13px; color: #1C2321; }
-h2 { font-size: 18px; font-weight: bold; margin-bottom: 4px; color: #192926; }
-h3 { font-size: 12px; font-weight: bold; margin-bottom: 10px; color: #555; text-transform: uppercase; }
-table { width: 100%; margin-bottom: 18px; }
-th { background: #192926; color: #fff; padding: 6px 8px; text-align: left; font-size: 10px; font-weight: bold; }
-td { padding: 6px 8px; border-bottom: 1px solid #E2D5B8; font-size: 11px; }
-tr:last-child td { border-bottom: none; }
-tr:nth-child(even) { background: #F9F5ED; }
-.amount-debit { color: #dc2626; font-weight: bold; font-family: Courier, monospace; }
-.amount-credit { color: #16a34a; font-weight: bold; font-family: Courier, monospace; }
-.amount-neutral { font-weight: bold; font-family: Courier, monospace; }
-.badge { display: inline-block; padding: 2px 6px; font-size: 9px; font-weight: bold; }
-.badge-success { background: #dcfce7; color: #166534; }
-.badge-pending { background: #fef9c3; color: #854d0e; }
-.badge-failed { background: #fee2e2; color: #991b1b; }
-.summary-card { background: #F3ECDD; border: 1px solid #E2D5B8; padding: 10px; margin-bottom: 10px; }
-.summary-card .label { font-size: 9px; color: #888; text-transform: uppercase; margin-bottom: 3px; }
-.summary-card .value { font-size: 16px; font-weight: bold; font-family: Courier, monospace; color: #192926; }
-.footer { margin-top: 24px; padding-top: 10px; border-top: 1px solid #E2D5B8; font-size: 9px; color: #aaa; text-align: center; }
-.highlight-row td { background: #fff8e1; font-weight: bold; }
-.balance-mismatch { background: #fee2e2; border: 1px solid #dc2626; padding: 8px 12px; color: #991b1b; font-weight: bold; margin-bottom: 14px; }
+body {
+    font-family: Helvetica, Arial, sans-serif;
+    color: #1e293b;
+    background: #ffffff;
+    font-size: 11px;
+    line-height: 1.35;
+}
+.page { padding: 4px; }
+.header-table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+.logo-title { font-size: 22px; font-weight: bold; color: #162a45; }
+.logo-accent { color: #e06a10; }
+.logo-sub { font-size: 10px; color: #64748b; margin-top: 2px; }
+.meta-box { text-align: right; font-size: 10px; color: #64748b; }
+.meta-box strong { font-size: 12px; color: #162a45; }
+.accent-line-navy { height: 2px; background-color: #162a45; width: 100%; margin-bottom: 2px; }
+.accent-line-orange { height: 2px; background-color: #e06a10; width: 100%; margin-bottom: 16px; }
+
+.section-title {
+    font-size: 16px;
+    font-weight: bold;
+    color: #162a45;
+    margin-top: 18px;
+    margin-bottom: 10px;
+}
+.sub-section-title {
+    font-size: 13px;
+    font-weight: bold;
+    color: #162a45;
+    margin-top: 14px;
+    margin-bottom: 6px;
+}
+
+.report-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+}
+.report-table th {
+    background-color: #162a45;
+    color: #ffffff;
+    font-weight: bold;
+    font-size: 10.5px;
+    padding: 7px 8px;
+    border: 1px solid #162a45;
+    text-align: left;
+}
+.report-table td {
+    padding: 6px 8px;
+    border: 1px solid #e2e8f0;
+    font-size: 10px;
+    color: #1e293b;
+}
+.report-table tr.even td {
+    background-color: #f8fafc;
+}
+.report-table tr.odd td {
+    background-color: #ffffff;
+}
+.total-row td {
+    background-color: #ffffff;
+    border-top: 1.5px solid #162a45;
+    border-bottom: 2px solid #162a45;
+    font-weight: bold;
+    font-size: 10.5px;
+    color: #162a45;
+}
+.closing-row td {
+    background-color: #ffffff;
+    border-top: 1.5px solid #162a45;
+    border-bottom: 2px solid #162a45;
+    font-weight: bold;
+    font-size: 10.5px;
+    color: #162a45;
+}
+.footer-text {
+    margin-top: 24px;
+    padding-top: 10px;
+    border-top: 1px solid #e2e8f0;
+    font-size: 9.5px;
+    color: #64748b;
+    text-align: center;
+}
+.page-break {
+    page-break-before: always;
+}
 """
 
 # ── Templates ──────────────────────────────────────────────────────────────────
 TEMPLATES: dict[str, str] = {
-    "transaction_receipt": """
-<!DOCTYPE html><html><head><meta charset="utf-8">
-<title>RenoPay — Transaction Receipt</title>
-<style>{{ css }}
-.receipt-card { max-width: 420px; margin: 0 auto; border: 1.5px solid #E2D5B8; border-radius: 16px; overflow: hidden; }
-.receipt-amount { text-align: center; padding: 32px 24px; background: linear-gradient(135deg, #192926 0%, #2d4a42 100%); }
-.receipt-amount .currency { font-size: 14px; color: #F3A833; font-weight: 600; }
-.receipt-amount .value { font-size: 42px; font-weight: 800; color: #fff; font-family: 'Space Mono', monospace; line-height: 1; }
-.receipt-amount .type { font-size: 12px; color: rgba(255,255,255,.6); margin-top: 6px; }
-.receipt-body { padding: 20px 24px; }
-.receipt-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #F0E8D5; }
-.receipt-row:last-child { border-bottom: none; }
-.receipt-row .key { font-size: 11px; color: #888; }
-.receipt-row .val { font-size: 12px; font-weight: 600; color: #1C2321; text-align: right; max-width: 60%; }
-</style></head>
-<body><div class="page">
-<div class="header">
-  <div><div class="logo">Reno<span>Pay</span></div><div class="logo-sub">Payment Receipt</div></div>
-  <div class="meta"><strong>{{ txn_ref }}</strong>{{ generated_at }}</div>
-</div>
-<div class="receipt-card">
-  <div class="receipt-amount">
-    <div class="currency">₹</div>
-    <div class="value">{{ "%.2f"|format(amount) }}</div>
-    <div class="type">{{ type | upper }}</div>
-  </div>
-  <div class="receipt-body">
-    <div class="receipt-row"><span class="key">Status</span><span class="val"><span class="badge badge-{{ status }}">{{ status | upper }}</span></span></div>
-    <div class="receipt-row"><span class="key">To / From</span><span class="val">{{ counterparty_vpa }}</span></div>
-    <div class="receipt-row"><span class="key">Description</span><span class="val">{{ description or '—' }}</span></div>
-    <div class="receipt-row"><span class="key">Category</span><span class="val">{{ category }}</span></div>
-    <div class="receipt-row"><span class="key">Date &amp; Time</span><span class="val">{{ created_at }}</span></div>
-    {% if round_up > 0 %}<div class="receipt-row"><span class="key">Gold Round-Up</span><span class="val" style="color:#F3A833">+ ₹{{ "%.2f"|format(round_up) }}</span></div>{% endif %}
-  </div>
-</div>
-<div class="footer">This is a system-generated receipt. RenoPay — Secure Payments Platform.</div>
-</div></body></html>
-""",
+    "transaction_receipt": """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>RenoPay — Payment Receipt</title>
+<style>
+{{ css }}
+body {
+    background-color: #ffffff;
+    padding: 10px;
+}
+.receipt-wrapper {
+    width: 96%;
+    margin: 0 auto;
+}
+.receipt-box {
+    border: 1px solid #e2e8f0;
+    background-color: #f8fafc;
+    margin-top: 14px;
+    margin-bottom: 18px;
+    padding: 16px 12px;
+    text-align: center;
+}
+.badge-success {
+    background-color: #15803d;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 4px 12px;
+}
+.badge-failed {
+    background-color: #dc2626;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 4px 12px;
+}
+.badge-pending {
+    background-color: #d97706;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 4px 12px;
+}
+</style>
+</head>
+<body>
+<div class="receipt-wrapper">
+    <!-- Brand Header -->
+    <table class="header-table" cellpadding="0" cellspacing="0">
+        <tr>
+            <td valign="top">
+                <div class="logo-title">Reno<span class="logo-accent">Pay</span></div>
+                <div class="logo-sub">Secure Payments Platform</div>
+            </td>
+        </tr>
+    </table>
+    <div style="height: 2.5px; background-color: #e06a10; width: 100%; margin-top: 4px; margin-bottom: 18px;"></div>
 
-    "balance_sheet": """
-<!DOCTYPE html><html><head><meta charset="utf-8">
-<title>RenoPay — Balance Sheet</title>
-<style>{{ css }}</style></head>
+    <!-- Title & Status -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 12px;">
+        <tr>
+            <td valign="middle">
+                <div style="font-size: 19px; font-weight: bold; color: #162a45;">Payment Receipt</div>
+            </td>
+            <td valign="middle" align="right">
+                <span class="badge-{{ status }}">{{ status | upper }}</span>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Monospace Reference -->
+    <div style="text-align: center; font-family: Courier, monospace; font-size: 12px; font-weight: bold; color: #162a45; margin-bottom: 14px;">
+        {{ txn_ref }}
+    </div>
+
+    <!-- Highlight Amount Card -->
+    <div class="receipt-box">
+        <div style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; margin-bottom: 6px;">
+            AMOUNT {{ 'CREDITED' if type == 'credit' else 'DEBITED' }}
+        </div>
+        <div style="font-size: 32px; font-weight: bold; color: {{ '#15803d' if type == 'credit' else '#162a45' }}; margin-bottom: 6px;">
+            Rs {{ "%.2f"|format(amount) }}
+        </div>
+        <div style="font-size: 11px; font-weight: bold; color: #334155;">
+            {{ type | upper }} &nbsp;<span style="color: #e06a10;">|</span>&nbsp; Category: {{ category }}
+        </div>
+    </div>
+
+    <!-- Key-Value Detail Table -->
+    <table width="100%" cellpadding="7" cellspacing="0" style="border-collapse: collapse; margin-bottom: 22px;">
+        <tr style="background-color: #f1f5f9;">
+            <td width="35%" style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #334155; font-size: 11px;">Transaction ID</td>
+            <td width="65%" align="right" style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #162a45; font-size: 11px; font-family: Courier, monospace;">{{ txn_ref }}</td>
+        </tr>
+        <tr>
+            <td style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #334155; font-size: 11px;">Status</td>
+            <td align="right" style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: {{ '#15803d' if status == 'success' else '#dc2626' }}; font-size: 11px;">{{ status | upper }}</td>
+        </tr>
+        <tr style="background-color: #f1f5f9;">
+            <td style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #334155; font-size: 11px;">Type</td>
+            <td align="right" style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #162a45; font-size: 11px;">{{ type | upper }}</td>
+        </tr>
+        <tr>
+            <td style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #334155; font-size: 11px;">Amount</td>
+            <td align="right" style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #162a45; font-size: 11px;">Rs {{ "%.2f"|format(amount) }}</td>
+        </tr>
+        <tr style="background-color: #f1f5f9;">
+            <td style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #334155; font-size: 11px;">Category</td>
+            <td align="right" style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #162a45; font-size: 11px;">{{ category }}</td>
+        </tr>
+        <tr>
+            <td style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #334155; font-size: 11px;">To / From</td>
+            <td align="right" style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #162a45; font-size: 11px;">{{ counterparty_vpa }}</td>
+        </tr>
+        <tr style="background-color: #f1f5f9;">
+            <td style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #334155; font-size: 11px;">Description</td>
+            <td align="right" style="border-bottom: 1px solid #e2e8f0; color: #162a45; font-size: 11px;">{{ description or '—' }}</td>
+        </tr>
+        <tr>
+            <td style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #334155; font-size: 11px;">Transaction Date &amp; Time</td>
+            <td align="right" style="border-bottom: 1px solid #e2e8f0; color: #162a45; font-size: 11px;">{{ created_at }}</td>
+        </tr>
+        <tr style="background-color: #f1f5f9;">
+            <td style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #334155; font-size: 11px;">Receipt Generated</td>
+            <td align="right" style="border-bottom: 1px solid #e2e8f0; color: #162a45; font-size: 11px;">{{ generated_at }}</td>
+        </tr>
+        {% if round_up > 0 %}
+        <tr>
+            <td style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #e06a10; font-size: 11px;">Digital Gold Round-Up</td>
+            <td align="right" style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #e06a10; font-size: 11px;">+ Rs {{ "%.2f"|format(round_up) }}</td>
+        </tr>
+        {% endif %}
+    </table>
+
+    <!-- Footer -->
+    <div style="border-top: 1px solid #cbd5e1; margin-top: 20px; padding-top: 12px; text-align: center;">
+        <div style="font-size: 10px; color: #64748b; font-style: italic; margin-bottom: 3px;">
+            This is a system-generated receipt and does not require a signature.
+        </div>
+        <div style="font-size: 10.5px; color: #162a45; font-weight: bold;">
+            RenoPay &mdash; Secure Payments Platform
+        </div>
+    </div>
+</div>
+</body>
+</html>""",
+
+    "full_accounting_pack": """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>RenoPay — Full Accounting Pack</title>
+<style>
+{{ css }}
+</style>
+</head>
+<body>
+<div class="page">
+    <!-- Header banner -->
+    <table class="header-table" cellpadding="0" cellspacing="0">
+        <tr>
+            <td valign="middle">
+                <div class="logo-title">Reno<span class="logo-accent">Pay</span></div>
+                <div class="logo-sub">Grounded AI Double-Entry Accounting Statement</div>
+            </td>
+            <td valign="middle" class="meta-box">
+                <div><strong>{{ account_name }}</strong></div>
+                <div>Generated: {{ generated_at }}</div>
+                {% if period_str %}<div>Period: <strong style="color: #e06a10;">{{ period_str }}</strong></div>{% endif %}
+            </td>
+        </tr>
+    </table>
+    <div class="accent-line-navy"></div>
+    <div class="accent-line-orange"></div>
+
+    <!-- 1. Journal Entries -->
+    <div class="section-title">1. Journal Entries</div>
+    <table class="report-table" cellpadding="6" cellspacing="0">
+        <thead>
+            <tr>
+                <th width="15%" align="left">Entry No</th>
+                <th width="15%" align="left">Date</th>
+                <th width="22%" align="left">Narration</th>
+                <th width="18%" align="left">Debit Account</th>
+                <th width="18%" align="left">Credit Account</th>
+                <th width="12%" align="right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for je in journal_entries %}
+            <tr class="{{ 'even' if loop.index is even else 'odd' }}">
+                <td style="font-weight: bold; font-family: Courier, monospace;">{{ je.entry_no }}</td>
+                <td>{{ je.date }}</td>
+                <td>{{ je.narration }}</td>
+                <td>{{ je.debit_account }}</td>
+                <td>{{ je.credit_account }}</td>
+                <td align="right" style="font-weight: bold;">{{ je.amount }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td colspan="4" style="border-right: none;"></td>
+                <td align="right" style="border-left: none; border-right: none;">Total</td>
+                <td align="right">{{ total_journal_amount }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- 2. General Ledger -->
+    <div class="section-title" style="margin-top: 26px;">2. General Ledger</div>
+    {% for gl in general_ledgers %}
+    <div class="sub-section-title">{{ gl.code }} &nbsp;-&nbsp; {{ gl.name }}</div>
+    <table class="report-table" cellpadding="6" cellspacing="0">
+        <thead>
+            <tr>
+                <th width="11%" align="left">Date</th>
+                <th width="15%" align="left">Entry No</th>
+                <th width="20%" align="left">Narration</th>
+                <th width="22%" align="left">Payee</th>
+                <th width="11%" align="right">Debit</th>
+                <th width="10%" align="right">Credit</th>
+                <th width="11%" align="right">Balance</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in gl.lines %}
+            <tr class="{{ 'even' if loop.index is even else 'odd' }}">
+                <td>{{ line.date }}</td>
+                <td style="font-family: Courier, monospace;">{{ line.entry_no }}</td>
+                <td>{{ line.narration }}</td>
+                <td>{{ line.payee or '—' }}</td>
+                <td align="right">{{ line.debit }}</td>
+                <td align="right">{{ line.credit }}</td>
+                <td align="right" style="font-weight: bold;">{{ line.balance }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="closing-row">
+                <td colspan="6" align="right" style="border-right: none;">Closing Balance</td>
+                <td align="right">{{ gl.closing_balance }}</td>
+            </tr>
+        </tbody>
+    </table>
+    {% endfor %}
+
+    <!-- 3. Payee-wise Ledger -->
+    <div class="section-title" style="margin-top: 26px;">3. Payee-wise Ledger</div>
+    {% for pl in payee_ledgers %}
+    <div class="sub-section-title">{{ pl.payee_vpa }}</div>
+    <table class="report-table" cellpadding="6" cellspacing="0">
+        <thead>
+            <tr>
+                <th width="12%" align="left">Date</th>
+                <th width="16%" align="left">Entry No</th>
+                <th width="24%" align="left">Narration</th>
+                <th width="24%" align="left">Account</th>
+                <th width="12%" align="right">Debit</th>
+                <th width="12%" align="right">Credit</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for line in pl.lines %}
+            <tr class="{{ 'even' if loop.index is even else 'odd' }}">
+                <td>{{ line.date }}</td>
+                <td style="font-family: Courier, monospace;">{{ line.entry_no }}</td>
+                <td>{{ line.narration }}</td>
+                <td>{{ line.account_name }}</td>
+                <td align="right">{{ line.debit }}</td>
+                <td align="right">{{ line.credit }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td colspan="4" align="right" style="border-right: none;">Total</td>
+                <td align="right">{{ pl.total_debit }}</td>
+                <td align="right">{{ pl.total_credit }}</td>
+            </tr>
+        </tbody>
+    </table>
+    {% endfor %}
+
+    {% if trial_balance and trial_balance.rows %}
+    <!-- 4. Trial Balance -->
+    <div class="section-title" style="margin-top: 26px;">4. Trial Balance</div>
+    <table class="report-table" cellpadding="6" cellspacing="0">
+        <thead>
+            <tr>
+                <th width="15%" align="left">Code</th>
+                <th width="45%" align="left">Account Name</th>
+                <th width="20%" align="right">Debit</th>
+                <th width="20%" align="right">Credit</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in trial_balance.rows %}
+            <tr class="{{ 'even' if loop.index is even else 'odd' }}">
+                <td style="font-family: Courier, monospace;">{{ row.code }}</td>
+                <td>{{ row.name }}</td>
+                <td align="right">{{ row.debit if row.debit else '' }}</td>
+                <td align="right">{{ row.credit if row.credit else '' }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td colspan="2" align="right" style="border-right: none;">Totals</td>
+                <td align="right">{{ trial_balance.total_debit }}</td>
+                <td align="right">{{ trial_balance.total_credit }}</td>
+            </tr>
+        </tbody>
+    </table>
+    {% endif %}
+
+    <div class="footer-text">
+        RenoPay Double-Entry Accounting Engine &mdash; Immutable Ledger Record &mdash; Generated {{ generated_at }}
+    </div>
+</div>
+</body>
+</html>""",
+
+    "balance_sheet": """<!DOCTYPE html><html><head><meta charset="utf-8"><title>RenoPay — Balance Sheet</title><style>{{ css }}</style></head>
 <body><div class="page">
-<div class="header">
-  <div><div class="logo">Reno<span>Pay</span></div><div class="logo-sub">Balance Sheet</div></div>
-  <div class="meta"><strong>{{ period }}</strong>Generated: {{ generated_at }}</div>
-</div>
-{% if balance_mismatch %}<div class="balance-mismatch">⚠️ BALANCE MISMATCH: Total debits and credits do not reconcile. Please review manually.</div>{% endif %}
-<div class="summary-grid">
-  <div class="summary-card"><div class="label">Total Income</div><div class="value" style="color:#16a34a">₹{{ "%.2f"|format(total_income) }}</div></div>
-  <div class="summary-card"><div class="label">Total Spent</div><div class="value" style="color:#dc2626">₹{{ "%.2f"|format(total_spent) }}</div></div>
-  <div class="summary-card"><div class="label">Net Balance</div><div class="value" style="color:{{'#16a34a' if net >= 0 else '#dc2626'}}">₹{{ "%.2f"|format(net) }}</div></div>
-</div>
-<h3>Transaction Ledger</h3>
-<table>
-  <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Type</th><th style="text-align:right">Amount</th></tr></thead>
+<table class="header-table" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><div class="logo-title">Reno<span class="logo-accent">Pay</span></div><div class="logo-sub">Balance Sheet Statement</div></td>
+    <td class="meta-box"><div><strong>{{ period }}</strong></div><div>Generated: {{ generated_at }}</div></td>
+  </tr>
+</table>
+<div class="accent-line-navy"></div><div class="accent-line-orange"></div>
+<div class="section-title">Summary</div>
+<table class="report-table" cellpadding="6" cellspacing="0">
+  <thead><tr><th>Total Income</th><th>Total Expenses</th><th>Net Balance</th></tr></thead>
+  <tbody>
+    <tr>
+      <td style="font-weight:bold; color:#15803d; font-size:12px;">Rs {{ "%.2f"|format(total_income) }}</td>
+      <td style="font-weight:bold; color:#dc2626; font-size:12px;">Rs {{ "%.2f"|format(total_spent) }}</td>
+      <td style="font-weight:bold; color:{{'#15803d' if net >= 0 else '#dc2626'}}; font-size:12px;">Rs {{ "%.2f"|format(net) }}</td>
+    </tr>
+  </tbody>
+</table>
+<div class="section-title">Transactions Ledger</div>
+<table class="report-table" cellpadding="6" cellspacing="0">
+  <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Type</th><th align="right">Amount</th></tr></thead>
   <tbody>
   {% for t in transactions %}
-  <tr>
+  <tr class="{{ 'even' if loop.index is even else 'odd' }}">
     <td>{{ t.date }}</td>
     <td>{{ t.description }}</td>
     <td>{{ t.category }}</td>
-    <td><span class="badge {{'badge-success' if t.type == 'credit' else 'badge-failed'}}">{{ t.type | upper }}</span></td>
-    <td style="text-align:right"><span class="{{'amount-credit' if t.type == 'credit' else 'amount-debit'}}">{{ '+' if t.type == 'credit' else '-' }}₹{{ "%.2f"|format(t.amount) }}</span></td>
+    <td style="font-weight:bold; color:{{'#15803d' if t.type == 'credit' else '#dc2626'}};">{{ t.type | upper }}</td>
+    <td align="right" style="font-weight:bold; color:{{'#15803d' if t.type == 'credit' else '#dc2626'}};">{{ '+' if t.type == 'credit' else '-' }}Rs {{ "%.2f"|format(t.amount) }}</td>
   </tr>
   {% endfor %}
   </tbody>
 </table>
-<h3>By Category</h3>
-<table>
-  <thead><tr><th>Category</th><th style="text-align:right">Amount Spent</th><th style="text-align:right">% of Total</th></tr></thead>
-  <tbody>
-  {% for c in by_category %}
-  <tr>
-    <td>{{ c.category }}</td>
-    <td style="text-align:right" class="amount-debit">₹{{ "%.2f"|format(c.amount) }}</td>
-    <td style="text-align:right">{{ c.percent }}%</td>
-  </tr>
-  {% endfor %}
-  </tbody>
-</table>
-<div class="footer">RenoPay — Grounded AI Accounting. All figures from immutable ledger. Report generated {{ generated_at }}</div>
-</div></body></html>
-""",
+<div class="footer-text">RenoPay Immutable Ledger &mdash; Generated {{ generated_at }}</div>
+</div></body></html>""",
 
-    "profit_loss": """
-<!DOCTYPE html><html><head><meta charset="utf-8">
-<title>RenoPay — Profit &amp; Loss</title>
-<style>{{ css }}</style></head>
+    "profit_loss": """<!DOCTYPE html><html><head><meta charset="utf-8"><title>RenoPay — Profit &amp; Loss</title><style>{{ css }}</style></head>
 <body><div class="page">
-<div class="header">
-  <div><div class="logo">Reno<span>Pay</span></div><div class="logo-sub">Income &amp; Expense Report</div></div>
-  <div class="meta"><strong>{{ period }}</strong>Generated: {{ generated_at }}</div>
-</div>
-<div class="summary-grid">
-  <div class="summary-card"><div class="label">Gross Income</div><div class="value" style="color:#16a34a">₹{{ "%.2f"|format(total_income) }}</div></div>
-  <div class="summary-card"><div class="label">Total Expenses</div><div class="value" style="color:#dc2626">₹{{ "%.2f"|format(total_spent) }}</div></div>
-  <div class="summary-card"><div class="label">Net {{ 'Profit' if net >= 0 else 'Loss' }}</div><div class="value" style="color:{{'#16a34a' if net >= 0 else '#dc2626'}}">₹{{ "%.2f"|format(net|abs) }}</div></div>
-</div>
-<h3>Income Breakdown</h3>
-<table>
-  <thead><tr><th>Category</th><th style="text-align:right">Amount</th></tr></thead>
+<table class="header-table" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><div class="logo-title">Reno<span class="logo-accent">Pay</span></div><div class="logo-sub">Income &amp; Expense Statement</div></td>
+    <td class="meta-box"><div><strong>{{ period }}</strong></div><div>Generated: {{ generated_at }}</div></td>
+  </tr>
+</table>
+<div class="accent-line-navy"></div><div class="accent-line-orange"></div>
+<div class="section-title">Performance Summary</div>
+<table class="report-table" cellpadding="6" cellspacing="0">
+  <thead><tr><th>Gross Income</th><th>Total Expenses</th><th>Net Result</th></tr></thead>
+  <tbody>
+    <tr>
+      <td style="font-weight:bold; color:#15803d; font-size:12px;">+ Rs {{ "%.2f"|format(total_income) }}</td>
+      <td style="font-weight:bold; color:#dc2626; font-size:12px;">- Rs {{ "%.2f"|format(total_spent) }}</td>
+      <td style="font-weight:bold; color:{{'#15803d' if net >= 0 else '#dc2626'}}; font-size:12px;">Rs {{ "%.2f"|format(net) }}</td>
+    </tr>
+  </tbody>
+</table>
+<div class="section-title">Income Categories</div>
+<table class="report-table" cellpadding="6" cellspacing="0">
+  <thead><tr><th>Category</th><th align="right">Amount</th></tr></thead>
   <tbody>
   {% for r in income_rows %}
-  <tr><td>{{ r.category }}</td><td style="text-align:right" class="amount-credit">+₹{{ "%.2f"|format(r.amount) }}</td></tr>
+  <tr class="{{ 'even' if loop.index is even else 'odd' }}"><td>{{ r.category }}</td><td align="right" style="font-weight:bold; color:#15803d;">+ Rs {{ "%.2f"|format(r.amount) }}</td></tr>
   {% endfor %}
-  <tr class="highlight-row"><td>Total Income</td><td style="text-align:right" class="amount-credit">+₹{{ "%.2f"|format(total_income) }}</td></tr>
+  <tr class="total-row"><td style="border-right:none;">Total Income</td><td align="right" style="color:#15803d;">+ Rs {{ "%.2f"|format(total_income) }}</td></tr>
   </tbody>
 </table>
-<h3>Expense Breakdown</h3>
-<table>
-  <thead><tr><th>Category</th><th style="text-align:right">Amount</th><th style="text-align:right">% of Spend</th></tr></thead>
+<div class="section-title">Expense Categories</div>
+<table class="report-table" cellpadding="6" cellspacing="0">
+  <thead><tr><th>Category</th><th align="right">Amount</th><th align="right">% of Spend</th></tr></thead>
   <tbody>
   {% for e in expense_rows %}
-  <tr><td>{{ e.category }}</td><td style="text-align:right" class="amount-debit">-₹{{ "%.2f"|format(e.amount) }}</td><td style="text-align:right">{{ e.percent }}%</td></tr>
+  <tr class="{{ 'even' if loop.index is even else 'odd' }}"><td>{{ e.category }}</td><td align="right" style="font-weight:bold; color:#dc2626;">- Rs {{ "%.2f"|format(e.amount) }}</td><td align="right">{{ e.percent }}%</td></tr>
   {% endfor %}
-  <tr class="highlight-row"><td>Total Expenses</td><td style="text-align:right" class="amount-debit">-₹{{ "%.2f"|format(total_spent) }}</td><td></td></tr>
+  <tr class="total-row"><td style="border-right:none;">Total Expenses</td><td align="right" style="color:#dc2626;">- Rs {{ "%.2f"|format(total_spent) }}</td><td style="border-left:none;"></td></tr>
   </tbody>
 </table>
-<div class="footer">RenoPay — All figures sourced from immutable transaction ledger. Generated {{ generated_at }}</div>
+<div class="footer-text">RenoPay Immutable Ledger &mdash; Generated {{ generated_at }}</div>
 </div></body></html>""",
-    "full_accounting_pack": """
-<!DOCTYPE html><html><head><meta charset="utf-8">
-<title>RenoPay — Full Accounting Pack</title>
-<style>{{ css }}
-.page-break { page-break-before: always; }
-.cover { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; text-align: center; }
-.cover h1 { font-size: 32px; font-weight: 800; color: #192926; margin-bottom: 16px; }
-.cover h2 { font-size: 18px; font-weight: 400; color: #555; margin-bottom: 32px; }
-.cover p { font-size: 12px; color: #888; }
-</style></head>
-<body>
-
-<div class="page cover">
-    <h1>Reno<span>Pay</span></h1>
-    <h2>Full Accounting Report</h2>
-    <p>Account: {{ account_name }}</p>
-    <p>Generated: {{ generated_at }}</p>
-</div>
-
-<div class="page page-break">
-<div class="header">
-  <div><div class="logo">Reno<span>Pay</span></div><div class="logo-sub">Journal Entries</div></div>
-  <div class="meta">Generated: {{ generated_at }}</div>
-</div>
-<h3>Journal</h3>
-<table>
-  <thead><tr><th>Entry No</th><th>Date</th><th>Narration</th><th>Ledger Head</th><th style="text-align:right">Debit</th><th style="text-align:right">Credit</th></tr></thead>
-  <tbody>
-  {% for je in journal_entries %}
-      {% for line in je.lines %}
-      <tr>
-        {% if loop.index == 1 %}
-        <td rowspan="{{ je.lines|length }}">{{ je.entry_no }}</td>
-        <td rowspan="{{ je.lines|length }}">{{ je.date }}</td>
-        <td rowspan="{{ je.lines|length }}">{{ je.narration }}</td>
-        {% endif %}
-        <td>{{ line.account_name }}</td>
-        <td style="text-align:right" class="amount-debit">{{ line.debit if line.debit else '' }}</td>
-        <td style="text-align:right" class="amount-credit">{{ line.credit if line.credit else '' }}</td>
-      </tr>
-      {% endfor %}
-  {% endfor %}
-  </tbody>
-</table>
-</div>
-
-<div class="page page-break">
-<div class="header">
-  <div><div class="logo">Reno<span>Pay</span></div><div class="logo-sub">General Ledger</div></div>
-  <div class="meta">Generated: {{ generated_at }}</div>
-</div>
-{% for gl in general_ledgers %}
-<h3>{{ gl.code }} - {{ gl.name }}</h3>
-<table>
-  <thead><tr><th>Date</th><th>Entry No</th><th>Narration</th><th>Payee</th><th style="text-align:right">Debit</th><th style="text-align:right">Credit</th><th style="text-align:right">Balance</th></tr></thead>
-  <tbody>
-  {% for line in gl.lines %}
-  <tr>
-    <td>{{ line.date }}</td>
-    <td>{{ line.entry_no }}</td>
-    <td>{{ line.narration }}</td>
-    <td>{{ line.payee or '—' }}</td>
-    <td style="text-align:right" class="amount-debit">{{ line.debit if line.debit else '' }}</td>
-    <td style="text-align:right" class="amount-credit">{{ line.credit if line.credit else '' }}</td>
-    <td style="text-align:right" class="amount-neutral">{{ line.balance }}</td>
-  </tr>
-  {% endfor %}
-  <tr class="highlight-row">
-    <td colspan="6" style="text-align:right">Closing Balance</td>
-    <td style="text-align:right" class="amount-neutral">{{ gl.closing_balance }}</td>
-  </tr>
-  </tbody>
-</table>
-<br>
-{% endfor %}
-</div>
-
-<div class="page page-break">
-<div class="header">
-  <div><div class="logo">Reno<span>Pay</span></div><div class="logo-sub">Payee Ledgers</div></div>
-  <div class="meta">Generated: {{ generated_at }}</div>
-</div>
-{% for pl in payee_ledgers %}
-<h3>Payee: {{ pl.payee_vpa }}</h3>
-<table>
-  <thead><tr><th>Date</th><th>Entry No</th><th>Narration</th><th>Account</th><th style="text-align:right">Debit</th><th style="text-align:right">Credit</th></tr></thead>
-  <tbody>
-  {% for line in pl.lines %}
-  <tr>
-    <td>{{ line.date }}</td>
-    <td>{{ line.entry_no }}</td>
-    <td>{{ line.narration }}</td>
-    <td>{{ line.account_name }}</td>
-    <td style="text-align:right" class="amount-debit">{{ line.debit if line.debit else '' }}</td>
-    <td style="text-align:right" class="amount-credit">{{ line.credit if line.credit else '' }}</td>
-  </tr>
-  {% endfor %}
-  <tr class="highlight-row">
-    <td colspan="4" style="text-align:right">Totals</td>
-    <td style="text-align:right" class="amount-debit">{{ pl.total_debit }}</td>
-    <td style="text-align:right" class="amount-credit">{{ pl.total_credit }}</td>
-  </tr>
-  </tbody>
-</table>
-<br>
-{% endfor %}
-</div>
-
-<div class="page page-break">
-<div class="header">
-  <div><div class="logo">Reno<span>Pay</span></div><div class="logo-sub">Trial Balance</div></div>
-  <div class="meta">Generated: {{ generated_at }}</div>
-</div>
-{% if trial_balance.balanced == false %}
-<div class="balance-mismatch">⚠️ BALANCE MISMATCH: Total debits and credits do not reconcile.</div>
-{% endif %}
-<table>
-  <thead><tr><th>Code</th><th>Account Name</th><th style="text-align:right">Debit</th><th style="text-align:right">Credit</th></tr></thead>
-  <tbody>
-  {% for row in trial_balance.rows %}
-  <tr>
-    <td>{{ row.code }}</td>
-    <td>{{ row.name }}</td>
-    <td style="text-align:right" class="amount-debit">{{ row.debit if row.debit else '' }}</td>
-    <td style="text-align:right" class="amount-credit">{{ row.credit if row.credit else '' }}</td>
-  </tr>
-  {% endfor %}
-  <tr class="highlight-row">
-    <td colspan="2" style="text-align:right">Totals</td>
-    <td style="text-align:right" class="amount-debit">{{ trial_balance.total_debit }}</td>
-    <td style="text-align:right" class="amount-credit">{{ trial_balance.total_credit }}</td>
-  </tr>
-  </tbody>
-</table>
-</div>
-
-<div class="page page-break">
-<div class="header">
-  <div><div class="logo">Reno<span>Pay</span></div><div class="logo-sub">Balance Sheet</div></div>
-  <div class="meta">Generated: {{ generated_at }}</div>
-</div>
-{% if balance_sheet.balanced == false %}
-<div class="balance-mismatch">⚠️ BALANCE MISMATCH: Assets != Liabilities + Equity</div>
-{% endif %}
-<h3>Assets</h3>
-<table>
-  <tbody>
-  {% for a in balance_sheet.assets %}
-  <tr><td>{{ a.name }}</td><td style="text-align:right" class="amount-neutral">{{ a.balance }}</td></tr>
-  {% endfor %}
-  <tr class="highlight-row"><td>Total Assets</td><td style="text-align:right" class="amount-neutral">₹{{ "%.2f"|format(balance_sheet.total_assets) }}</td></tr>
-  </tbody>
-</table>
-<h3>Liabilities</h3>
-<table>
-  <tbody>
-  {% for l in balance_sheet.liabilities %}
-  <tr><td>{{ l.name }}</td><td style="text-align:right" class="amount-neutral">{{ l.balance }}</td></tr>
-  {% endfor %}
-  <tr class="highlight-row"><td>Total Liabilities</td><td style="text-align:right" class="amount-neutral">₹{{ "%.2f"|format(balance_sheet.total_liabilities) }}</td></tr>
-  </tbody>
-</table>
-<h3>Equity</h3>
-<table>
-  <tbody>
-  {% for e in balance_sheet.equity %}
-  <tr><td>{{ e.name }}</td><td style="text-align:right" class="amount-neutral">{{ e.balance }}</td></tr>
-  {% endfor %}
-  <tr class="highlight-row"><td>Total Equity</td><td style="text-align:right" class="amount-neutral">₹{{ "%.2f"|format(balance_sheet.total_equity) }}</td></tr>
-  </tbody>
-</table>
-<div class="summary-grid" style="margin-top: 20px;">
-  <div class="summary-card"><div class="label">Total Assets</div><div class="value">₹{{ "%.2f"|format(balance_sheet.total_assets) }}</div></div>
-  <div class="summary-card"><div class="label">Total Liab + Equity</div><div class="value">₹{{ "%.2f"|format(balance_sheet.total_liab_equity) }}</div></div>
-</div>
-</div>
-
-<div class="page page-break">
-<div class="header">
-  <div><div class="logo">Reno<span>Pay</span></div><div class="logo-sub">Cash Flow</div></div>
-  <div class="meta">Generated: {{ generated_at }}</div>
-</div>
-<h3>Operating Activities</h3>
-<table>
-  <tbody>
-  {% for item in cash_flow.operating['items'] %}
-  <tr><td>{{ item.name }}</td><td style="text-align:right" class="amount-neutral">{{ item.amount }}</td></tr>
-  {% endfor %}
-  <tr class="highlight-row"><td>Net Operating Cash Flow</td><td style="text-align:right" class="amount-neutral">{{ cash_flow.operating.total }}</td></tr>
-  </tbody>
-</table>
-<h3>Investing Activities</h3>
-<table>
-  <tbody>
-  {% for item in cash_flow.investing['items'] %}
-  <tr><td>{{ item.name }}</td><td style="text-align:right" class="amount-neutral">{{ item.amount }}</td></tr>
-  {% endfor %}
-  <tr class="highlight-row"><td>Net Investing Cash Flow</td><td style="text-align:right" class="amount-neutral">{{ cash_flow.investing.total }}</td></tr>
-  </tbody>
-</table>
-<h3>Financing Activities</h3>
-<table>
-  <tbody>
-  {% for item in cash_flow.financing['items'] %}
-  <tr><td>{{ item.name }}</td><td style="text-align:right" class="amount-neutral">{{ item.amount }}</td></tr>
-  {% endfor %}
-  <tr class="highlight-row"><td>Net Financing Cash Flow</td><td style="text-align:right" class="amount-neutral">{{ cash_flow.financing.total }}</td></tr>
-  </tbody>
-</table>
-<div class="summary-grid" style="margin-top: 20px;">
-  <div class="summary-card"><div class="label">Net Change in Cash</div><div class="value">₹{{ "%.2f"|format(cash_flow.net_change) }}</div></div>
-</div>
-<div class="footer">RenoPay AI Accounting Engine</div>
-</div>
-
-</body></html>
-""",
 }
 
 

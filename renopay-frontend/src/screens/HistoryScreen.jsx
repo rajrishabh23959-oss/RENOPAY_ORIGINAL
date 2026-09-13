@@ -3,12 +3,18 @@ import { PaymentAPI, AnalyticsAPI } from "../lib/api";
 import { useRenoSocket } from "../hooks/useRenoSocket";
 import { Badge, TrustBadge, Card } from "../components/ui";
 import { fmt, ago } from "../lib/format";
+import { PdfPreviewModal } from "../components/PdfPreviewModal";
 
 export function HistoryScreen({ onBack }) {
   const [txns, setTxns] = useState([]);
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [downloadingRef, setDownloadingRef] = useState(null);
+  const [viewingRef, setViewingRef] = useState(null);
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [previewBlob, setPreviewBlob] = useState(null);
+  const [previewTitle, setPreviewTitle] = useState("Payment Receipt");
+  const [previewFilename, setPreviewFilename] = useState("receipt.pdf");
 
   const load = () => PaymentAPI.getTransactions(20, 0)
     .then((res) => { setTxns(res.data || res); })
@@ -38,6 +44,27 @@ export function HistoryScreen({ onBack }) {
       alert("Failed to download PDF receipt: " + (e?.response?.data?.detail || e.message));
     } finally {
       setDownloadingRef(null);
+    }
+  };
+
+  const handleViewReceipt = async (txn_ref) => {
+    if (viewingRef) return;
+    setViewingRef(txn_ref);
+    setPreviewTitle(`Payment Receipt - ${txn_ref}`);
+    setPreviewFilename(`Receipt_${txn_ref}.pdf`);
+    setPreviewBlob(null);
+    setPreviewModalOpen(true);
+    try {
+      const blob = await AnalyticsAPI.downloadReport({
+        type: "transaction_receipt",
+        txn_ref: txn_ref,
+      });
+      setPreviewBlob(blob);
+    } catch (e) {
+      alert("Failed to open PDF receipt: " + (e?.response?.data?.detail || e.message));
+      setPreviewModalOpen(false);
+    } finally {
+      setViewingRef(null);
     }
   };
 
@@ -75,21 +102,42 @@ export function HistoryScreen({ onBack }) {
                 {t.type === "credit" ? "+" : "-"}{fmt(t.amount)}
               </p>
               <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => handleDownloadReceipt(t.txn_ref)}
-                  disabled={downloadingRef === t.txn_ref}
-                  className="btn bg-card border border-line hover:border-accent/40 text-textLight px-1.5 py-0.5 rounded text-[10px] font-semibold flex items-center gap-1 cursor-pointer"
-                  title="Download PDF Receipt"
-                >
-                  {downloadingRef === t.txn_ref ? "⏳" : "📄 PDF"}
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => handleViewReceipt(t.txn_ref)}
+                    disabled={viewingRef === t.txn_ref}
+                    className="btn bg-card border border-line hover:border-accent/50 text-textLight px-1.5 py-0.5 rounded text-[10px] font-semibold flex items-center gap-0.5 cursor-pointer"
+                    title="View Receipt PDF"
+                  >
+                    {viewingRef === t.txn_ref ? "⏳" : "👁 View"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadReceipt(t.txn_ref)}
+                    disabled={downloadingRef === t.txn_ref}
+                    className="btn bg-card border border-accent/40 hover:bg-accent/10 text-accent px-1.5 py-0.5 rounded text-[10px] font-semibold flex items-center gap-0.5 cursor-pointer"
+                    title="Download Receipt PDF"
+                  >
+                    {downloadingRef === t.txn_ref ? "⏳" : "⬇ PDF"}
+                  </button>
+                </div>
                 <Badge color="#FF6A1A" size={9}>{t.category}</Badge>
               </div>
             </div>
           </Card>
         ))}
       </div>
+
+      {/* Receipt PDF Preview Modal */}
+      <PdfPreviewModal
+        isOpen={previewModalOpen}
+        onClose={() => setPreviewModalOpen(false)}
+        pdfBlob={previewBlob}
+        title={previewTitle}
+        filename={previewFilename}
+        loading={viewingRef !== null}
+      />
     </div>
   );
 }

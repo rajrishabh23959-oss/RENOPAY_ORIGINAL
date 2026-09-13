@@ -6,6 +6,7 @@ import { Btn, Badge, Card } from "../components/ui";
 import { PINPad } from "../components/PINPad";
 import { NoteSlider } from "../components/NoteSlider";
 import { fmt } from "../lib/format";
+import { PdfPreviewModal } from "../components/PdfPreviewModal";
 
 const CATS = [
   { id: "Food", icon: "🍔" }, { id: "Shopping", icon: "🛍️" }, { id: "Transport", icon: "🚗" },
@@ -34,7 +35,13 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [suggestedVpas, setSuggestedVpas] = useState([]);
+  const [vpaError, setVpaError] = useState("");
+  const [isSearchingVpa, setIsSearchingVpa] = useState(false);
   const [downloadingReceipt, setDownloadingReceipt] = useState(false);
+  const [viewingReceipt, setViewingReceipt] = useState(false);
+  const [receiptBlob, setReceiptBlob] = useState(null);
+  const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [downloadError, setDownloadError] = useState("");
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
 
@@ -95,6 +102,26 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
       setDownloadError("Failed to download PDF receipt. Please try again.");
     } finally {
       setDownloadingReceipt(false);
+    }
+  };
+
+  const handleViewReceipt = async () => {
+    if (!result?.txn_ref || viewingReceipt) return;
+    setViewingReceipt(true);
+    setDownloadError("");
+    setReceiptBlob(null);
+    setReceiptModalOpen(true);
+    try {
+      const blob = await AnalyticsAPI.downloadReport({
+        type: "transaction_receipt",
+        txn_ref: result.txn_ref,
+      });
+      setReceiptBlob(blob);
+    } catch (e) {
+      setDownloadError("Failed to open PDF receipt. Please try again.");
+      setReceiptModalOpen(false);
+    } finally {
+      setViewingReceipt(false);
     }
   };
 
@@ -297,15 +324,25 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
                 )}
                 {result.round_up > 0 && <div className="mt-2"><Badge color="#FF6A1A">🪙 +{fmt(result.round_up)} rounded up to Digital Gold!</Badge></div>}
 
-                <div className="mt-4">
-                  <button
-                    type="button"
-                    onClick={handleDownloadReceipt}
-                    disabled={downloadingReceipt}
-                    className="btn bg-card border border-accent/40 text-accent hover:bg-accent/10 px-4 py-2 rounded-xl text-xs font-semibold inline-flex items-center gap-2 transition-all cursor-pointer"
-                  >
-                    📄 {downloadingReceipt ? "Generating PDF..." : "Download Receipt (PDF)"}
-                  </button>
+                <div className="mt-4 flex flex-col items-center gap-2">
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleViewReceipt}
+                      disabled={viewingReceipt || downloadingReceipt}
+                      className="btn bg-card border border-accent/40 text-accent hover:bg-accent/10 px-3.5 py-2 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      👁 {viewingReceipt ? "Loading..." : "View Receipt"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDownloadReceipt}
+                      disabled={downloadingReceipt || viewingReceipt}
+                      className="btn bg-accent text-white shadow-accentGlow hover:brightness-110 px-3.5 py-2 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      ⬇ {downloadingReceipt ? "Generating..." : "Download Receipt"}
+                    </button>
+                  </div>
                   {downloadError && <p className="text-danger text-xs mt-1">{downloadError}</p>}
                 </div>
               </>
@@ -324,6 +361,16 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
           </div>
         )}
       </div>
+
+      {/* Receipt PDF Preview Modal */}
+      <PdfPreviewModal
+        isOpen={receiptModalOpen}
+        onClose={() => setReceiptModalOpen(false)}
+        pdfBlob={receiptBlob}
+        title="Payment Receipt"
+        filename={`Receipt_${result?.txn_ref || "transaction"}.pdf`}
+        loading={viewingReceipt}
+      />
     </div>
   );
 }
