@@ -9,6 +9,10 @@ vi.mock('../lib/api', () => ({
     trustDevice: vi.fn(),
     toggleRoundUp: vi.fn(),
     updateBudget: vi.fn(),
+    updatePreferences: vi.fn().mockResolvedValue({}),
+  },
+  GoldAPI: {
+    withdraw: vi.fn(),
   },
 }));
 
@@ -80,6 +84,19 @@ describe('ProfileScreen', () => {
 
     await waitFor(() => {
       expect(mockLogout).toHaveBeenCalled();
+    });
+  });
+
+  it('renders language selector and updates preferred language', async () => {
+    renderWithAuth(<ProfileScreen onBack={mockOnBack} />);
+    expect(screen.getByText('Hindi')).toBeInTheDocument();
+    expect(screen.getByText('Tamil')).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Hindi'));
+
+    await waitFor(() => {
+      expect(AccountAPI.updatePreferences).toHaveBeenCalledWith({ language_code: 'hi' });
+      expect(mockRefreshProfile).toHaveBeenCalled();
     });
   });
 });

@@ -7,7 +7,9 @@ from app.core.money import rupees_to_paise
 from app.db.session import get_db
 from app.models.user import User, Device
 from app.models.account import Account
-from app.schemas.account import ProfileOut, AccountOut, ToggleRoundUpRequest, UpdateBudgetRequest
+from app.schemas.account import (
+    ProfileOut, AccountOut, ToggleRoundUpRequest, UpdateBudgetRequest, UserPreferencesUpdate
+)
 
 router = APIRouter()
 
@@ -26,6 +28,27 @@ async def get_profile(
         avatar_url=user.avatar_url, account=AccountOut.from_model(account),
         has_upi_pin=(user.pin_hash is not None),
         is_trusted_device=trusted,
+        language_code=getattr(user, "language_code", "en"),
+    )
+
+
+@router.patch("/preferences", response_model=ProfileOut)
+async def update_preferences(
+    payload: UserPreferencesUpdate,
+    user: User = Depends(get_current_user),
+    account: Account = Depends(get_current_account),
+    db: AsyncSession = Depends(get_db),
+):
+    user.language_code = payload.language_code
+    await db.commit()
+    await db.refresh(user)
+    return ProfileOut(
+        id=user.id, full_name=user.full_name, phone_number=user.phone_number,
+        kyc_status=user.kyc_status.value if hasattr(user.kyc_status, "value") else user.kyc_status,
+        avatar_url=user.avatar_url, account=AccountOut.from_model(account),
+        has_upi_pin=(user.pin_hash is not None),
+        is_trusted_device=False,
+        language_code=user.language_code,
     )
 
 

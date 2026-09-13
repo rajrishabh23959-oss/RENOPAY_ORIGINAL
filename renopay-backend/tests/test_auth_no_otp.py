@@ -1,6 +1,6 @@
 import pytest
-from app.routers.auth import register, login, send_otp, verify_otp_endpoint
-from app.schemas.auth import RegisterRequest, LoginRequest, SendOTPRequest, VerifyOTPRequest
+from app.routers.auth import register, login
+from app.schemas.auth import RegisterRequest, LoginRequest
 from app.models.user import User
 from app.models.account import Account
 from sqlalchemy import select
@@ -57,14 +57,3 @@ async def test_login_without_pin_or_otp(db_session):
     assert login_res.user_id == reg_res.user_id
     assert login_res.access_token is not None
 
-@pytest.mark.asyncio
-async def test_send_and_verify_otp_passthrough(db_session):
-    phone = "9876543213"
-    send_res = await send_otp(SendOTPRequest(phone_number=phone), db=db_session)
-    assert send_res["success"] is True
-
-    verify_res = await verify_otp_endpoint(
-        VerifyOTPRequest(phone_number=phone, otp="123456"),
-        db=db_session
-    )
-    assert verify_res["success"] is True

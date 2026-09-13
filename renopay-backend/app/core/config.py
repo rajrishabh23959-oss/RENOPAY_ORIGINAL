@@ -130,6 +130,11 @@ class Settings(BaseSettings):
         "https://renopay-original.vercel.app",
     ]
 
+    # --- AI Assistant (Groq platform default & BYO) ---
+    GROQ_API_KEY: str = ""
+    DEFAULT_AI_MODEL: str = "llama-3.3-70b-versatile"
+    AI_HOURLY_RATE_LIMIT: int = 20
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

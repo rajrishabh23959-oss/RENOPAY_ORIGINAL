@@ -35,10 +35,7 @@ export function AuthProvider({ children }) {
     return refreshProfile();
   }, [refreshProfile]);
 
-  const completeRegistration = useCallback(async (phone, otp) => {
-    if (otp) {
-      await AuthAPI.verifyOTP(phone, otp, "registration");
-    }
+  const completeRegistration = useCallback(async () => {
     return refreshProfile();
   }, [refreshProfile]);
 

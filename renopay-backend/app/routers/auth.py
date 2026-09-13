@@ -17,7 +17,7 @@ from app.models.user import User, KYCStatus, Device
 from app.models.account import Account
 from app.models.auth import RefreshToken
 from app.schemas.auth import (
-    RegisterRequest, SendOTPRequest, VerifyOTPRequest, SetPinRequest,
+    RegisterRequest, SetPinRequest,
     LoginRequest, RefreshRequest, TokenResponse,
 )
 
@@ -40,15 +40,6 @@ _redis_mock = MockRedis()
 async def _get_redis():
     return _redis_mock
 
-
-@router.post("/send-otp")
-async def send_otp(payload: SendOTPRequest, db: AsyncSession = Depends(get_db)):
-    return {
-        "success": True,
-        "message": "OTP verification not required",
-        "expires_in_seconds": settings.OTP_EXPIRE_SECONDS,
-        "debug_otp": "000000",
-    }
 
 
 @router.post("/register", response_model=TokenResponse)
@@ -89,15 +80,6 @@ async def register(payload: RegisterRequest, db: AsyncSession = Depends(get_db))
     await db.commit()
 
     return await _issue_tokens(db, user.id, None)
-
-
-@router.post("/verify-otp")
-async def verify_otp_endpoint(payload: VerifyOTPRequest, db: AsyncSession = Depends(get_db)):
-    existing = await db.execute(select(User).where(User.phone_number == payload.phone_number))
-    user = existing.scalar_one_or_none()
-    if user is not None:
-        return await _issue_tokens(db, user.id, None)
-    return {"success": True}
 
 
 @router.patch("/pin", response_model=TokenResponse)

@@ -2,19 +2,8 @@ import { http, setTokens, clearTokens } from "./http";
 
 // ---------- Auth ----------
 export const AuthAPI = {
-  sendOTP: (phone_number, purpose = "registration") =>
-    http.post("/auth/send-otp", { phone_number, purpose }).then((r) => r.data),
-
   register: async (payload) => {
     const { data } = await http.post("/auth/register", payload);
-    if (data.access_token) {
-      setTokens(data);
-    }
-    return data;
-  },
-
-  verifyOTP: async (phone_number, otp, purpose = "registration") => {
-    const { data } = await http.post("/auth/verify-otp", { phone_number, otp, purpose });
     if (data.access_token) {
       setTokens(data);
     }
@@ -60,6 +49,8 @@ export const AccountAPI = {
   toggleRoundUp: (enabled) => http.patch("/accounts/round-up", { enabled }).then((r) => r.data),
 
   updateBudget: (monthly_budget) => http.patch("/accounts/budget", { monthly_budget }).then((r) => r.data),
+
+  updatePreferences: (preferences) => http.patch("/accounts/preferences", preferences).then((r) => r.data),
 };
 
 // ---------- Payments ----------
@@ -220,4 +211,17 @@ export const AccountingAPI = {
 // ---------- Savings Goals (extra) ----------
 GoalAPI.setAutoSave = (goalId, enabled, daily_amount) =>
   http.patch(`/goals/${goalId}/auto-save`, { enabled, daily_amount }).then((r) => r.data);
+
+// ---------- Multilingual AI Assistant (RenoAI) ----------
+export const AIAPI = {
+  query: (query_text, screen_context = null, language = null, session_id = null) =>
+    http.post("/ai/query", { query_text, screen_context, language, session_id }).then((r) => r.data),
+
+  getSessions: () => http.get("/ai/sessions").then((r) => r.data),
+
+  getMessages: (session_id) => http.get(`/ai/sessions/${session_id}/messages`).then((r) => r.data),
+
+  deleteSession: (session_id) => http.delete(`/ai/sessions/${session_id}`).then((r) => r.data),
+};
+
 

@@ -7,8 +7,6 @@ import { AuthAPI } from '../lib/api';
 vi.mock('../lib/api', () => ({
   AuthAPI: {
     register: vi.fn(),
-    sendOTP: vi.fn(),
-    verifyOTP: vi.fn(),
     setPin: vi.fn(),
   },
 }));

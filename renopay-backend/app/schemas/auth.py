@@ -17,17 +17,6 @@ class RegisterRequest(BaseModel):
         return v
 
 
-class SendOTPRequest(BaseModel):
-    phone_number: str
-    purpose: str = "registration"  # registration | login | reset_pin
-
-
-class VerifyOTPRequest(BaseModel):
-    phone_number: str
-    otp: str = Field(min_length=6, max_length=6)
-    purpose: str = "registration"
-
-
 class SetPinRequest(BaseModel):
     pin: str = Field(min_length=6, max_length=6)
     confirm_pin: str = Field(min_length=6, max_length=6)

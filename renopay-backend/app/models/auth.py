@@ -22,16 +22,3 @@ class RefreshToken(Base, UUIDPKMixin, TimestampMixin):
     expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     revoked: Mapped[bool] = mapped_column(Boolean, default=False)
 
-
-class OTPChallenge(Base, UUIDPKMixin, TimestampMixin):
-    """Short-lived OTP records. In production, prefer Redis (TTL-native)
-    over a table — included here so the flow works even without Redis
-    configured yet."""
-    __tablename__ = "otp_challenges"
-
-    phone_number: Mapped[str] = mapped_column(String(15), index=True)
-    otp_hash: Mapped[str] = mapped_column(String(255))
-    purpose: Mapped[str] = mapped_column(String(30))  # registration | login | reset_pin
-    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    consumed: Mapped[bool] = mapped_column(Boolean, default=False)
-    attempts: Mapped[int] = mapped_column(Integer, default=0)

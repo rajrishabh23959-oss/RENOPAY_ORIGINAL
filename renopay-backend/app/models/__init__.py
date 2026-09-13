@@ -14,9 +14,10 @@ from app.models.reward import ScratchCard, RewardType          # noqa: F401
 from app.models.savings import (                                # noqa: F401
     SavingsGoal, SharedVault, SharedVaultMember, SharedVaultLog, SharedVaultWithdrawalRequest,
 )
-from app.models.auth import RefreshToken, OTPChallenge          # noqa: F401
+from app.models.auth import RefreshToken                         # noqa: F401
 from app.models.gold import UserGoldPot, GoldLedger              # noqa: F401
 from app.models.accounting import (                             # noqa: F401
     ChartOfAccount, JournalEntry, JournalLine, LedgerAuditLog,
     Invoice, InvoiceStatus
 )
+from app.models.ai import AIConfig, AIChatSession, AIChatMessage  # noqa: F401

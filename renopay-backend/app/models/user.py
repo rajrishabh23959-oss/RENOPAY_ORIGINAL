@@ -39,6 +39,7 @@ class User(Base, UUIDPKMixin, TimestampMixin):
 
     avatar_url: Mapped[str | None] = mapped_column(String(512), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    language_code: Mapped[str] = mapped_column(String(10), default="en", nullable=False)
 
     # Last known location — used by SentinAI geo-velocity check
     last_lat: Mapped[float | None] = mapped_column(nullable=True)

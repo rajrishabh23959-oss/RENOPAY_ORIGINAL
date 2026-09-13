@@ -391,8 +391,8 @@ export function ExpensesScreen({ onBack }) {
                   📄
                 </div>
                 <div>
-                  <p className="text-xs font-bold text-textLight">Official 2-Page PDF Statement</p>
-                  <p className="text-[10px] text-muted">Page 1 graphs & Page 2 itemized transactions</p>
+                  <p className="text-xs font-bold text-textLight">EXPENSE REPORT</p>
+                  <p className="text-[10px] text-muted">FULL MONTH REPORT</p>
                 </div>
               </div>
               <button

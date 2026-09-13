@@ -43,6 +43,7 @@ class ProfileOut(BaseModel):
     account: AccountOut
     has_upi_pin: bool
     is_trusted_device: bool = False
+    language_code: str = "en"
 
 
 class ToggleRoundUpRequest(BaseModel):
@@ -51,4 +52,8 @@ class ToggleRoundUpRequest(BaseModel):
 
 class UpdateBudgetRequest(BaseModel):
     monthly_budget: float = Field(gt=0)
+
+
+class UserPreferencesUpdate(BaseModel):
+    language_code: str = Field(..., pattern="^(en|hi|ta|te|ml)$", description="Supported: en, hi, ta, te, ml")
 

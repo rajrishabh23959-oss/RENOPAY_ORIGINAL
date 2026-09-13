@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { Nav } from "./components/Nav";
+import { AIAssistant } from "./components/AIAssistant";
 
 import { LoginScreen } from "./screens/LoginScreen";
 import { HomeScreen } from "./screens/HomeScreen";
@@ -73,6 +74,7 @@ function AppShell() {
       {screen === "gold"          && <DigitalGoldScreen onBack={() => go("home")} />}
       {screen === "ledger"        && <LedgerReportScreen onBack={() => go("home")} />}
       {screen === "accounting"    && <AccountingScreen onBack={() => go("home")} />}
+      <AIAssistant currentScreen={screen} onNavigate={go} />
       <Nav active={tab} onNavigate={go} />
     </div>
   );

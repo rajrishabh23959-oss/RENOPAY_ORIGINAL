@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.routers import auth, accounts, payments, requests as requests_router
 from app.routers import mandates, rewards, goals, vaults, lite, analytics, ws
-from app.routers import gold, voice, ledger, accounting
+from app.routers import gold, voice, ledger, accounting, ai
 from app.services.scheduler import start_scheduler
 
 
@@ -27,7 +27,11 @@ async def lifespan(app: FastAPI):
             try:
                 await conn.execute(text("ALTER TABLE scratch_cards ADD COLUMN IF NOT EXISTS is_withdrawn BOOLEAN DEFAULT FALSE;"))
             except Exception as e:
-                logger.warning(f"Could not alter scratch_cards table: {e}")
+                print(f"Could not alter scratch_cards table: {e}")
+            try:
+                await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS language_code VARCHAR(10) DEFAULT 'en';"))
+            except Exception as e:
+                print(f"Could not alter users table for language_code: {e}")
 
         async with AsyncSessionLocal() as session:
             res = await session.execute(select(User).where(User.phone_number == "9876543210"))
@@ -145,6 +149,18 @@ app.include_router(gold.router, prefix="/gold", tags=["digital-gold"])
 app.include_router(voice.router, prefix="/payments", tags=["voice-upi"])
 app.include_router(ledger.router, prefix="/analytics", tags=["reports"])
 app.include_router(accounting.router, prefix="/accounting", tags=["accounting"])
+app.include_router(ai.router, prefix="/ai", tags=["ai-assistant"])
+
+
+@app.patch("/user/preferences", tags=["user-preferences"])
+async def user_preferences_alias(
+    payload: accounts.UserPreferencesUpdate,
+    user=accounts.Depends(accounts.get_current_user),
+    account=accounts.Depends(accounts.get_current_account),
+    db=accounts.Depends(accounts.get_db),
+):
+    return await accounts.update_preferences(payload, user, account, db)
+
 
 
 @app.get("/health")
