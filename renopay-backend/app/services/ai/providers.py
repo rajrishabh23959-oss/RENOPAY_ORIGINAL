@@ -188,26 +188,53 @@ class GeminiProvider(BaseLLMProvider):
 # ---------------------------------------------------------------------------
 # 5. Fallback Local Provider (Guarantees zero crashes if no key in .env)
 # ---------------------------------------------------------------------------
+import re
+
 class FallbackLocalProvider(BaseLLMProvider):
     """
     Used when platform GROQ_API_KEY is not set yet in .env.
     Answers directly using extracted RenoPay knowledge base guide without crashing.
+    Politely declines non-financial queries (e.g., photosynthesis, science, entertainment).
     """
     def __init__(self, message: str | None = None):
         self.message = message
 
     async def generate(self, messages: list[dict], system_prompt: str, temperature: float = 0.7) -> str:
         last_msg = messages[-1]["content"] if messages else ""
+        lower_msg = last_msg.lower()
+
+        # Non-financial off-topic detection
+        non_financial_triggers = [
+            "photosynthesis", "chlorophyll", "biology", "botany", "anatomy",
+            "solar system", "planet", "galaxy", "physics", "chemistry",
+            "movie", "cinema", "actor", "actress", "cricket", "football",
+            "recipe", "cooking", "poem", "fiction story"
+        ]
+
+        if any(trigger in lower_msg for trigger in non_financial_triggers):
+            return (
+                "🔒 **Saathi Financial Assistant**\n\n"
+                "I am **Saathi**, RenoPay's specialized assistant for **finance, banking, accounting, stock markets, and global payments**.\n\n"
+                "I am only able to answer questions related to:\n"
+                "- **RenoPay App**: Features, Split Bill, Shared Vaults, UPI Lite, Digital Gold, Accounting\n"
+                "- **UPI & Payments**: UPI, BharatQR, global instant payments (Pix, FedNow, PayNow)\n"
+                "- **Accounting & Bookkeeping**: Double-entry, trial balance, balance sheets, P&L, GST\n"
+                "- **Stock Market & Securities**: Equities, NIFTY/SENSEX, mutual funds, SIPs, IPOs, F&O\n"
+                "- **Money Markets & Banking**: T-bills, commercial paper, interest rates, loans, deposits\n\n"
+                "I cannot answer questions on non-financial topics (like science, entertainment, or general trivia). Please ask me a question related to finance, payments, or RenoPay!"
+            )
+
         return (
-            f"⚡ **Saathi Guide**\n\n"
+            f"⚡ **Saathi Financial Guide**\n\n"
             f"I have received your question: *\"{last_msg}\"*\n\n"
-            f"### RenoPay Quick Guide:\n"
+            f"### RenoPay & Finance Quick Guide:\n"
             f"- **Split Bill**: Go to Split Screen to divide bills and send instant UPI requests to friends.\n"
             f"- **Shared Vaults**: Save jointly with friends or family with multi-signature withdrawal approvals.\n"
             f"- **UPI Lite**: 1-click pinless payments under ₹500 from your on-device wallet.\n"
             f"- **Digital Gold**: Auto round-up your daily payments to accumulate 24K pure gold!\n"
-            f"- **Double-Entry Accounting**: Real-time journals, trial balance, and automated GST reports.\n\n"
-            f"*(Note: Ensure `GROQ_API_KEY=gsk_...` is set in backend `.env` to enable live Groq model inference)*"
+            f"- **Double-Entry Accounting**: Real-time journals, trial balance, and automated GST reports.\n"
+            f"- **Stock & Money Markets**: Equities, mutual funds, SIPs, T-bills, and commercial paper guidance.\n\n"
+            f"*(Note: Set `GROQ_API_KEY=gsk_...` in backend `.env` to enable full live Groq model conversational inference)*"
         )
 
     async def test_connection(self) -> bool:

@@ -177,15 +177,15 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       const userFirstName = profile?.full_name?.split(" ")[0] || "there";
-      let greeting = `Hello ${userFirstName}! I'm **Saathi**, your personal financial companion on RenoPay. How can I help you today?`;
+      let greeting = `Hello ${userFirstName}! I'm **Saathi**, your personal assistant for RenoPay, UPI, Accounting & Stock Markets. How can I help you today?`;
       if (currentLang === "hi") {
-        greeting = `नमस्ते ${userFirstName}! मैं **Saathi** हूँ, आपका RenoPay वित्तीय साथी। Split Bill, Shared Vaults, UPI Lite, Digital Gold या RenoPay के किसी भी फीचर के बारे में आप मुझसे पूछ सकते हैं!`;
+        greeting = `नमस्ते ${userFirstName}! मैं **Saathi** हूँ, आपका RenoPay साथी। RenoPay, UPI, Accounting, Stock Market या Banking के बारे में आप मुझसे पूछ सकते हैं!`;
       } else if (currentLang === "ta") {
-        greeting = `வணக்கம் ${userFirstName}! நான் **Saathi**, உங்கள் RenoPay நிதி உதவியாளர். உங்களுக்கு நான் எவ்வாறு உதவ முடியும்?`;
+        greeting = `வணக்கம் ${userFirstName}! நான் **Saathi**, உங்கள் RenoPay, UPI, கணக்கியல் மற்றும் பங்குச் சந்தை உதவியாளர். உங்களுக்கு நான் எவ்வாறு உதவ முடியும்?`;
       } else if (currentLang === "te") {
-        greeting = `నమస్కారం ${userFirstName}! నేను **Saathi**, మీ RenoPay ఆర్థిక సహాయకుడిని. మీకు నేను ఎలా సహాయపడగలను?`;
+        greeting = `నమస్కారం ${userFirstName}! నేను **Saathi**, మీ RenoPay, UPI, అకౌంటింగ్ మరియు స్టాక్ మార్కెట్ సహాయకుడిని. మీకు నేను ఎలా సహాయపడగలను?`;
       } else if (currentLang === "ml") {
-        greeting = `നമസ്കാരം ${userFirstName}! ഞാൻ **Saathi**, നിങ്ങളുടെ RenoPay സാമ്പത്തിക സഹായി. ഞാൻ നിങ്ങളെ എങ്ങനെ സഹായിക്കണം?`;
+        greeting = `നമസ്കാരം ${userFirstName}! ഞാൻ **Saathi**, നിങ്ങളുടെ RenoPay, UPI, അക്കൗണ്ടിംഗ്, സ്റ്റോക്ക് മാർക്കറ്റ് സഹായി. ഞാൻ നിങ്ങളെ എങ്ങനെ സഹായിക്കണം?`;
       }
 
       setMessages([
@@ -481,18 +481,16 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
                 handleDragStart(e.touches[0].clientX, e.touches[0].clientY, rect);
               }
             }}
-            className={`group relative flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#151210] shadow-[0_10px_35px_rgba(0,0,0,0.85),0_0_25px_rgba(255,106,26,0.55)] border-2 transition-all duration-150 cursor-grab active:cursor-grabbing touch-none select-none ${
-              speechStatus !== "idle"
+            className={`group relative flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-[#151210] shadow-[0_10px_35px_rgba(0,0,0,0.85),0_0_25px_rgba(255,106,26,0.55)] border-2 transition-all duration-150 cursor-grab active:cursor-grabbing touch-none select-none ${speechStatus !== "idle"
                 ? "border-teal ring-4 ring-teal/30 scale-105 shadow-[0_0_30px_rgba(20,184,166,0.5)]"
                 : "border-accent hover:border-[#FF5500] hover:scale-105 active:scale-95"
-            }`}
+              }`}
             title="Drag to move • Tap to open Saathi"
           >
             {/* Ambient radial pulse glow */}
             <span
-              className={`absolute inset-0 rounded-full blur-md -z-10 transition-all animate-pulse ${
-                speechStatus !== "idle" ? "bg-teal/50" : "bg-accent/40 group-hover:blur-lg group-hover:bg-accent/60"
-              }`}
+              className={`absolute inset-0 rounded-full blur-md -z-10 transition-all animate-pulse ${speechStatus !== "idle" ? "bg-teal/50" : "bg-accent/40 group-hover:blur-lg group-hover:bg-accent/60"
+                }`}
             />
 
             {/* Circular Saathi Logo */}
@@ -633,7 +631,7 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
                     if (profile) {
                       AccountAPI.updatePreferences({ language_code: newLang })
                         .then(refreshProfile)
-                        .catch(() => {});
+                        .catch(() => { });
                     }
                   }}
                   className="bg-[#1D1815] border border-accent/40 text-[11px] text-accent font-bold rounded-xl px-2 py-1.5 outline-none cursor-pointer max-w-[120px] sm:max-w-none truncate hover:border-accent transition-colors"
@@ -694,13 +692,12 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
 
                       {/* Message Bubble */}
                       <div
-                        className={`rounded-2xl px-4 py-3 text-xs sm:text-sm leading-relaxed ${
-                          isUser
+                        className={`rounded-2xl px-4 py-3 text-xs sm:text-sm leading-relaxed ${isUser
                             ? "bg-gradient-to-r from-accent to-[#D43D0A] text-white rounded-br-none shadow-md font-medium"
                             : m.isError
-                            ? "bg-danger/15 text-danger border border-danger/30 rounded-bl-none"
-                            : "bg-[#1B1614] text-zinc-100 border border-white/10 rounded-bl-none shadow-sm"
-                        }`}
+                              ? "bg-danger/15 text-danger border border-danger/30 rounded-bl-none"
+                              : "bg-[#1B1614] text-zinc-100 border border-white/10 rounded-bl-none shadow-sm"
+                          }`}
                       >
                         <div className="whitespace-pre-wrap">{m.content}</div>
 
@@ -835,11 +832,10 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
               <button
                 type="button"
                 onClick={toggleSpeechRecognition}
-                className={`w-11 h-11 rounded-2xl flex items-center justify-center text-lg transition-all cursor-pointer flex-shrink-0 ${
-                  isListening
+                className={`w-11 h-11 rounded-2xl flex items-center justify-center text-lg transition-all cursor-pointer flex-shrink-0 ${isListening
                     ? "bg-[#FF3D60] text-white animate-pulse shadow-lg ring-2 ring-[#FF3D60]/50"
                     : "bg-[#1F1916] border border-white/10 text-muted hover:text-accent hover:border-accent/40"
-                }`}
+                  }`}
                 title={isListening ? "Listening..." : "Tap to Speak (Voice)"}
               >
                 🎙️
@@ -853,8 +849,8 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
                 placeholder={
                   currentLang === "hi"
-                    ? "Saathi se kuch bhi poochein..."
-                    : `Ask Saathi in ${currentLangObj.native}...`
+                    ? "RenoPay, UPI, Accounting ya Stock Market ke baare me poochein..."
+                    : `Ask about RenoPay, UPI, Accounting or Stocks in ${currentLangObj.native}...`
                 }
                 className="flex-1 bg-[#120F0D] border border-white/15 rounded-2xl py-2.5 px-4 text-xs sm:text-sm text-white placeholder:text-muted/60 outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
                 disabled={busy}

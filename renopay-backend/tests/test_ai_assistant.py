@@ -35,10 +35,16 @@ def test_system_prompt_builder():
     assert "Hindi" in prompt_hi
     assert "Rishab" in prompt_hi
     assert "Split Bill" in prompt_hi
+    assert "Accounting & Bookkeeping" in prompt_hi
+    assert "Stock Market & Capital Markets" in prompt_hi
+    assert "Money Markets & Fixed Income" in prompt_hi
+    assert "photosynthesis" in prompt_hi  # explicitly mentioned in refusal guardrail
 
     prompt_ta = build_system_prompt(language="ta", current_screen="gold", user_name="Alex")
     assert "Tamil" in prompt_ta
     assert "Digital Gold" in prompt_ta
+    assert "STRICT OUT-OF-SCOPE REFUSAL POLICY" in prompt_ta
+    assert "Stock Market" in prompt_ta
 
 
 def test_provider_instantiation():
@@ -57,11 +63,22 @@ def test_provider_instantiation():
 
 
 @pytest.mark.asyncio
-async def test_fallback_local_provider():
+async def test_fallback_local_provider_financial():
     fallback = FallbackLocalProvider()
-    response = await fallback.generate([{"role": "user", "content": "Hello"}], "System prompt")
-    assert "Saathi Guide" in response
-    assert "GROQ_API_KEY" in response or "RenoPay Quick Help" in response
+    response = await fallback.generate([{"role": "user", "content": "How do I split a bill?"}], "System prompt")
+    assert "Saathi" in response
+    assert "Split Bill" in response
+    assert "Accounting" in response
+    assert "Stock & Money Markets" in response
+
+
+@pytest.mark.asyncio
+async def test_fallback_local_provider_non_financial_refusal():
+    fallback = FallbackLocalProvider()
+    response = await fallback.generate([{"role": "user", "content": "Tell me what is photosynthesis?"}], "System prompt")
+    assert "Saathi Financial Assistant" in response
+    assert "cannot answer questions on non-financial topics" in response
+    assert "Stock Market" in response
 
 
 def test_rate_limiter():
