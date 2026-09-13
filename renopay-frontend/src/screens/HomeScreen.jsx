@@ -13,14 +13,13 @@ const QUICK_ACTIONS_1 = [
   { icon: "🗺️", l: "Goals", s: "savings" },
 ];
 const QUICK_ACTIONS_2 = [
-  { icon: "📷", l: "Scan", s: "scan" }, { icon: "➕", l: "Add ₹", s: "addmoney" },
-  { icon: "📊", l: "Tracker", s: "expenses" }, { icon: "🎰", l: "Rewards", s: "rewards" },
-  { icon: "📋", l: "History", s: "history" },
+  { icon: "➕", l: "Add ₹", s: "addmoney" }, { icon: "📊", l: "Tracker", s: "expenses" },
+  { icon: "🎰", l: "Rewards", s: "rewards" }, { icon: "📋", l: "History", s: "history" },
+  { icon: "📲", l: "UPI Lite", s: "upilite" },
 ];
 const QUICK_ACTIONS_3 = [
   { icon: "🎙️", l: "Voice", s: "voice" }, { icon: "🪙", l: "Gold", s: "gold" },
-  { icon: "📄", l: "Reports", s: "ledger" }, { icon: "📲", l: "UPI Lite", s: "upilite" },
-  { icon: "🏖️", l: "Vaults", s: "vaults" },
+  { icon: "📄", l: "Reports", s: "ledger" }, { icon: "🏖️", l: "Vaults", s: "vaults" },
 ];
 
 export function HomeScreen({ onNavigate }) {
@@ -237,7 +236,7 @@ export function HomeScreen({ onNavigate }) {
             </button>
           ))}
         </div>
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-4 gap-2">
           {QUICK_ACTIONS_3.map((a) => (
             <button key={a.s} className="btn bg-card border border-line rounded-[20px] py-3 px-1 flex flex-col items-center gap-[5px] hover:border-accent/30 transition-colors" onClick={() => onNavigate(a.s)}>
               <span className="text-xl">{a.icon}</span><span className="text-[9px] text-muted font-semibold">{a.l}</span>

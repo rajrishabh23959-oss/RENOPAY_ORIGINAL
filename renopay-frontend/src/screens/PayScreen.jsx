@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import jsQR from "jsqr";
 import { PaymentAPI, AnalyticsAPI } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { getDeviceFingerprint } from "../lib/format";
@@ -7,6 +8,7 @@ import { PINPad } from "../components/PINPad";
 import { NoteSlider } from "../components/NoteSlider";
 import { fmt } from "../lib/format";
 import { PdfPreviewModal } from "../components/PdfPreviewModal";
+import { parseUniversalUpiQr } from "./ScanScreen";
 
 const CATS = [
   { id: "Food", icon: "🍔" }, { id: "Shopping", icon: "🛍️" }, { id: "Transport", icon: "🚗" },
@@ -44,6 +46,106 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
   const [receiptModalOpen, setReceiptModalOpen] = useState(false);
   const [downloadError, setDownloadError] = useState("");
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
+
+  // Camera QR scanner states & refs
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const streamRef = useRef(null);
+  const rafRef = useRef(null);
+  const [cameraStatus, setCameraStatus] = useState("starting"); // starting | active | denied | unsupported
+
+  const stopCamera = () => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+  };
+
+  const handleDetectedQr = async (parsed) => {
+    stopCamera();
+    setErr("");
+    try {
+      const res = await PaymentAPI.resolveVPA(parsed.vpa, parsed.name);
+      const finalName = res?.name || parsed.name || parsed.vpa;
+      const finalApp = res?.app || parsed.app || "UPI";
+
+      setResolvedName(finalName);
+      setPayeeApp(finalApp);
+      setVpa(parsed.vpa);
+      if (parsed.amount) setAmount(String(parsed.amount));
+      if (parsed.note) setDesc(parsed.note);
+      if (parsed.category) setCategory(parsed.category);
+      setStep("amount");
+    } catch {
+      setErr(`Scanned "${parsed.vpa}" but it's not a valid UPI handle`);
+      setVpa(parsed.vpa);
+    }
+  };
+
+  const scanFrame = () => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas || video.readyState !== video.HAVE_ENOUGH_DATA) {
+      rafRef.current = requestAnimationFrame(scanFrame);
+      return;
+    }
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+      inversionAttempts: "dontInvert",
+    });
+
+    if (code?.data) {
+      const parsed = parseUniversalUpiQr(code.data);
+      if (parsed?.vpa) {
+        handleDetectedQr(parsed);
+        return;
+      }
+    }
+    rafRef.current = requestAnimationFrame(scanFrame);
+  };
+
+  useEffect(() => {
+    if (step !== "vpa") {
+      stopCamera();
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setCameraStatus("unsupported");
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+        });
+        if (cancelled) {
+          stream.getTracks().forEach((t) => t.stop());
+          return;
+        }
+        streamRef.current = stream;
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+          await videoRef.current.play();
+        }
+        setCameraStatus("active");
+        rafRef.current = requestAnimationFrame(scanFrame);
+      } catch (e) {
+        console.warn("Camera start error:", e);
+        setCameraStatus("denied");
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      stopCamera();
+    };
+  }, [step]);
+
 
   useEffect(() => {
     if (prefillVpa) resolveVpa(prefillVpa, prefillName);
@@ -175,20 +277,90 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
 
       <div className="px-[22px]">
         {step === "vpa" && (
-          <form onSubmit={handleResolveSubmit} className="animate-fadeUp">
-            <Card className="p-5 mb-4">
-              <p className="text-muted text-[11px] tracking-wide mb-2 uppercase">Pay to (UPI ID)</p>
-              <input placeholder="e.g. merchant@paytm or user@renopay" value={vpa} onChange={(e) => setVpa(e.target.value)} />
-              {err && <p className="text-danger text-xs mt-2">{err}</p>}
-              <div className="flex items-center gap-2 mt-2 text-xs text-muted">
-                <span>Try:</span>
-                <button type="button" className="text-accent hover:underline cursor-pointer" onClick={() => { setVpa("praveen@renopay"); resolveVpa("praveen@renopay"); }}>praveen@renopay</button>
-                <span>or</span>
-                <button type="button" className="text-accent hover:underline cursor-pointer" onClick={() => { setVpa("groceries@paytm"); resolveVpa("groceries@paytm", "City Supermarket"); }}>groceries@paytm</button>
+          <div className="animate-fadeUp">
+            {/* Live Camera QR Scanner */}
+            <div className="mb-4 relative rounded-[22px] overflow-hidden border border-line bg-[#0E0C0A] flex flex-col items-center justify-center min-h-[250px] h-[44vh] max-h-[320px] shadow-2xl">
+              <video
+                ref={videoRef}
+                playsInline
+                muted
+                className="w-full h-full object-cover absolute inset-0"
+              />
+              <canvas ref={canvasRef} className="hidden" />
+
+              {/* Viewfinder Overlay with Reticle & Laser */}
+              <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
+                {/* Scanner Target Box */}
+                <div className="w-48 h-48 sm:w-52 sm:h-52 relative border-2 border-dashed border-accent/70 rounded-2xl flex items-center justify-center shadow-[0_0_25px_rgba(255,106,26,0.35)]">
+                  {/* Corner accents */}
+                  <div className="absolute -top-1 -left-1 w-6 h-6 border-t-[3.5px] border-l-[3.5px] border-accent rounded-tl-lg" />
+                  <div className="absolute -top-1 -right-1 w-6 h-6 border-t-[3.5px] border-r-[3.5px] border-accent rounded-tr-lg" />
+                  <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-[3.5px] border-l-[3.5px] border-accent rounded-bl-lg" />
+                  <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-[3.5px] border-r-[3.5px] border-accent rounded-br-lg" />
+
+                  {/* Animated laser scan line */}
+                  <div
+                    className="w-full h-[2.5px] bg-gradient-to-r from-transparent via-[#FF6A1A] to-transparent absolute top-0"
+                    style={{ animation: "scanLaserLine 2.2s ease-in-out infinite" }}
+                  />
+                </div>
+
+                <div className="mt-3.5 px-3.5 py-1.5 rounded-full bg-black/75 backdrop-blur-md border border-white/10 flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-accent animate-ping" />
+                  <p className="text-[11px] font-bold text-white tracking-wide">
+                    {cameraStatus === "active"
+                      ? "Scan any UPI QR Code"
+                      : cameraStatus === "denied"
+                      ? "Camera permission denied"
+                      : "Opening Camera Scanner…"}
+                  </p>
+                </div>
               </div>
-            </Card>
-            <Btn type="submit">Find & Pay →</Btn>
-          </form>
+
+              {cameraStatus === "denied" && (
+                <div className="relative z-10 text-center p-6 bg-black/85 rounded-2xl max-w-xs border border-line">
+                  <span className="text-3xl">📷</span>
+                  <p className="text-xs font-bold text-white mt-2">Camera permission denied</p>
+                  <p className="text-[11px] text-muted mt-1">Please allow camera in browser settings or enter UPI ID below.</p>
+                </div>
+              )}
+              {cameraStatus === "unsupported" && (
+                <div className="relative z-10 text-center p-6 bg-black/85 rounded-2xl max-w-xs border border-line">
+                  <span className="text-3xl">📷</span>
+                  <p className="text-xs font-bold text-white mt-2">Camera scanner unavailable</p>
+                  <p className="text-[11px] text-muted mt-1">Please enter UPI ID below to pay.</p>
+                </div>
+              )}
+            </div>
+
+            <style>{`
+              @keyframes scanLaserLine {
+                0% { top: 4%; opacity: 0.7; }
+                50% { top: 94%; opacity: 1; }
+                100% { top: 4%; opacity: 0.7; }
+              }
+            `}</style>
+
+            {/* Manual UPI ID Card */}
+            <form onSubmit={handleResolveSubmit}>
+              <Card className="p-4 sm:p-5 mb-4 border-accent/[.2]">
+                <p className="text-muted text-[11px] tracking-wide mb-2 uppercase">Pay to (UPI ID)</p>
+                <input
+                  placeholder="e.g. merchant@paytm or user@renopay"
+                  value={vpa}
+                  onChange={(e) => setVpa(e.target.value)}
+                />
+                {err && <p className="text-danger text-xs mt-2">{err}</p>}
+                <div className="flex items-center gap-2 mt-2 text-xs text-muted flex-wrap">
+                  <span>Try:</span>
+                  <button type="button" className="text-accent hover:underline cursor-pointer" onClick={() => { setVpa("praveen@renopay"); resolveVpa("praveen@renopay"); }}>praveen@renopay</button>
+                  <span>or</span>
+                  <button type="button" className="text-accent hover:underline cursor-pointer" onClick={() => { setVpa("groceries@paytm"); resolveVpa("groceries@paytm", "City Supermarket"); }}>groceries@paytm</button>
+                </div>
+              </Card>
+              <Btn type="submit">Find & Pay →</Btn>
+            </form>
+          </div>
         )}
 
         {step === "amount" && (

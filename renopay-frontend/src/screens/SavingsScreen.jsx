@@ -7,7 +7,7 @@ import { fmt } from "../lib/format";
 /* ── Confetti Celebration ─────────────────────────────────────────────────── */
 function MilestoneCelebration({ milestone, onDone }) {
   const PIECES = 24;
-  const colors = ["#FF6A1A","#22C55E","#FFA352","#B8420E","#F5F3F0","#FFA000"];
+  const colors = ["#FF6A1A", "#22C55E", "#FFA352", "#B8420E", "#F5F3F0", "#FFA000"];
   useEffect(() => {
     const t = setTimeout(onDone, 2800);
     return () => clearTimeout(t);
@@ -41,12 +41,12 @@ function MilestoneCelebration({ milestone, onDone }) {
 
 /* ── SVG Treasure Map ────────────────────────────────────────────────────── */
 const MAP_WAYPOINTS = [
-  { x: 30,  y: 130, item: "🌿", label: "Start" },
-  { x: 100, y: 90,  item: "🏕️", label: "Camp" },
+  { x: 30, y: 130, item: "🌿", label: "Start" },
+  { x: 100, y: 90, item: "🏕️", label: "Camp" },
   { x: 175, y: 110, item: "🌊", label: "River" },
-  { x: 240, y: 75,  item: "🌋", label: "Volcano" },
-  { x: 305, y: 95,  item: "🏔️", label: "Peak" },
-  { x: 365, y: 65,  item: "🌈", label: "Rainbow" },
+  { x: 240, y: 75, item: "🌋", label: "Volcano" },
+  { x: 305, y: 95, item: "🏔️", label: "Peak" },
+  { x: 365, y: 65, item: "🌈", label: "Rainbow" },
   { x: 320, y: 130, item: "⭐", label: "Star" },
   { x: 380, y: 150, item: "💎", label: "Gem" },
   { x: 410, y: 110, item: "💰", label: "Treasure!" },
@@ -247,7 +247,7 @@ function TreasureMap({ goal, onAddSavings, onWithdrawSavings }) {
         </div>
       )}
 
-      {/* Confirmation Step 2: You will not be able to purchase ___ */}
+      {/* Confirmation Step 2: You will not be able to achieve your goal ___ */}
       {withdrawStep === "confirm2" && (
         <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[999] p-4">
           <Card className="p-6 max-w-[340px] w-full border-warn/30 text-center animate-fade-in shadow-2xl">
@@ -255,7 +255,7 @@ function TreasureMap({ goal, onAddSavings, onWithdrawSavings }) {
               {goal.icon || "🎯"}
             </div>
             <h3 className="text-base font-extrabold text-[#FF3D60] mb-2 leading-tight">
-              You will not be able to purchase {goal.name}!
+              You will not be able to achieve your goal {goal.name}!
             </h3>
             <p className="text-muted text-xs mb-5">
               Withdrawing now will reset your savings progress for <span className="text-textLight font-semibold">{goal.name}</span> and return the funds to your main account.
@@ -422,11 +422,10 @@ function TreasureMap({ goal, onAddSavings, onWithdrawSavings }) {
         {goal.saved > 0 && !adding && (
           <button
             type="button"
-            className={`btn w-full mt-2.5 py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-              pct >= 100
+            className={`btn w-full mt-2.5 py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${pct >= 100
                 ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg hover:brightness-110 active:scale-98"
                 : "bg-surf border border-line text-muted hover:text-white active:scale-98"
-            }`}
+              }`}
             onClick={() => { setWithdrawStep("confirm1"); setWithdrawErr(""); }}
           >
             <span>💸</span>
@@ -448,7 +447,7 @@ export function SavingsScreen({ onBack, onNavigate }) {
 
   const load = useCallback(() =>
     GoalAPI.list().then((res) => setGoals(res.data || res)).catch(console.error),
-  []);
+    []);
   useEffect(() => { load(); }, [load]);
 
   const addGoal = async () => {
@@ -470,7 +469,7 @@ export function SavingsScreen({ onBack, onNavigate }) {
     await load();
   };
 
-  const ICONS2 = ["📱","✈️","🚗","🏠","💻","📷","🎸","🎓","🌴","🎯"];
+  const ICONS2 = ["📱", "✈️", "🚗", "🏠", "💻", "📷", "🎸", "🎓", "🌴", "🎯"];
 
   return (
     <div className="min-h-screen bg-bg pb-[100px]">
