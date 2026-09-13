@@ -3,42 +3,43 @@ import { AIAPI, AccountAPI } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 
 const LANGUAGES = [
-  { code: "en", name: "English (English)", flag: "🌐", locale: "en-IN" },
-  { code: "hi", name: "Hindi (हिंदी)", flag: "🇮🇳", locale: "hi-IN" },
-  { code: "ta", name: "Tamil (தமிழ்)", flag: "🇮🇳", locale: "ta-IN" },
-  { code: "te", name: "Telugu (తెలుగు)", flag: "🇮🇳", locale: "te-IN" },
-  { code: "ml", name: "Malayalam (മലയാളം)", flag: "🇮🇳", locale: "ml-IN" },
+  { code: "en", name: "English", native: "English", flag: "🌐", locale: "en-IN" },
+  { code: "hi", name: "Hindi", native: "हिंदी", flag: "🇮🇳", locale: "hi-IN" },
+  { code: "ta", name: "Tamil", native: "தமிழ்", flag: "🇮🇳", locale: "ta-IN" },
+  { code: "te", name: "Telugu", native: "తెలుగు", flag: "🇮🇳", locale: "te-IN" },
+  { code: "ml", name: "Malayalam", native: "മലയാളം", flag: "🇮🇳", locale: "ml-IN" },
 ];
 
 const SCREEN_PROMPTS = {
   split: [
     "How do I split a bill with friends?",
-    "Can I set custom amounts per person?",
+    "Can I set custom amounts per person in Split Bill?",
   ],
   vaults: [
-    "How do shared vaults work?",
-    "How are vault withdrawals approved?",
+    "How do shared vaults work in RenoPay?",
+    "How are vault withdrawals approved with multi-sig?",
   ],
   accounting: [
-    "Explain double-entry ledger in RenoPay",
-    "How do I generate a GST report?",
-    "How to run automated payroll?",
+    "Explain double-entry ledger & chart of accounts",
+    "How do I generate and download GST reports?",
+    "How does automated payroll calculation work?",
   ],
   gold: [
     "How does 24K digital gold round-up work?",
-    "How can I withdraw my gold to bank?",
+    "How can I withdraw my gold balance to bank?",
   ],
   upilite: [
     "What are UPI Lite limits and benefits?",
-    "How to make pinless 1-click payments?",
+    "How to make pinless 1-click payments under ₹500?",
   ],
   pay: [
     "How to send money to a UPI ID?",
-    "What is high-value privacy code?",
+    "What is the high-value privacy code?",
   ],
   home: [
-    "Give me an overview of RenoPay features",
+    "Give me an overview of top RenoPay features",
     "How does SentinAI fraud detection protect me?",
+    "How to save money with Digital Gold round-up?",
   ],
 };
 
@@ -61,6 +62,7 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
 
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
+  const modalRef = useRef(null);
 
   // Sync language with user profile
   useEffect(() => {
@@ -72,16 +74,16 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
   // Initial welcome greeting when chat opens first time
   useEffect(() => {
     if (isOpen && messages.length === 0) {
-      const langObj = LANGUAGES.find((l) => l.code === currentLang) || LANGUAGES[0];
-      let greeting = `Hello ${profile?.full_name?.split(" ")[0] || "there"}! I'm **RenoAI**, your personal guide. How can I help you today?`;
+      const userFirstName = profile?.full_name?.split(" ")[0] || "there";
+      let greeting = `Hello ${userFirstName}! I'm **Saathi**, your personal financial companion on RenoPay. How can I help you today?`;
       if (currentLang === "hi") {
-        greeting = `नमस्ते ${profile?.full_name?.split(" ")[0] || ""}! मैं **RenoAI** हूँ। RenoPay के किसी भी फीचर (Split Bill, Vaults, Accounting, UPI Lite) के बारे में आप मुझसे पूछ सकते हैं!`;
+        greeting = `नमस्ते ${userFirstName}! मैं **Saathi** हूँ, आपका RenoPay वित्तीय साथी। Split Bill, Shared Vaults, UPI Lite, Digital Gold या RenoPay के किसी भी फीचर के बारे में आप मुझसे पूछ सकते हैं!`;
       } else if (currentLang === "ta") {
-        greeting = `வணக்கம்! நான் **RenoAI**. RenoPay பயன்பாட்டில் உங்களுக்கு எவ்வாறு உதவ முடியும்?`;
+        greeting = `வணக்கம் ${userFirstName}! நான் **Saathi**, உங்கள் RenoPay நிதி உதவியாளர். உங்களுக்கு நான் எவ்வாறு உதவ முடியும்?`;
       } else if (currentLang === "te") {
-        greeting = `నమస్కారం! నేను **RenoAI**. RenoPay ఫీచర్ల గురించి ఏదైనా నన్ను అడగవచ్చు!`;
+        greeting = `నమస్కారం ${userFirstName}! నేను **Saathi**, మీ RenoPay ఆర్థిక సహాయకుడిని. మీకు నేను ఎలా సహాయపడగలను?`;
       } else if (currentLang === "ml") {
-        greeting = `നമസ്കാരം! ഞാൻ **RenoAI**. RenoPay-ൽ ഞാൻ നിങ്ങളെ എങ്ങനെ സഹായിക്കണം?`;
+        greeting = `നമസ്കാരം ${userFirstName}! ഞാൻ **Saathi**, നിങ്ങളുടെ RenoPay സാമ്പത്തിക സഹായി. ഞാൻ നിങ്ങളെ എങ്ങനെ സഹായിക്കണം?`;
       }
 
       setMessages([
@@ -95,10 +97,29 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
     }
   }, [isOpen, currentLang, profile?.full_name]);
 
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && isOpen) {
+        handleClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isOpen]);
+
   // Scroll to bottom on new message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [messages, busy]);
+
+  const handleClose = () => {
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    if (recognitionRef.current) recognitionRef.current.stop();
+    setIsListening(false);
+    setSpeakingMessageId(null);
+    setIsOpen(false);
+  };
 
   // Handle Text Submission
   const handleSend = async (overrideText = null) => {
@@ -131,7 +152,6 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
         content: res.response_text,
         provider: res.provider,
         model: res.model,
-        is_byo: res.is_byo,
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
       setMessages((prev) => [...prev, botMsg]);
@@ -139,7 +159,7 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
       const errMsg = {
         id: "err-" + Date.now(),
         role: "assistant",
-        content: `⚠️ ${e?.response?.data?.detail || "Could not connect to AI Assistant. Please check your network or try again."}`,
+        content: `⚠️ ${e?.response?.data?.detail || "Could not connect to Saathi. Please check backend Groq API settings or network."}`,
         isError: true,
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
@@ -149,9 +169,7 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
     }
   };
 
-  // -------------------------------------------------------------------------
-  // Speech-to-Text (STT) via Web Speech API
-  // -------------------------------------------------------------------------
+  // Speech-to-Text (STT)
   const toggleSpeechRecognition = () => {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -172,26 +190,21 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
       recognition.continuous = false;
       recognition.interimResults = false;
 
-      // Select locale based on active language
       const langObj = LANGUAGES.find((l) => l.code === currentLang) || LANGUAGES[0];
       recognition.lang = langObj.locale;
 
       recognition.onstart = () => setIsListening(true);
-
       recognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
         if (transcript) {
           setInput(transcript);
-          // Automatically send transcribed text
           handleSend(transcript);
         }
       };
-
       recognition.onerror = (err) => {
         console.warn("Speech recognition error:", err);
         setIsListening(false);
       };
-
       recognition.onend = () => setIsListening(false);
 
       recognitionRef.current = recognition;
@@ -202,9 +215,7 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
     }
   };
 
-  // -------------------------------------------------------------------------
-  // Text-to-Speech (TTS) via Web Speech API
-  // -------------------------------------------------------------------------
+  // Text-to-Speech (TTS)
   const toggleSpeechSynthesis = (msgId, text) => {
     if (!window.speechSynthesis) return;
 
@@ -214,8 +225,8 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
       return;
     }
 
-    window.speechSynthesis.cancel(); // stop any ongoing audio
-    const cleanText = text.replace(/[*#_`]/g, ""); // strip markdown tokens
+    window.speechSynthesis.cancel();
+    const cleanText = text.replace(/[*#_`]/g, "");
     const utterance = new SpeechSynthesisUtterance(cleanText);
 
     const langObj = LANGUAGES.find((l) => l.code === currentLang) || LANGUAGES[0];
@@ -235,216 +246,289 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
 
   return (
     <>
-      {/* ── 1. Floating Action Bubble (Bottom-Right) ───────────────────── */}
-      <div className="fixed bottom-[74px] right-4 z-[90]">
-        {!isOpen && (
+      {/* ── 1. Floating Saathi Button (Bottom-Right launcher) ────────── */}
+      {!isOpen && (
+        <div className="fixed bottom-[76px] right-4 sm:right-6 z-[90]">
           <button
             type="button"
             onClick={() => setIsOpen(true)}
-            className="btn relative flex items-center justify-center w-14 h-14 rounded-full bg-gradient-to-br from-accent via-[#FF5500] to-[#992200] text-white shadow-2xl border-2 border-accent/60 hover:scale-105 active:scale-95 transition-all cursor-pointer group"
-            title="Open RenoAI Assistant"
+            className="group relative flex items-center gap-2.5 px-4 py-3 rounded-full bg-gradient-to-r from-accent via-[#FF5500] to-[#B8420E] text-white shadow-[0_12px_30px_rgba(255,106,26,0.45)] border border-white/20 hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
+            title="Open Saathi - Your RenoPay Assistant"
           >
-            {/* Glowing radial aura */}
-            <span className="absolute inset-0 rounded-full bg-accent/40 blur-md -z-10 group-hover:blur-lg transition-all animate-pulse" />
+            {/* Ambient pulse glow */}
+            <span className="absolute inset-0 rounded-full bg-accent/50 blur-md -z-10 group-hover:blur-lg transition-all animate-pulse" />
 
-            <span className="text-2xl animate-bounce">🤖</span>
+            {/* Sparkle Avatar */}
+            <div className="w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center text-base border border-white/20">
+              ✨
+            </div>
 
-            {/* Tiny active badge */}
-            <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-teal border-2 border-[#0A0908] flex items-center justify-center text-[9px] font-extrabold text-black">
-              ✓
-            </span>
+            <div className="text-left pr-1">
+              <div className="flex items-center gap-1.5">
+                <span className="font-extrabold text-sm tracking-wide text-white drop-shadow">
+                  Saathi
+                </span>
+                <span className="w-2 h-2 rounded-full bg-teal animate-ping" />
+              </div>
+              <p className="text-[10px] text-white/80 font-medium leading-none">
+                AI Companion
+              </p>
+            </div>
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
-      {/* ── 2. Chat Modal / Drawer ────────────────────────────────────── */}
+      {/* ── 2. Centered Modal Overlay ("BEECH ME KRO") ───────────────── */}
       {isOpen && (
-        <div className="fixed inset-0 sm:inset-auto sm:bottom-20 sm:right-4 sm:w-[410px] sm:h-[580px] bg-[#0F0D0C]/95 backdrop-blur-xl border border-accent/30 rounded-none sm:rounded-3xl shadow-2xl z-[9999] flex flex-col overflow-hidden animate-fade-in">
-          {/* Header Bar */}
-          <div className="px-4 py-3.5 bg-[#171310] border-b border-line flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-accent to-[#B8420E] flex items-center justify-center text-lg shadow-sm border border-accent/40">
-                🤖
-              </div>
-              <div>
-                <div className="flex items-center gap-1.5">
-                  <h3 className="text-sm font-extrabold text-white">RenoAI</h3>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-teal/15 text-teal font-semibold border border-teal/30">
-                    ⚡ Online
-                  </span>
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md transition-all duration-200"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) handleClose();
+          }}
+        >
+          {/* Centered Modal Card */}
+          <div
+            ref={modalRef}
+            className="relative w-full max-w-[480px] h-[660px] max-h-[92vh] flex flex-col bg-[#120F0D] border border-accent/40 rounded-3xl shadow-[0_25px_70px_rgba(0,0,0,0.85),0_0_35px_rgba(255,106,26,0.2)] overflow-hidden ring-1 ring-white/10 animate-fade-in"
+          >
+            {/* Top subtle decorative ambient glow */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-80 h-28 bg-gradient-to-b from-accent/25 to-transparent blur-3xl pointer-events-none -z-0" />
+
+            {/* Header Bar */}
+            <div className="relative z-10 px-4 py-3.5 bg-[#181412]/90 backdrop-blur-md border-b border-line/80 flex items-center justify-between">
+              {/* Saathi Brand & Status */}
+              <div className="flex items-center gap-3">
+                <div className="relative w-10 h-10 rounded-2xl bg-gradient-to-tr from-accent to-[#D43D0A] flex items-center justify-center text-xl shadow-md border border-white/20">
+                  ✨
+                  {/* Online Dot */}
+                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-teal border-2 border-[#181412]" />
                 </div>
-                <p className="text-[10px] text-muted flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-teal animate-pulse" />
-                  <span>Multilingual Smart Guide</span>
-                </p>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-black text-white tracking-wide">
+                      Saathi
+                    </h3>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-teal/15 text-teal font-semibold border border-teal/30">
+                      Online
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted flex items-center gap-1 font-medium">
+                    <span>Your 24/7 RenoPay Assistant</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Controls: Language Selector & Close */}
+              <div className="flex items-center gap-2">
+                {/* Language Select Dropdown */}
+                <div className="relative">
+                  <select
+                    value={currentLang}
+                    onChange={(e) => {
+                      const newLang = e.target.value;
+                      setCurrentLang(newLang);
+                      if (profile) {
+                        AccountAPI.updatePreferences({ language_code: newLang })
+                          .then(refreshProfile)
+                          .catch(() => {});
+                      }
+                    }}
+                    className="bg-[#1D1815] border border-accent/40 text-[11px] text-accent font-bold rounded-xl px-2.5 py-1.5 outline-none cursor-pointer hover:border-accent transition-colors"
+                    title="Change AI Language"
+                  >
+                    {LANGUAGES.map((l) => (
+                      <option key={l.code} value={l.code} className="bg-[#181412] text-white">
+                        {l.flag} {l.native} ({l.name})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Close Button */}
+                <button
+                  type="button"
+                  onClick={handleClose}
+                  className="w-8 h-8 rounded-full bg-white/5 border border-white/10 text-muted hover:text-white hover:bg-white/15 flex items-center justify-center text-sm transition-all cursor-pointer"
+                  title="Close (Esc)"
+                >
+                  ✕
+                </button>
               </div>
             </div>
 
-            {/* Language & Close Controls */}
-            <div className="flex items-center gap-1.5">
-              {/* Quick Language Dropdown */}
-              <select
-                value={currentLang}
-                onChange={(e) => {
-                  setCurrentLang(e.target.value);
-                  if (profile) {
-                    AccountAPI.updatePreferences({ language_code: e.target.value }).then(refreshProfile).catch(() => {});
-                  }
-                }}
-                className="bg-[#120F0D] border border-line text-[11px] text-accent rounded-lg px-2 py-1 outline-none font-bold cursor-pointer"
-                title="Change AI Language"
-              >
-                {LANGUAGES.map((l) => (
-                  <option key={l.code} value={l.code}>
-                    {l.flag} {l.name}
-                  </option>
-                ))}
-              </select>
-
-              {/* Close Button */}
-              <button
-                type="button"
-                onClick={() => {
-                  if (window.speechSynthesis) window.speechSynthesis.cancel();
-                  setIsOpen(false);
-                }}
-                className="p-1.5 rounded-lg text-muted hover:text-white hover:bg-white/5 text-sm transition-colors cursor-pointer"
-              >
-                ✕
-              </button>
+            {/* Smart Screen Context Bar */}
+            <div className="relative z-10 px-4 py-2 bg-accent/[.08] border-b border-accent/20 flex items-center justify-between text-[11px]">
+              <div className="flex items-center gap-1.5 text-muted">
+                <span className="text-accent">📍</span>
+                <span>Active Context:</span>
+                <span className="text-accent font-bold uppercase tracking-wider">
+                  {currentScreen}
+                </span>
+              </div>
+              <span className="text-muted text-[10px] font-medium">
+                Speaks {currentLangObj.native}
+              </span>
             </div>
-          </div>
 
-          {/* Screen Context Banner */}
-          <div className="px-4 py-2 bg-accent/[.07] border-b border-accent/20 flex items-center justify-between text-[11px]">
-            <span className="text-muted flex items-center gap-1">
-              <span>📍</span> Current Screen: <strong className="text-accent uppercase">{currentScreen}</strong>
-            </span>
-            <span className="text-[10px] text-muted font-mono">{currentLangObj.name}</span>
-          </div>
-
-          {/* Chat Messages Body */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3.5 scrollbar-thin">
-            {messages.map((m) => {
-              const isUser = m.role === "user";
-              return (
-                <div
-                  key={m.id}
-                  className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}
-                >
+            {/* Chat Messages Body */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin relative z-10">
+              {messages.map((m) => {
+                const isUser = m.role === "user";
+                return (
                   <div
-                    className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed ${
-                      isUser
-                        ? "bg-accent text-white rounded-br-none shadow-md"
-                        : m.isError
-                        ? "bg-danger/15 text-danger border border-danger/30 rounded-bl-none"
-                        : "bg-[#181412] text-textLight border border-line rounded-bl-none shadow-sm"
-                    }`}
+                    key={m.id}
+                    className={`flex flex-col ${isUser ? "items-end" : "items-start"}`}
                   >
-                    <div className="whitespace-pre-wrap">{m.content}</div>
-
-                    {/* Metadata footer with TTS speaker button */}
-                    {!isUser && !m.isError && (
-                      <div className="mt-2 pt-1.5 border-t border-line/60 flex items-center justify-between text-[10px] text-muted">
-                        <span>{m.time}</span>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => toggleSpeechSynthesis(m.id, m.content)}
-                            className="text-muted hover:text-accent font-semibold transition-colors flex items-center gap-0.5 cursor-pointer"
-                            title="Listen in your language"
-                          >
-                            <span>{speakingMessageId === m.id ? "⏹️ Stop" : "🔊 Listen"}</span>
-                          </button>
+                    <div className="flex items-end gap-2 max-w-[88%]">
+                      {/* Saathi Icon Avatar */}
+                      {!isUser && (
+                        <div className="w-7 h-7 rounded-xl bg-accent/20 border border-accent/30 flex items-center justify-center text-xs text-accent flex-shrink-0 mb-1">
+                          ✨
                         </div>
+                      )}
+
+                      {/* Message Bubble */}
+                      <div
+                        className={`rounded-2xl px-4 py-3 text-xs sm:text-sm leading-relaxed ${
+                          isUser
+                            ? "bg-gradient-to-r from-accent to-[#D43D0A] text-white rounded-br-none shadow-md font-medium"
+                            : m.isError
+                            ? "bg-danger/15 text-danger border border-danger/30 rounded-bl-none"
+                            : "bg-[#1B1614] text-zinc-100 border border-white/10 rounded-bl-none shadow-sm"
+                        }`}
+                      >
+                        <div className="whitespace-pre-wrap">{m.content}</div>
+
+                        {/* Footer with Timestamp & Listen button */}
+                        {!isUser && !m.isError && (
+                          <div className="mt-2.5 pt-2 border-t border-white/[0.08] flex items-center justify-between text-[11px] text-muted">
+                            <span className="text-[10px]">{m.time}</span>
+                            <button
+                              type="button"
+                              onClick={() => toggleSpeechSynthesis(m.id, m.content)}
+                              className="text-muted hover:text-accent font-semibold transition-colors flex items-center gap-1 cursor-pointer bg-white/5 px-2 py-0.5 rounded-md border border-white/5"
+                              title="Listen audio"
+                            >
+                              {speakingMessageId === m.id ? (
+                                <span className="text-accent flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-ping" />
+                                  ⏹️ Stop
+                                </span>
+                              ) : (
+                                <span>🔊 Listen</span>
+                              )}
+                            </button>
+                          </div>
+                        )}
                       </div>
+                    </div>
+                    {isUser && (
+                      <span className="text-[10px] text-muted mt-1 pr-1 font-mono">
+                        {m.time}
+                      </span>
                     )}
                   </div>
-                  {isUser && <span className="text-[9px] text-muted mt-0.5 pr-1">{m.time}</span>}
-                </div>
-              );
-            })}
+                );
+              })}
 
-            {/* Loading Indicator */}
-            {busy && (
-              <div className="flex items-center gap-2 p-3 rounded-2xl bg-[#181412] border border-line w-fit">
-                <div className="w-2 h-2 rounded-full bg-accent animate-ping" />
-                <span className="text-xs text-muted">RenoAI is thinking...</span>
+              {/* Saathi Thinking Animation */}
+              {busy && (
+                <div className="flex items-center gap-2.5 p-3.5 rounded-2xl bg-[#1B1614] border border-white/10 w-fit animate-pulse">
+                  <div className="w-6 h-6 rounded-lg bg-accent/20 flex items-center justify-center text-xs text-accent">
+                    ✨
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-accent animate-bounce" />
+                    <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:0.2s]" />
+                    <span className="w-2 h-2 rounded-full bg-accent animate-bounce [animation-delay:0.4s]" />
+                    <span className="text-xs text-muted font-medium ml-1">
+                      Saathi is thinking...
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Quick Context-Aware Suggestion Chips */}
+            {messages.length <= 4 && (
+              <div className="relative z-10 px-4 py-2.5 bg-[#15110E] border-t border-line/80 flex gap-2 overflow-x-auto scrollbar-none">
+                {currentPrompts.map((prompt, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => handleSend(prompt)}
+                    className="whitespace-nowrap px-3 py-1.5 rounded-full bg-[#1F1916] border border-white/10 text-xs text-muted hover:text-white hover:border-accent/50 hover:bg-accent/15 transition-all cursor-pointer font-medium"
+                  >
+                    💡 {prompt}
+                  </button>
+                ))}
               </div>
             )}
 
-            <div ref={messagesEndRef} />
-          </div>
-
-          {/* Quick Context-Aware Suggestion Chips */}
-          {messages.length <= 4 && (
-            <div className="px-3 py-2 bg-[#120F0D] border-t border-line flex gap-1.5 overflow-x-auto scrollbar-none">
-              {currentPrompts.map((prompt, i) => (
+            {/* Live Listening Wave Banner */}
+            {isListening && (
+              <div className="relative z-10 px-4 py-2.5 bg-[#FF3D60]/15 border-t border-[#FF3D60]/30 flex items-center justify-between text-xs text-[#FF3D60] animate-pulse">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#FF3D60] animate-ping" />
+                  <span>
+                    Listening in <strong>{currentLangObj.native}</strong>... speak now
+                  </span>
+                </div>
                 <button
-                  key={i}
                   type="button"
-                  onClick={() => handleSend(prompt)}
-                  className="whitespace-nowrap px-2.5 py-1 rounded-full bg-card border border-line text-[11px] text-muted hover:text-accent hover:border-accent/40 transition-colors cursor-pointer"
+                  onClick={() => recognitionRef.current?.stop()}
+                  className="font-bold underline cursor-pointer hover:opacity-80"
                 >
-                  💡 {prompt}
+                  Done
                 </button>
-              ))}
-            </div>
-          )}
-
-          {/* Listening Pulsing Wave Banner */}
-          {isListening && (
-            <div className="px-4 py-2 bg-[#FF3D60]/15 border-t border-[#FF3D60]/30 flex items-center justify-between text-xs text-[#FF3D60]">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#FF3D60] animate-ping" />
-                <span>Listening in <strong>{currentLangObj.name}</strong>... speak now</span>
               </div>
+            )}
+
+            {/* Input Footer Bar */}
+            <div className="relative z-10 p-3.5 bg-[#181412] border-t border-line/80 flex items-center gap-2.5">
+              {/* Mic Voice Button */}
               <button
                 type="button"
-                onClick={() => recognitionRef.current?.stop()}
-                className="font-bold underline cursor-pointer"
+                onClick={toggleSpeechRecognition}
+                className={`w-11 h-11 rounded-2xl flex items-center justify-center text-lg transition-all cursor-pointer flex-shrink-0 ${
+                  isListening
+                    ? "bg-[#FF3D60] text-white animate-pulse shadow-lg ring-2 ring-[#FF3D60]/50"
+                    : "bg-[#1F1916] border border-white/10 text-muted hover:text-accent hover:border-accent/40"
+                }`}
+                title={isListening ? "Listening..." : "Tap to Speak (Voice)"}
               >
-                Done
+                🎙️
+              </button>
+
+              {/* Text Input Field */}
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                placeholder={
+                  currentLang === "hi"
+                    ? "Saathi se kuch bhi poochein..."
+                    : `Ask Saathi in ${currentLangObj.native}...`
+                }
+                className="flex-1 bg-[#120F0D] border border-white/15 rounded-2xl py-2.5 px-4 text-xs sm:text-sm text-white placeholder:text-muted/60 outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
+                disabled={busy}
+                autoFocus
+              />
+
+              {/* Send Button */}
+              <button
+                type="button"
+                onClick={() => handleSend()}
+                disabled={busy || !input.trim()}
+                className="w-11 h-11 rounded-2xl bg-gradient-to-r from-accent to-[#D43D0A] text-white flex items-center justify-center text-base font-bold shadow-md hover:opacity-95 active:scale-95 disabled:opacity-30 disabled:pointer-events-none transition-all cursor-pointer flex-shrink-0"
+                title="Send message"
+              >
+                ➤
               </button>
             </div>
-          )}
-
-          {/* Input Footer */}
-          <div className="p-3 bg-[#171310] border-t border-line flex items-center gap-2">
-            {/* Voice Mic Button */}
-            <button
-              type="button"
-              onClick={toggleSpeechRecognition}
-              className={`w-10 h-10 rounded-xl flex items-center justify-center text-base transition-all cursor-pointer ${
-                isListening
-                  ? "bg-[#FF3D60] text-white animate-pulse shadow-md"
-                  : "bg-card border border-line text-muted hover:text-accent hover:border-accent"
-              }`}
-              title={isListening ? "Listening..." : "Tap to Speak (Voice Input)"}
-            >
-              🎙️
-            </button>
-
-            {/* Text Input */}
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
-              placeholder={`Ask in ${currentLangObj.name}...`}
-              className="flex-1 bg-[#120F0D] border border-line rounded-xl py-2 px-3 text-xs text-white outline-none focus:border-accent"
-              disabled={busy}
-            />
-
-            {/* Send Button */}
-            <button
-              type="button"
-              onClick={() => handleSend()}
-              disabled={busy || !input.trim()}
-              className="w-10 h-10 rounded-xl bg-accent text-white flex items-center justify-center text-sm font-bold shadow-md hover:opacity-90 active:scale-95 disabled:opacity-40 transition-all cursor-pointer"
-            >
-              ➤
-            </button>
           </div>
         </div>
       )}

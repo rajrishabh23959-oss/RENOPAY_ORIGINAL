@@ -404,7 +404,7 @@ export function ProfileScreen({ onBack, onLoggedOut }) {
                 <span>🌐</span> Preferred Language / भाषा
               </p>
               <p className="text-muted text-[11px] mt-0.5">
-                Controls app context, AI bot response & voice language
+                Controls app context, Saathi AI response & voice language
               </p>
             </div>
             {savingLang && (

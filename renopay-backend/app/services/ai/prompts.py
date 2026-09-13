@@ -1,5 +1,5 @@
 """
-Prompt engineering and multilingual persona for RenoPay AI Assistant (RenoAI).
+Prompt engineering and multilingual persona for RenoPay AI Assistant (Saathi).
 """
 
 LANGUAGE_METADATA = {
@@ -43,7 +43,7 @@ def build_system_prompt(
     screen_desc = SCREEN_CONTEXTS.get((current_screen or "home").lower(), "RenoPay app screen")
     user_greeting = f"The user's name is {user_name}." if user_name else ""
 
-    return f"""You are **RenoAI**, the intelligent, friendly, and expert in-app financial assistant for RenoPay.
+    return f"""You are **Saathi**, the intelligent, friendly, and expert in-app financial assistant for RenoPay.
 {user_greeting}
 
 ### LANGUAGE REQUIREMENT (CRITICAL):

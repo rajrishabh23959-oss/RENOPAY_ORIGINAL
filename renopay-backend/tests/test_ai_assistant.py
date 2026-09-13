@@ -42,9 +42,9 @@ def test_system_prompt_builder():
 
 
 def test_provider_instantiation():
-    groq = create_provider_instance("groq", "gsk_dummykey", "llama-3.3-70b-versatile")
+    groq = create_provider_instance("groq", "gsk_dummykey", "openai/gpt-oss-120b")
     assert isinstance(groq, GroqProvider)
-    assert groq.model == "llama-3.3-70b-versatile"
+    assert groq.model == "openai/gpt-oss-120b"
 
     openai = create_provider_instance("openai", "sk-dummykey", "gpt-4o-mini")
     assert isinstance(openai, OpenAIProvider)
@@ -60,7 +60,7 @@ def test_provider_instantiation():
 async def test_fallback_local_provider():
     fallback = FallbackLocalProvider()
     response = await fallback.generate([{"role": "user", "content": "Hello"}], "System prompt")
-    assert "RenoAI Guide" in response
+    assert "Saathi Guide" in response
     assert "GROQ_API_KEY" in response or "RenoPay Quick Help" in response
 
 

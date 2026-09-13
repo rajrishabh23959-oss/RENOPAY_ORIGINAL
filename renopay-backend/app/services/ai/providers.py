@@ -31,9 +31,9 @@ class BaseLLMProvider(ABC):
 # 1. Groq Provider (OpenAI-compatible)
 # ---------------------------------------------------------------------------
 class GroqProvider(BaseLLMProvider):
-    def __init__(self, api_key: str, model: str = "llama-3.3-70b-versatile"):
+    def __init__(self, api_key: str, model: str = "openai/gpt-oss-120b"):
         self.api_key = api_key
-        self.model = model or "llama-3.3-70b-versatile"
+        self.model = model or "openai/gpt-oss-120b"
         self.endpoint = "https://api.groq.com/openai/v1/chat/completions"
 
     async def generate(self, messages: list[dict], system_prompt: str, temperature: float = 0.7) -> str:
@@ -199,7 +199,7 @@ class FallbackLocalProvider(BaseLLMProvider):
     async def generate(self, messages: list[dict], system_prompt: str, temperature: float = 0.7) -> str:
         last_msg = messages[-1]["content"] if messages else ""
         return (
-            f"⚡ **RenoAI Guide**\n\n"
+            f"⚡ **Saathi Guide**\n\n"
             f"I have received your question: *\"{last_msg}\"*\n\n"
             f"### RenoPay Quick Guide:\n"
             f"- **Split Bill**: Go to Split Screen to divide bills and send instant UPI requests to friends.\n"
@@ -207,7 +207,7 @@ class FallbackLocalProvider(BaseLLMProvider):
             f"- **UPI Lite**: 1-click pinless payments under ₹500 from your on-device wallet.\n"
             f"- **Digital Gold**: Auto round-up your daily payments to accumulate 24K pure gold!\n"
             f"- **Double-Entry Accounting**: Real-time journals, trial balance, and automated GST reports.\n\n"
-            f"*(Note: Ensure `GROQ_API_KEY=gsk_...` is set in backend `.env` to enable live Groq Llama 3.3 model inference)*"
+            f"*(Note: Ensure `GROQ_API_KEY=gsk_...` is set in backend `.env` to enable live Groq model inference)*"
         )
 
     async def test_connection(self) -> bool:
@@ -221,7 +221,7 @@ def create_provider_instance(provider_name: str, api_key: str, model_name: str) 
     """Instantiate provider by name."""
     p_name = (provider_name or "").lower().strip()
     if p_name == "groq":
-        return GroqProvider(api_key, model=model_name or "llama-3.3-70b-versatile")
+        return GroqProvider(api_key, model=model_name or "openai/gpt-oss-120b")
     elif p_name == "openai":
         return OpenAIProvider(api_key, model=model_name or "gpt-4o-mini")
     elif p_name == "anthropic":
@@ -229,7 +229,7 @@ def create_provider_instance(provider_name: str, api_key: str, model_name: str) 
     elif p_name == "gemini":
         return GeminiProvider(api_key, model=model_name or "gemini-1.5-flash")
     else:
-        return GroqProvider(api_key, model=model_name or "llama-3.3-70b-versatile")
+        return GroqProvider(api_key, model=model_name or "openai/gpt-oss-120b")
 
 
 async def get_llm_provider_for_user(
@@ -252,7 +252,7 @@ async def get_llm_provider_for_user(
     return (
         FallbackLocalProvider(),
         "groq",
-        "llama-3.3-70b-versatile",
+        "openai/gpt-oss-120b",
         False,
     )
 
