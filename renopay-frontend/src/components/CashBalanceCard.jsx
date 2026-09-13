@@ -10,6 +10,7 @@ import note100Img from "../assets/currency/note_100.png";
 import note50Img from "../assets/currency/note_50.png";
 import note20Img from "../assets/currency/note_20.png";
 import note10Img from "../assets/currency/note_10.png";
+import note5Img from "../assets/currency/note_5.png";
 import coin2Img from "../assets/currency/coin_2.png";
 import coin1Img from "../assets/currency/coin_1.png";
 
@@ -20,7 +21,7 @@ const NOTE_SPECS = [
   { value: 50,  label: "₹ 50",  img: note50Img },
   { value: 20,  label: "₹ 20",  img: note20Img },
   { value: 10,  label: "₹ 10",  img: note10Img },
-  { value: 5,   label: "₹ 5",   img: null },
+  { value: 5,   label: "₹ 5",   img: note5Img },
 ];
 
 const COIN_SPECS = [
