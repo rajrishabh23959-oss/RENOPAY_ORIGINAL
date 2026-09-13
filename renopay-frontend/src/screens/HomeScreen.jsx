@@ -143,7 +143,7 @@ export function HomeScreen({ onNavigate }) {
           vpa={profile.account.vpa}
           bank={profile.account.linked_bank_name}
           show={show}
-          onToggle={() => setShow((s) => !s)}
+          onToggle={(val) => setShow(typeof val === "boolean" ? val : !show)}
           denominations={denominations || profile.account.cash_denominations}
         />
 

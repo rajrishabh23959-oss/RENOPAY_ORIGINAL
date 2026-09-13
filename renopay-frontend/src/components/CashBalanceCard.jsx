@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import "./cashBalanceCard.css";
 import { fmt } from "../lib/format";
+import { UpiPinModal } from "./UpiPinModal";
 
 // Real currency photograph assets
 import note500Img from "../assets/currency/note_500.png";
@@ -42,12 +43,13 @@ function calculateFallbackDenominations(amount) {
 export function CashBalanceCard({
   balance = 0,
   vpa = "user@renopay",
-  bank = "RenoPay Bank",
-  show = true,
+  bank = "RenoPay Virtual Bank",
+  show = false,
   onToggle,
   denominations = null,
 }) {
   const [viewMode, setViewMode] = useState("normal"); // "normal" | "advanced"
+  const [pinModalOpen, setPinModalOpen] = useState(false);
 
   // Use live denominations from backend or compute fallback
   const counts = useMemo(() => {
@@ -65,6 +67,21 @@ export function CashBalanceCard({
     }
     return total > 0 ? total : balance;
   }, [counts, balance]);
+
+  const handleEyeClick = () => {
+    if (show) {
+      // Currently visible -> hide immediately
+      onToggle?.(false);
+    } else {
+      // Currently hidden -> require UPI PIN to reveal
+      setPinModalOpen(true);
+    }
+  };
+
+  const handlePinSuccess = () => {
+    onToggle?.(true);
+    setPinModalOpen(false);
+  };
 
   return (
     <div className="cbc-card">
@@ -105,9 +122,9 @@ export function CashBalanceCard({
               <span className="cbc-balance-caption">Available Balance</span>
               <button
                 className="cbc-eye-toggle"
-                onClick={onToggle}
+                onClick={handleEyeClick}
                 type="button"
-                title={show ? "Hide balance" : "Show balance"}
+                title={show ? "Hide balance" : "Show balance (requires UPI PIN)"}
               >
                 {show ? (
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -158,8 +175,28 @@ export function CashBalanceCard({
               <div className="cbc-adv-title">
                 <span>🧾</span> Cash Breakdown
               </div>
-              <div className="cbc-adv-total-chip">
-                {show ? fmt(totalCashAmount) : "••••"}
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <div className="cbc-adv-total-chip">
+                  {show ? fmt(totalCashAmount) : "••••"}
+                </div>
+                <button
+                  className="cbc-eye-toggle"
+                  onClick={handleEyeClick}
+                  type="button"
+                  title={show ? "Hide cash breakdown" : "Show cash breakdown (requires UPI PIN)"}
+                >
+                  {show ? (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  )}
+                </button>
               </div>
             </div>
 
@@ -193,8 +230,8 @@ export function CashBalanceCard({
                       )}
                       <span className="cbc-denom-name">{n.label}</span>
                     </div>
-                    <div className="cbc-cell-count">{count}</div>
-                    <div className="cbc-cell-total">₹ {rowTotal.toLocaleString("en-IN")}</div>
+                    <div className="cbc-cell-count">{show ? count : "••"}</div>
+                    <div className="cbc-cell-total">{show ? `₹ ${rowTotal.toLocaleString("en-IN")}` : "••••"}</div>
                   </div>
                 );
               })}
@@ -230,8 +267,8 @@ export function CashBalanceCard({
                       )}
                       <span className="cbc-denom-name">{c.label}</span>
                     </div>
-                    <div className="cbc-cell-count">{count}</div>
-                    <div className="cbc-cell-total">₹ {rowTotal.toLocaleString("en-IN")}</div>
+                    <div className="cbc-cell-count">{show ? count : "••"}</div>
+                    <div className="cbc-cell-total">{show ? `₹ ${rowTotal.toLocaleString("en-IN")}` : "••••"}</div>
                   </div>
                 );
               })}
@@ -243,15 +280,30 @@ export function CashBalanceCard({
                 <span>💰</span> Total Cash
               </div>
               <div className="cbc-total-amount">
-                ₹ {Number(totalCashAmount).toLocaleString("en-IN", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
+                {show ? (
+                  <>
+                    ₹ {Number(totalCashAmount).toLocaleString("en-IN", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </>
+                ) : (
+                  "₹ ••••••"
+                )}
               </div>
             </div>
           </div>
         )}
       </div>
+
+      {/* ── Secure UPI PIN Modal ── */}
+      <UpiPinModal
+        isOpen={pinModalOpen}
+        onClose={() => setPinModalOpen(false)}
+        onSuccess={handlePinSuccess}
+        vpa={vpa}
+        bank={bank}
+      />
     </div>
   );
 }

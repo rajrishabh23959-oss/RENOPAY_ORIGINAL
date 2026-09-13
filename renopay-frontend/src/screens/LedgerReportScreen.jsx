@@ -3,6 +3,7 @@ import { AnalyticsAPI, PaymentAPI } from "../lib/api";
 import { Card, Btn, Badge } from "../components/ui";
 import { fmt, ago } from "../lib/format";
 import { PdfPreviewModal } from "../components/PdfPreviewModal";
+import { DatePickerInput } from "../components/DatePickerInput";
 
 /**
  * LedgerReportScreen — PDF Report Generation.
@@ -195,14 +196,20 @@ export function LedgerReportScreen({ onBack }) {
             <p className="text-[10px] text-muted font-bold tracking-widest mb-3">DATE RANGE</p>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <p className="text-[10px] text-muted mb-1">From</p>
-                <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)}
-                  className="text-sm" max={toDate} />
+                <p className="text-[10px] text-muted mb-1 font-semibold">From</p>
+                <DatePickerInput
+                  value={fromDate}
+                  onChange={(e) => setFromDate(e.target.value)}
+                  title="From Date"
+                />
               </div>
               <div>
-                <p className="text-[10px] text-muted mb-1">To</p>
-                <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)}
-                  className="text-sm" min={fromDate} max={today()} />
+                <p className="text-[10px] text-muted mb-1 font-semibold">To</p>
+                <DatePickerInput
+                  value={toDate}
+                  onChange={(e) => setToDate(e.target.value)}
+                  title="To Date"
+                />
               </div>
             </div>
           </Card>

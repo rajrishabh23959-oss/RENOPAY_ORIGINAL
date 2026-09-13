@@ -4,6 +4,7 @@ import { Card, Btn, Badge } from "../components/ui";
 import { fmt } from "../lib/format";
 import { useAuth } from "../context/AuthContext";
 import { PdfPreviewModal } from "../components/PdfPreviewModal";
+import { DatePickerInput } from "../components/DatePickerInput";
 
 function formatDateStr(d) {
   return d.toISOString().split("T")[0];
@@ -42,11 +43,10 @@ function SectionDateFilterBar({
             <label className="block text-[9px] text-muted font-bold mb-1 uppercase tracking-wider">
               {singleDateLabel}
             </label>
-            <input
-              type="date"
+            <DatePickerInput
               value={from || ""}
               onChange={(e) => onFromChange(e.target.value)}
-              className="w-full bg-card border border-line rounded-lg px-2.5 py-1.5 text-[12px] text-textLight outline-none focus:border-accent"
+              title={singleDateLabel}
             />
           </div>
         ) : (
@@ -55,22 +55,20 @@ function SectionDateFilterBar({
               <label className="block text-[9px] text-muted font-bold mb-1 uppercase tracking-wider">
                 From Date
               </label>
-              <input
-                type="date"
+              <DatePickerInput
                 value={from || ""}
                 onChange={(e) => onFromChange(e.target.value)}
-                className="w-full bg-card border border-line rounded-lg px-2 py-1.5 text-[12px] text-textLight outline-none focus:border-accent"
+                title="From Date"
               />
             </div>
             <div>
               <label className="block text-[9px] text-muted font-bold mb-1 uppercase tracking-wider">
                 To Date
               </label>
-              <input
-                type="date"
+              <DatePickerInput
                 value={to || ""}
                 onChange={(e) => onToChange(e.target.value)}
-                className="w-full bg-card border border-line rounded-lg px-2 py-1.5 text-[12px] text-textLight outline-none focus:border-accent"
+                title="To Date"
               />
             </div>
           </div>
@@ -584,20 +582,18 @@ export function AccountingScreen({ onBack }) {
                       <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-line/60">
                         <div>
                           <label className="block text-[10px] text-muted font-bold mb-1">From Date</label>
-                          <input
-                            type="date"
+                          <DatePickerInput
                             value={fromDate}
                             onChange={(e) => setFromDate(e.target.value)}
-                            className="w-full bg-card border border-line rounded-lg px-2.5 py-1.5 text-[12px] text-textLight focus:border-accent outline-none"
+                            title="From Date"
                           />
                         </div>
                         <div>
                           <label className="block text-[10px] text-muted font-bold mb-1">To Date</label>
-                          <input
-                            type="date"
+                          <DatePickerInput
                             value={toDate}
                             onChange={(e) => setToDate(e.target.value)}
-                            className="w-full bg-card border border-line rounded-lg px-2.5 py-1.5 text-[12px] text-textLight focus:border-accent outline-none"
+                            title="To Date"
                           />
                         </div>
                       </div>

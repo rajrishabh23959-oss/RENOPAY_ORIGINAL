@@ -35,6 +35,22 @@ input {
 input:focus { border-color: #FF6A1A; box-shadow: 0 0 0 3px rgba(255, 106, 26, 0.28); }
 input::placeholder { color: #5C564F; }
 
+input[type="date"] {
+  color-scheme: dark;
+  cursor: pointer;
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  filter: invert(0.8) sepia(100%) saturate(300%) hue-rotate(350deg);
+  opacity: 0.85;
+  padding: 2px;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+  transform: scale(1.15);
+}
+
 .btn { cursor: pointer; border: none; outline: none; transition: all 0.18s; }
 .btn:active { transform: scale(0.94); }
 

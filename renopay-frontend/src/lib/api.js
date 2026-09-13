@@ -27,6 +27,11 @@ export const AuthAPI = {
     return data;
   },
 
+  verifyPin: async (pin) => {
+    const { data } = await http.post("/auth/verify-pin", { pin });
+    return data;
+  },
+
   login: async (phone_number, pin = null, device_fingerprint = null, device_label = null) => {
     const body = { phone_number, device_fingerprint, device_label };
     if (pin) body.pin = pin;

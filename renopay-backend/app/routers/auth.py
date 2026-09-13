@@ -107,6 +107,29 @@ async def set_pin(payload: SetPinRequest, user: User = Depends(get_current_user)
     return await _issue_tokens(db, user.id, None)
 
 
+from pydantic import BaseModel
+
+class VerifyPinRequest(BaseModel):
+    pin: str
+
+@router.post("/verify-pin")
+async def verify_pin_endpoint(
+    payload: VerifyPinRequest,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    from app.services.pin_auth import verify_user_pin, PinError
+    try:
+        await verify_user_pin(db, user, payload.pin)
+        await db.commit()
+        return {"success": True, "message": "UPI PIN verified successfully"}
+    except PinError as exc:
+        status_code = status.HTTP_401_UNAUTHORIZED if exc.code == "invalid_pin" else status.HTTP_400_BAD_REQUEST
+        if exc.code == "pin_locked":
+            status_code = status.HTTP_423_LOCKED
+        raise HTTPException(status_code, exc.message)
+
+
 def _ensure_utc(dt: datetime | None) -> datetime | None:
     if dt is None:
         return None
