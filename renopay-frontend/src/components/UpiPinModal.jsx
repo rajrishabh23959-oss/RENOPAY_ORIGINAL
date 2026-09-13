@@ -61,9 +61,6 @@ export function UpiPinModal({
     if (pin.length < 6) {
       const next = pin + digit;
       setPin(next);
-      if (next.length === 6) {
-        handleSubmit(next);
-      }
     }
   };
 
@@ -81,8 +78,8 @@ export function UpiPinModal({
 
   const handleSubmit = async (pinValue) => {
     const pinToTest = pinValue || pin;
-    if (pinToTest.length < 4) {
-      setError("Please enter complete UPI PIN");
+    if (pinToTest.length < 6) {
+      setError("Please enter 6-digit UPI PIN");
       triggerShake();
       return;
     }
@@ -200,15 +197,18 @@ export function UpiPinModal({
               </button>
             ))}
 
+            {/* 0 ke left me: Cross symbol ✕ */}
             <button
               type="button"
               disabled={loading || pin.length === 0}
-              onClick={handleClear}
-              className="h-12 rounded-xl bg-[#1A1614] hover:bg-[#241F1B] active:scale-95 border border-[#2D2622] text-muted hover:text-white text-[11px] font-bold uppercase tracking-wider transition-all flex items-center justify-center cursor-pointer disabled:opacity-40"
+              onClick={handleBackspace}
+              className="h-12 rounded-xl bg-[#1A1614] hover:bg-[#241F1B] active:scale-95 border border-[#2D2622] text-warn hover:text-white text-[18px] font-bold transition-all flex items-center justify-center cursor-pointer disabled:opacity-40"
+              aria-label="Delete digit"
             >
-              Clear
+              ✕
             </button>
 
+            {/* 0 in center */}
             <button
               type="button"
               disabled={loading}
@@ -218,13 +218,19 @@ export function UpiPinModal({
               0
             </button>
 
+            {/* 0 ke right me: Check button */}
             <button
               type="button"
-              disabled={loading || pin.length === 0}
-              onClick={handleBackspace}
-              className="h-12 rounded-xl bg-[#1A1614] hover:bg-[#241F1B] active:scale-95 border border-[#2D2622] text-white text-[16px] transition-all flex items-center justify-center cursor-pointer disabled:opacity-40"
+              disabled={loading || pin.length !== 6}
+              onClick={() => handleSubmit(pin)}
+              className={`h-12 rounded-xl border text-[13px] font-extrabold uppercase tracking-wider transition-all flex items-center justify-center cursor-pointer ${
+                pin.length === 6 && !loading
+                  ? "bg-accent border-accent text-white shadow-accentGlow hover:brightness-110 active:scale-95 animate-pulse"
+                  : "bg-[#1A1614] border-[#2D2622] text-muted/40 cursor-not-allowed"
+              }`}
+              aria-label="Check PIN"
             >
-              ⌫
+              Check
             </button>
           </div>
 

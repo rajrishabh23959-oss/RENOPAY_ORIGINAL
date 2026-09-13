@@ -297,7 +297,7 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
               <p className="text-muted text-xs mt-0.5">to {resolvedName} · {vpa}</p>
             </Card>
             {err && <p className="text-danger text-[13px] text-center mb-3">{err}</p>}
-            <PINPad onComplete={executePay} label="Enter your UPI PIN" />
+            <PINPad onComplete={executePay} label="Enter your UPI PIN" actionLabel="Pay" actionType="pay" />
             {loading && <p className="text-center text-muted text-xs mt-4">Processing...</p>}
           </div>
         )}

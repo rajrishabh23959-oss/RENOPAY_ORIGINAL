@@ -312,6 +312,8 @@ export function ProfileScreen({ onBack, onLoggedOut }) {
             <div className="mt-4 pt-4 border-t border-line">
               <PINPad 
                 label={newPin ? "Confirm new UPI PIN" : "Enter new 6-digit UPI PIN"}
+                actionLabel="Check"
+                actionType="check"
                 onComplete={async (enteredPin) => {
                   if (!newPin) {
                     setNewPin(enteredPin);

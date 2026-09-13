@@ -1,6 +1,13 @@
 import { useState, useEffect } from "react";
 
-export function PINPad({ onComplete, label, accent = "#FF6A1A", shuffled = false }) {
+export function PINPad({
+  onComplete,
+  label,
+  accent = "#FF6A1A",
+  shuffled = false,
+  actionType = "pay", // "pay" | "check"
+  actionLabel,
+}) {
   const [pin, setPin] = useState("");
   const baseOrder = [1, 2, 3, 4, 5, 6, 7, 8, 9];
   const [order, setOrder] = useState(baseOrder);
@@ -12,11 +19,39 @@ export function PINPad({ onComplete, label, accent = "#FF6A1A", shuffled = false
 
   const add = (d) => {
     if (pin.length >= 6) return;
-    const np = pin + d;
-    setPin(np);
-    if (np.length === 6) setTimeout(() => { onComplete(np); setPin(""); }, 180);
+    setPin((prev) => prev + d);
   };
+
   const del = () => setPin((p) => p.slice(0, -1));
+
+  const resolvedAction = actionLabel || (actionType === "check" ? "Check" : "Pay");
+
+  const handleAction = () => {
+    if (pin.length === 6 && onComplete) {
+      const pinToSubmit = pin;
+      setPin("");
+      onComplete(pinToSubmit);
+    }
+  };
+
+  // Keyboard shortcut listener
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.target?.tagName === "INPUT" || e.target?.tagName === "TEXTAREA") return;
+      if (e.key >= "0" && e.key <= "9") {
+        e.preventDefault();
+        add(e.key);
+      } else if (e.key === "Backspace") {
+        e.preventDefault();
+        del();
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        handleAction();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [pin]);
 
   return (
     <div className="text-center">
@@ -38,24 +73,53 @@ export function PINPad({ onComplete, label, accent = "#FF6A1A", shuffled = false
       <div className="grid grid-cols-3 gap-2.5 max-w-[270px] mx-auto">
         {order.map((d) => (
           <button
-            key={d} className="btn py-[15px] rounded-[13px] bg-surf border border-line text-textLight text-xl font-mono font-bold hover:bg-[#1a1714] active:bg-accent/20 transition-colors"
+            key={d}
+            type="button"
+            className="btn py-[15px] rounded-[13px] bg-surf border border-line text-textLight text-xl font-mono font-bold hover:bg-[#1a1714] active:bg-accent/20 transition-colors cursor-pointer"
             onClick={() => add(String(d))}
             aria-label={`Digit ${d}`}
           >
             {d}
           </button>
         ))}
+
+        {/* 0 ke left me: Cross symbol ✕ for delete/backspace */}
         <button
-          className="btn py-[15px] rounded-[13px] bg-surf border border-line text-muted hover:text-white text-xs font-bold uppercase tracking-wider hover:bg-[#1a1714] active:bg-accent/20 transition-colors"
-          onClick={() => setPin("")}
           type="button"
-          aria-label="Clear PIN"
+          className="btn py-[15px] rounded-[13px] bg-surf border border-line text-warn hover:text-white text-lg font-bold hover:bg-[#1a1714] active:bg-accent/20 transition-colors flex items-center justify-center disabled:opacity-40 cursor-pointer"
+          onClick={del}
+          disabled={pin.length === 0}
+          aria-label="Delete digit"
         >
-          Clear
+          ✕
         </button>
-        <button className="btn py-[15px] rounded-[13px] bg-surf border border-line text-textLight text-xl font-mono font-bold hover:bg-[#1a1714] active:bg-accent/20 transition-colors" onClick={() => add("0")} aria-label="Digit 0">0</button>
-        <button className="btn py-[15px] rounded-[13px] bg-surf border border-line text-warn text-lg hover:bg-[#1a1714] transition-colors" onClick={del} aria-label="Backspace">⌫</button>
+
+        {/* 0 in center */}
+        <button
+          type="button"
+          className="btn py-[15px] rounded-[13px] bg-surf border border-line text-textLight text-xl font-mono font-bold hover:bg-[#1a1714] active:bg-accent/20 transition-colors cursor-pointer"
+          onClick={() => add("0")}
+          aria-label="Digit 0"
+        >
+          0
+        </button>
+
+        {/* 0 ke right me: Check or Pay button */}
+        <button
+          type="button"
+          className={`btn py-[15px] rounded-[13px] border text-xs font-extrabold uppercase tracking-wider transition-all flex items-center justify-center ${
+            pin.length === 6
+              ? "bg-accent border-accent text-white shadow-accentGlow hover:brightness-110 active:scale-95 cursor-pointer animate-pulse"
+              : "bg-surf border-line text-muted/40 cursor-not-allowed"
+          }`}
+          onClick={handleAction}
+          disabled={pin.length !== 6}
+          aria-label={resolvedAction}
+        >
+          {resolvedAction}
+        </button>
       </div>
     </div>
   );
 }
+
