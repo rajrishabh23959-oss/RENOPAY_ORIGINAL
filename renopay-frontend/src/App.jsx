@@ -23,6 +23,9 @@ import { DigitalGoldScreen } from "./screens/DigitalGoldScreen";
 import { LedgerReportScreen } from "./screens/LedgerReportScreen";
 import { AccountingScreen } from "./screens/AccountingScreen";
 import { TravelScreen } from "./screens/TravelScreen";
+import { LoansScreen } from "./screens/LoansScreen";
+import { RechargeScreen } from "./screens/RechargeScreen";
+import { MutualFundsScreen } from "./screens/MutualFundsScreen";
 
 function AppShell() {
   const { profile, loading } = useAuth();
@@ -30,12 +33,20 @@ function AppShell() {
   const [tab, setTab] = useState("home");
   const [payPrefill, setPayPrefill] = useState(null);
   const [travelPrefillTab, setTravelPrefillTab] = useState("train");
+  const [rechargePrefillTab, setRechargePrefillTab] = useState("mobile");
+  const [loansPrefillTab, setLoansPrefillTab] = useState("personal");
 
   const go = (s, data) => {
     if (["home", "pay", "expenses", "history", "profile", "accounting"].includes(s)) setTab(s);
     setPayPrefill(s === "pay" ? data ?? null : null);
     if (s === "travel") {
       setTravelPrefillTab(typeof data === "string" ? data : data?.tab || "train");
+    }
+    if (s === "recharge") {
+      setRechargePrefillTab(typeof data === "string" ? data : data?.tab || "mobile");
+    }
+    if (s === "loans") {
+      setLoansPrefillTab(typeof data === "string" ? data : data?.tab || "personal");
     }
     setScreen(s);
   };
@@ -84,6 +95,26 @@ function AppShell() {
           onBack={() => go("home")}
           onNavigate={go}
           initialTab={travelPrefillTab}
+        />
+      )}
+      {screen === "loans"         && (
+        <LoansScreen
+          onBack={() => go("home")}
+          onNavigate={go}
+          initialTab={loansPrefillTab}
+        />
+      )}
+      {screen === "recharge"      && (
+        <RechargeScreen
+          onBack={() => go("home")}
+          onNavigate={go}
+          initialTab={rechargePrefillTab}
+        />
+      )}
+      {screen === "invest"        && (
+        <MutualFundsScreen
+          onBack={() => go("home")}
+          onNavigate={go}
         />
       )}
       <AIAssistant currentScreen={screen} onNavigate={go} />

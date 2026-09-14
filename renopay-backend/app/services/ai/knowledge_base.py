@@ -149,4 +149,111 @@ RENOPAY_DOCS = [
             "3. Tap 'Withdraw to Bank' to instantly transfer accumulated reward money into your primary account."
         ),
     },
+    {
+        "id": "travel_booking",
+        "title": "Travel & Transit: How to Book Train, Flight, Bus & Hotel Tickets",
+        "screen": "travel",
+        "keywords": [
+            "travel", "ticket", "train", "flight", "bus", "hotel", "book", "irctc",
+            "pnr", "boarding pass", "tatkal", "berth", "seat", "booking", "yatra", "safar",
+            "tickets", "airline", "indigo", "air india", "redbus", "railway", "station"
+        ],
+        "content": (
+            "How to book travel tickets and hotels on RenoPay:\n"
+            "1. Open 'Travel' from the RenoPay Home screen or navigation bar.\n"
+            "2. Select your category: ✈️ Flights, 🚆 Trains, 🚌 Buses, or 🏨 Hotels.\n"
+            "3. Enter your Origin & Destination city (or City for hotels), Travel Date, and Class (e.g., 3rd AC / Economy / AC Sleeper / Deluxe Room).\n"
+            "4. RenoPay shows real-time schedules, operators (IndiGo, Air India, IRCTC Rajdhani, RedBus, etc.), and upfront prices.\n"
+            "5. Click 'Book Now', then enter Passenger Name, Age, Gender, and Berth/Seat preference.\n"
+            "6. Click 'Proceed to Pay': choose between ⚡ Normal Pay (direct 6-digit UPI PIN) or 🚀 Advance Pay (interactive tactile note slider + PIN).\n"
+            "7. Once confirmed, payment is debited from your RenoPay account, and your official PNR or Ticket Reference is generated immediately.\n"
+            "8. Tap 'View Ticket (PDF)' or 'Download Ticket (PDF)' to instantly save your official boarding pass and journey itinerary.\n"
+            "9. You can view, download, or manage all your past and upcoming bookings anytime under the 'My Bookings' tab at the top of the Travel screen."
+        ),
+    },
+    {
+        "id": "instant_loans",
+        "title": "Instant Loans: How to Apply and Repay EMIs",
+        "screen": "loans",
+        "keywords": [
+            "loan", "loans", "emi", "borrow", "credit", "personal loan", "gold loan",
+            "mutual fund loan", "lamf", "disbursal", "repay", "interest", "tenure", "karz", "udhar"
+        ],
+        "content": (
+            "How to get an instant loan and repay EMIs on RenoPay:\n"
+            "1. Open 'Loans' from the RenoPay Home screen.\n"
+            "2. Choose your Loan Category:\n"
+            "   - Instant Personal Loan: Up to ₹5,00,000 at 10.5% p.a.\n"
+            "   - Loan Against Mutual Funds (LAMF): Up to ₹10,00,000 at 9.25% p.a. without selling your mutual fund units.\n"
+            "   - Instant Gold Loan: Up to ₹15,00,000 at 8.75% p.a. against your digital gold reserve.\n"
+            "3. Use the interactive EMI Calculator to choose your amount and flexible tenure (6 to 36 months).\n"
+            "4. Fill your Employment status, Monthly income, and PAN Number. Zero physical documentation required.\n"
+            "5. Tap 'Apply for Instant Loan'. Approval takes seconds, and funds are disbursed instantly directly into your RenoPay wallet balance with an official transaction record (RENO-TXN-LN...).\n"
+            "6. To Repay an EMI: Under 'Active Loans' on the Loans screen, tap 'Pay EMI Now', enter your 6-digit UPI PIN, and the EMI is deducted from your balance. Download your official tax-compliant PDF Repayment Receipt."
+        ),
+    },
+    {
+        "id": "recharge_and_bills",
+        "title": "Recharges & Bill Payments (Mobile, Electricity BBPS & Tuition Fees)",
+        "screen": "recharge",
+        "keywords": [
+            "recharge", "bill", "bills", "mobile", "jio", "airtel", "vi", "bsnl",
+            "electricity", "bijli", "tuition", "fee", "fees", "fastag", "dth", "broadband", "bbps"
+        ],
+        "content": (
+            "How to pay bills and recharge on RenoPay:\n"
+            "1. Open 'Recharge & Bills' from the RenoPay Home screen.\n"
+            "2. Available Services:\n"
+            "   - Mobile Recharge: Enter mobile number, choose operator (Jio, Airtel, Vi, BSNL), select popular/unlimited 5G/annual plan, and pay.\n"
+            "   - Tuition Fees: Manage teachers/tutors by adding their UPI ID, student name, and fee. Never miss a due date with 1-click tuition settlement.\n"
+            "   - Electricity & Utility Bills: Powered by BBPS. Enter Consumer Number and Board (e.g. BSES, Tata Power, BESCOM) to fetch and pay current bill.\n"
+            "   - Fastag & DTH: Instant toll recharge and TV subscription renewals.\n"
+            "3. Payment: Select ⚡ Normal Pay (instant UPI PIN) or 🚀 Advance Pay (note slider), authenticate with your 6-digit PIN.\n"
+            "4. Money is deducted from your RenoPay account, and an official PDF receipt is immediately available for download."
+        ),
+    },
+    {
+        "id": "mutual_funds_wealth",
+        "title": "Mutual Funds, Daily ₹10 Micro-SIP & Daily RD (8.1% p.a.)",
+        "screen": "mutualfunds",
+        "keywords": [
+            "mutual fund", "mutual funds", "sip", "micro sip", "rd", "recurring deposit",
+            "investment", "invest", "wealth", "portfolio", "returns", "cagr", "nifty", "interest"
+        ],
+        "content": (
+            "How to invest in Mutual Funds & Savings on RenoPay:\n"
+            "1. Open 'Mutual Funds' from the RenoPay Home screen.\n"
+            "2. Investment Options:\n"
+            "   - Monthly SIP: Invest in top 5-star rated equity, hybrid, and index funds (Parag Parikh, Mirae Asset, Quant, etc.) starting from ₹500/month.\n"
+            "   - Daily ₹10 Micro-SIP: Build massive wealth effortlessly by auto-investing just ₹10 every day.\n"
+            "   - Daily Recurring Deposit (RD): Earn a guaranteed high return of 8.1% p.a. with daily interest accrual and flexible withdrawal.\n"
+            "3. Tap 'Invest Now', verify the fund details, and confirm payment using your UPI PIN.\n"
+            "4. Amount is debited from your RenoPay account, units are credited to your in-app portfolio, and an official PDF Investment Certificate is generated."
+        ),
+    },
+    {
+        "id": "payment_modes_normal_advance",
+        "title": "Payment Modes: Normal Pay vs Advance Pay",
+        "screen": "pay",
+        "keywords": [
+            "normal pay", "advance pay", "note slider", "payment mode", "mode", "notes",
+            "coins", "slide", "keypad", "pin", "tactile", "haptic", "how to pay"
+        ],
+        "content": (
+            "RenoPay offers two unique payment experiences:\n"
+            "1. ⚡ Normal Pay (Standard & Fast):\n"
+            "   - Enter the amount directly via numeric keypad (or use prefilled amount for tickets/bills).\n"
+            "   - Enter your 6-digit UPI PIN.\n"
+            "   - Payment is authenticated and processed within 2 seconds. Ideal for quick everyday merchant checkouts.\n"
+            "2. 🚀 Advance Pay (Signature RenoPay Multi-Sensory Note Slider):\n"
+            "   - Experience digital money like real physical currency!\n"
+            "   - Interactive draggable notes (₹500, ₹200, ₹100, ₹50, ₹20, ₹10) and clickable coins (₹5, ₹2, ₹1).\n"
+            "   - Slide notes into the recipient drop tray with authentic bill-sliding sound effects, floating counter, and haptic vibrations.\n"
+            "   - Eliminates typing mistakes and accidental zeros.\n"
+            "   - Enter your 6-digit UPI PIN to finalize payment.\n"
+            "3. Direct Request Pay:\n"
+            "   - When paying a bill, preset request, or booking with fixed price, you can immediately confirm with your 6-digit UPI PIN without retyping."
+        ),
+    },
 ]
+

@@ -1675,13 +1675,13 @@ def build_travel_ticket_data(booking, txn=None, user=None) -> dict:
     if booking.booking_type == "train" and booking.distance_km > 0:
         c = booking.travel_class.lower()
         if "sleep" in c or "sl" in c:
-            rate_desc = f"{booking.distance_km:.0f} km × ₹1.0 / km"
+            rate_desc = f"{booking.distance_km:.0f} km × ₹0.7 / km"
         elif "3a" in c or "3rd" in c:
-            rate_desc = f"{booking.distance_km:.0f} km × ₹1.8 / km"
+            rate_desc = f"{booking.distance_km:.0f} km × ₹1.2 / km"
         elif "2a" in c or "2nd" in c:
-            rate_desc = f"{booking.distance_km:.0f} km × ₹3.0 / km"
+            rate_desc = f"{booking.distance_km:.0f} km × ₹2.0 / km"
         elif "1a" in c or "1st" in c:
-            rate_desc = f"{booking.distance_km:.0f} km × ₹4.0 / km"
+            rate_desc = f"{booking.distance_km:.0f} km × ₹3.0 / km"
         else:
             rate_desc = f"{booking.distance_km:.0f} km distance fare"
     elif booking.booking_type == "bus" and booking.distance_km > 0:

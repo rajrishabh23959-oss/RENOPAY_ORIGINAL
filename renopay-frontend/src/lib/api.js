@@ -67,6 +67,14 @@ export const PaymentAPI = {
     http.get(`/payments/resolve/${encodeURIComponent(vpa)}`, { params: pn ? { pn } : {} }).then((r) => r.data),
 
   sendMoney: (payload) => http.post("/payments/send", payload).then((r) => r.data),
+  send: (payload) =>
+    http.post("/payments/send", {
+      to_vpa: payload.counterparty_vpa || payload.to_vpa,
+      amount: payload.amount,
+      pin: payload.pin,
+      description: payload.note || payload.description,
+      category: payload.category || "Other",
+    }).then((r) => r.data),
 
   addMoney: (amount, bank_name) => http.post("/payments/add-money", { amount, bank_name }).then((r) => r.data),
 
@@ -240,8 +248,27 @@ export const TravelAPI = {
     const r = await http.get(`/travel/ticket/${booking_id}/pdf`, { responseType: "blob" });
     return r.data;
   },
-  getAIRouteInfo: (origin, destination, mode = "train") =>
-    http.post("/travel/ai-route-info", { origin, destination, mode }).then((r) => r.data),
+};
+
+// ---------- Unified Financial Services (Bills, Loans, Investments) ----------
+export const FinancialAPI = {
+  // Bills & Recharges
+  payBill: (payload) => http.post("/financial/bills/pay", payload).then((r) => r.data),
+
+  // Loans
+  applyLoan: (payload) => http.post("/financial/loans/apply", payload).then((r) => r.data),
+  repayLoan: (payload) => http.post("/financial/loans/repay", payload).then((r) => r.data),
+  getLoans: () => http.get("/financial/loans").then((r) => r.data),
+
+  // Mutual Funds & Daily RD
+  invest: (payload) => http.post("/financial/investments/invest", payload).then((r) => r.data),
+  getInvestments: () => http.get("/financial/investments").then((r) => r.data),
+
+  // Transaction Receipt PDF
+  getReceiptPdf: async (txnRef) => {
+    const r = await http.get(`/financial/receipt/${encodeURIComponent(txnRef)}/pdf`, { responseType: "blob" });
+    return r.data;
+  },
 };
 
 

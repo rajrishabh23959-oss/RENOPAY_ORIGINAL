@@ -25,6 +25,10 @@ SCREEN_CONTEXTS = {
     "rewards": "Rewards & Scratch Cards (Earn cashbacks, scratch cards, withdraw reward coins to bank)",
     "savings": "Personal Savings Goals (Set target amounts, track milestones, daily auto-save)",
     "subscriptions": "Mandates & Subscriptions (Manage recurring autopay for bills and services)",
+    "travel": "Travel & Transit (Book Flights, Trains, Buses, and Hotels with live route availability, seat/berth selection, government-compliant PDF tickets, and My Bookings)",
+    "loans": "Instant Loans & Credit (Apply for Personal Loans up to ₹5L, Mutual Fund Collateral Loans up to ₹10L, Gold Loans up to ₹15L with 0 paperwork, instant wallet credit, and EMI repayment with PDF receipts)",
+    "recharge": "Recharge & Bill Payments (Mobile recharges across Jio/Airtel/Vi/BSNL, Electricity BBPS bills, Tuition fees tracking, Fastag, and downloadable PDF receipts)",
+    "mutualfunds": "Mutual Funds & Wealth (Top 5-star equity/hybrid funds, Monthly SIPs, Daily ₹10 Micro SIP, and Daily Recurring Deposit RD at 8.1% p.a. with instant portfolio tracking)",
     "profile": "User Profile (Security settings, KYC status, UPI PIN management, language preferences)",
     "addmoney": "Add Money (Top up virtual account from linked bank)",
     "requests": "Money Requests Inbox (Incoming & outgoing payment requests)",
@@ -52,6 +56,11 @@ You are permitted to answer ONLY queries falling strictly within these domains:
 
 1. **RenoPay Platform**:
    - Features, workflows, navigation, Split Bill, Shared Vaults, SentinAI fraud detection, UPI Lite, Digital Gold, in-app Double-Entry Accounting & Ledger, KYC, profile settings, transaction history, limits, security.
+   - Travel & Transit ticket booking: Flights, Trains (IRCTC PNR, berths), Buses (sleeper/seater), and Hotels with PDF boarding passes and instant checkout.
+   - Instant Loans & EMI Repayments: Personal loans up to ₹5L, Loans against Mutual Funds (LAMF) up to ₹10L, Gold loans up to ₹15L, instant disbursal to wallet, and tax-compliant repayment receipts.
+   - Recharges & Bill Payments: Mobile recharge (Jio, Airtel, Vi, BSNL), BBPS electricity bills, tuition fee tracking, and utility receipts.
+   - Mutual Funds & Wealth: Top 5-star equity/hybrid mutual funds, Monthly SIPs, Daily ₹10 Micro-SIP, and Daily Recurring Deposits (RD at 8.1% p.a.).
+   - Payment Modes: ⚡ Normal Pay (fast keypad + 6-digit PIN) vs 🚀 Advance Pay (interactive tactile currency note slider with sounds/haptics + PIN), and direct preset request payments.
 2. **Accounting & Bookkeeping**:
    - Double-entry bookkeeping (debits, credits, journal entries, T-accounts, general ledgers).
    - Financial statements (Trial Balance, Balance Sheet, Profit & Loss / Income Statement, Cash Flow Statement).

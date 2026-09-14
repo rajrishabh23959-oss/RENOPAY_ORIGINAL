@@ -6,6 +6,7 @@ import { Card, Btn, Badge } from "../components/ui";
 import { DatePickerInput } from "../components/DatePickerInput";
 import { PdfPreviewModal } from "../components/PdfPreviewModal";
 import { FlightIcon, BusIcon, TrainIcon, HotelIcon } from "../components/TravelIcons";
+import { PaymentMethodModal } from "../components/PaymentMethodModal";
 
 // Helper for today's date formatted as YYYY-MM-DD
 function getTodayString() {
@@ -19,42 +20,573 @@ function getNextDayString(daysAhead = 1) {
   return d.toISOString().slice(0, 10);
 }
 
-// Popular routes & realistic distances in KM
+// Popular routes & realistic distances in KM (User Constants)
 const CITY_DISTANCES = {
-  "Bihar_Chennai": 2075,
-  "Patna_Chennai": 2075,
-  "New Delhi_Mumbai": 1380,
-  "New Delhi_Lucknow": 500,
-  "New Delhi_Kanpur": 440,
-  "New Delhi_Varanasi": 760,
+  "New Delhi_Mumbai": 1415,
   "New Delhi_Bengaluru": 2150,
-  "New Delhi_Kolkata": 1450,
+  "New Delhi_Chennai": 2200,
+  "New Delhi_Kolkata": 1500,
+  "New Delhi_Hyderabad": 1580,
+  "New Delhi_Pune": 1450,
+  "New Delhi_Ahmedabad": 940,
   "New Delhi_Jaipur": 280,
+  "New Delhi_Lucknow": 530,
+  "New Delhi_Kanpur": 500,
+  "New Delhi_Nagpur": 1060,
+  "New Delhi_Indore": 810,
+  "New Delhi_Bhopal": 780,
+  "New Delhi_Patna": 1050,
+  "New Delhi_Vadodara": 1000,
+  "New Delhi_Surat": 1150,
   "New Delhi_Chandigarh": 250,
+  "New Delhi_Kochi": 2650,
+  "New Delhi_Visakhapatnam": 1800,
+  "New Delhi_Varanasi": 820,
+  "New Delhi_Agra": 210,
+  "New Delhi_Amritsar": 450,
+  "New Delhi_Bhubaneswar": 1650,
+  "New Delhi_Guwahati": 1900,
+  "New Delhi_Ranchi": 1200,
+  "New Delhi_Coimbatore": 2450,
+  "New Delhi_Madurai": 2600,
+  "New Delhi_Goa": 1900,
+  "New Delhi_Raipur": 1150,
   "Mumbai_Bengaluru": 980,
-  "Mumbai_Goa": 590,
+  "Mumbai_Chennai": 1330,
+  "Mumbai_Kolkata": 1950,
+  "Mumbai_Hyderabad": 710,
   "Mumbai_Pune": 150,
-  "Mumbai_Ahmedabad": 520,
+  "Mumbai_Ahmedabad": 530,
+  "Mumbai_Jaipur": 1150,
+  "Mumbai_Lucknow": 1370,
+  "Mumbai_Kanpur": 1280,
+  "Mumbai_Nagpur": 810,
+  "Mumbai_Indore": 580,
+  "Mumbai_Bhopal": 770,
+  "Mumbai_Patna": 1750,
+  "Mumbai_Vadodara": 410,
+  "Mumbai_Surat": 290,
+  "Mumbai_Chandigarh": 1650,
+  "Mumbai_Kochi": 1350,
+  "Mumbai_Visakhapatnam": 1340,
+  "Mumbai_Varanasi": 1500,
+  "Mumbai_Agra": 1200,
+  "Mumbai_Amritsar": 1850,
+  "Mumbai_Bhubaneswar": 1650,
+  "Mumbai_Guwahati": 2500,
+  "Mumbai_Ranchi": 1400,
+  "Mumbai_Coimbatore": 1200,
+  "Mumbai_Madurai": 1420,
+  "Mumbai_Goa": 590,
+  "Mumbai_Raipur": 1120,
   "Bengaluru_Chennai": 350,
+  "Bengaluru_Kolkata": 1870,
   "Bengaluru_Hyderabad": 570,
-  "Kolkata_Patna": 540,
-  "Bihar_Delhi": 998,
-  "Patna_Delhi": 998,
+  "Bengaluru_Pune": 840,
+  "Bengaluru_Ahmedabad": 1500,
+  "Bengaluru_Jaipur": 1950,
+  "Bengaluru_Lucknow": 1850,
+  "Bengaluru_Kanpur": 1780,
+  "Bengaluru_Nagpur": 1050,
+  "Bengaluru_Indore": 1400,
+  "Bengaluru_Bhopal": 1450,
+  "Bengaluru_Patna": 2050,
+  "Bengaluru_Vadodara": 1380,
+  "Bengaluru_Surat": 1250,
+  "Bengaluru_Chandigarh": 2400,
+  "Bengaluru_Kochi": 550,
+  "Bengaluru_Visakhapatnam": 1000,
+  "Bengaluru_Varanasi": 1800,
+  "Bengaluru_Agra": 1900,
+  "Bengaluru_Amritsar": 2600,
+  "Bengaluru_Bhubaneswar": 1450,
+  "Bengaluru_Guwahati": 2800,
+  "Bengaluru_Ranchi": 1700,
+  "Bengaluru_Coimbatore": 360,
+  "Bengaluru_Madurai": 430,
+  "Bengaluru_Goa": 560,
+  "Bengaluru_Raipur": 1350,
+  "Chennai_Kolkata": 1670,
+  "Chennai_Hyderabad": 630,
+  "Chennai_Pune": 1190,
+  "Chennai_Ahmedabad": 1820,
+  "Chennai_Jaipur": 2150,
+  "Chennai_Lucknow": 2000,
+  "Chennai_Kanpur": 1900,
+  "Chennai_Nagpur": 1100,
+  "Chennai_Indore": 1550,
+  "Chennai_Bhopal": 1450,
+  "Chennai_Patna": 2100,
+  "Chennai_Vadodara": 1700,
+  "Chennai_Surat": 1570,
+  "Chennai_Chandigarh": 2450,
+  "Chennai_Kochi": 690,
+  "Chennai_Visakhapatnam": 800,
+  "Chennai_Varanasi": 1850,
+  "Chennai_Agra": 1950,
+  "Chennai_Amritsar": 2650,
+  "Chennai_Bhubaneswar": 1200,
+  "Chennai_Guwahati": 2650,
+  "Chennai_Ranchi": 1600,
+  "Chennai_Coimbatore": 510,
+  "Chennai_Madurai": 460,
+  "Chennai_Goa": 920,
+  "Chennai_Raipur": 1300,
+  "Kolkata_Hyderabad": 1490,
+  "Kolkata_Pune": 1840,
+  "Kolkata_Ahmedabad": 2060,
+  "Kolkata_Jaipur": 1500,
+  "Kolkata_Lucknow": 1000,
+  "Kolkata_Kanpur": 1000,
+  "Kolkata_Nagpur": 1120,
+  "Kolkata_Indore": 1550,
+  "Kolkata_Bhopal": 1400,
+  "Kolkata_Patna": 580,
+  "Kolkata_Vadodara": 1950,
+  "Kolkata_Surat": 1900,
+  "Kolkata_Chandigarh": 1750,
+  "Kolkata_Kochi": 2300,
+  "Kolkata_Visakhapatnam": 880,
+  "Kolkata_Varanasi": 680,
+  "Kolkata_Agra": 1250,
+  "Kolkata_Amritsar": 1950,
+  "Kolkata_Bhubaneswar": 440,
+  "Kolkata_Guwahati": 980,
+  "Kolkata_Ranchi": 400,
+  "Kolkata_Coimbatore": 2100,
+  "Kolkata_Madurai": 2150,
+  "Kolkata_Goa": 2100,
+  "Kolkata_Raipur": 830,
+  "Hyderabad_Pune": 560,
+  "Hyderabad_Ahmedabad": 1200,
+  "Hyderabad_Jaipur": 1450,
+  "Hyderabad_Lucknow": 1350,
+  "Hyderabad_Kanpur": 1250,
+  "Hyderabad_Nagpur": 500,
+  "Hyderabad_Indore": 850,
+  "Hyderabad_Bhopal": 850,
+  "Hyderabad_Patna": 1450,
+  "Hyderabad_Vadodara": 1050,
+  "Hyderabad_Surat": 950,
+  "Hyderabad_Chandigarh": 1850,
+  "Hyderabad_Kochi": 1100,
+  "Hyderabad_Visakhapatnam": 620,
+  "Hyderabad_Varanasi": 1200,
+  "Hyderabad_Agra": 1350,
+  "Hyderabad_Amritsar": 2050,
+  "Hyderabad_Bhubaneswar": 1040,
+  "Hyderabad_Guwahati": 2450,
+  "Hyderabad_Ranchi": 1100,
+  "Hyderabad_Coimbatore": 900,
+  "Hyderabad_Madurai": 1050,
+  "Hyderabad_Goa": 650,
+  "Hyderabad_Raipur": 780,
+  "Pune_Ahmedabad": 660,
+  "Pune_Jaipur": 1180,
+  "Pune_Lucknow": 1400,
+  "Pune_Kanpur": 1300,
+  "Pune_Nagpur": 710,
+  "Pune_Indore": 600,
+  "Pune_Bhopal": 790,
+  "Pune_Patna": 1650,
+  "Pune_Vadodara": 550,
+  "Pune_Surat": 420,
+  "Pune_Chandigarh": 1700,
+  "Pune_Kochi": 1200,
+  "Pune_Visakhapatnam": 1250,
+  "Pune_Varanasi": 1450,
+  "Pune_Agra": 1250,
+  "Pune_Amritsar": 1900,
+  "Pune_Bhubaneswar": 1550,
+  "Pune_Guwahati": 2600,
+  "Pune_Ranchi": 1350,
+  "Pune_Coimbatore": 1050,
+  "Pune_Madurai": 1250,
+  "Pune_Goa": 450,
+  "Pune_Raipur": 1050,
+  "Ahmedabad_Jaipur": 680,
+  "Ahmedabad_Lucknow": 1150,
+  "Ahmedabad_Kanpur": 1050,
+  "Ahmedabad_Nagpur": 850,
+  "Ahmedabad_Indore": 390,
+  "Ahmedabad_Bhopal": 590,
+  "Ahmedabad_Patna": 1600,
+  "Ahmedabad_Vadodara": 110,
+  "Ahmedabad_Surat": 260,
+  "Ahmedabad_Chandigarh": 1150,
+  "Ahmedabad_Kochi": 1800,
+  "Ahmedabad_Visakhapatnam": 1700,
+  "Ahmedabad_Varanasi": 1350,
+  "Ahmedabad_Agra": 850,
+  "Ahmedabad_Amritsar": 1350,
+  "Ahmedabad_Bhubaneswar": 1850,
+  "Ahmedabad_Guwahati": 2500,
+  "Ahmedabad_Ranchi": 1550,
+  "Ahmedabad_Coimbatore": 1750,
+  "Ahmedabad_Madurai": 1900,
+  "Ahmedabad_Goa": 1100,
+  "Ahmedabad_Raipur": 1200,
+  "Jaipur_Lucknow": 570,
+  "Jaipur_Kanpur": 510,
+  "Jaipur_Nagpur": 920,
+  "Jaipur_Indore": 600,
+  "Jaipur_Bhopal": 610,
+  "Jaipur_Patna": 1050,
+  "Jaipur_Vadodara": 750,
+  "Jaipur_Surat": 900,
+  "Jaipur_Chandigarh": 510,
+  "Jaipur_Kochi": 2450,
+  "Jaipur_Visakhapatnam": 1650,
+  "Jaipur_Varanasi": 850,
+  "Jaipur_Agra": 240,
+  "Jaipur_Amritsar": 700,
+  "Jaipur_Bhubaneswar": 1600,
+  "Jaipur_Guwahati": 1950,
+  "Jaipur_Ranchi": 1250,
+  "Jaipur_Coimbatore": 2300,
+  "Jaipur_Madurai": 2450,
+  "Jaipur_Goa": 1700,
+  "Jaipur_Raipur": 1150,
+  "Lucknow_Kanpur": 90,
+  "Lucknow_Nagpur": 750,
+  "Lucknow_Indore": 780,
+  "Lucknow_Bhopal": 600,
+  "Lucknow_Patna": 530,
+  "Lucknow_Vadodara": 1150,
+  "Lucknow_Surat": 1250,
+  "Lucknow_Chandigarh": 660,
+  "Lucknow_Kochi": 2350,
+  "Lucknow_Visakhapatnam": 1350,
+  "Lucknow_Varanasi": 320,
+  "Lucknow_Agra": 330,
+  "Lucknow_Amritsar": 850,
+  "Lucknow_Bhubaneswar": 1150,
+  "Lucknow_Guwahati": 1450,
+  "Lucknow_Ranchi": 750,
+  "Lucknow_Coimbatore": 2200,
+  "Lucknow_Madurai": 2350,
+  "Lucknow_Goa": 1950,
+  "Lucknow_Raipur": 780,
+  "Kanpur_Nagpur": 720,
+  "Kanpur_Indore": 750,
+  "Kanpur_Bhopal": 550,
+  "Kanpur_Patna": 580,
+  "Kanpur_Vadodara": 1050,
+  "Kanpur_Surat": 1180,
+  "Kanpur_Chandigarh": 680,
+  "Kanpur_Kochi": 2250,
+  "Kanpur_Visakhapatnam": 1250,
+  "Kanpur_Varanasi": 330,
+  "Kanpur_Agra": 280,
+  "Kanpur_Amritsar": 870,
+  "Kanpur_Bhubaneswar": 1100,
+  "Kanpur_Guwahati": 1500,
+  "Kanpur_Ranchi": 700,
+  "Kanpur_Coimbatore": 2150,
+  "Kanpur_Madurai": 2300,
+  "Kanpur_Goa": 1900,
+  "Kanpur_Raipur": 720,
+  "Nagpur_Indore": 420,
+  "Nagpur_Bhopal": 350,
+  "Nagpur_Patna": 900,
+  "Nagpur_Vadodara": 800,
+  "Nagpur_Surat": 750,
+  "Nagpur_Chandigarh": 1300,
+  "Nagpur_Kochi": 1500,
+  "Nagpur_Visakhapatnam": 700,
+  "Nagpur_Varanasi": 750,
+  "Nagpur_Agra": 850,
+  "Nagpur_Amritsar": 1500,
+  "Nagpur_Bhubaneswar": 850,
+  "Nagpur_Guwahati": 1850,
+  "Nagpur_Ranchi": 750,
+  "Nagpur_Coimbatore": 1400,
+  "Nagpur_Madurai": 1550,
+  "Nagpur_Goa": 1100,
+  "Nagpur_Raipur": 280,
+  "Indore_Bhopal": 190,
+  "Indore_Patna": 1050,
+  "Indore_Vadodara": 350,
+  "Indore_Surat": 450,
+  "Indore_Chandigarh": 1050,
+  "Indore_Kochi": 1750,
+  "Indore_Visakhapatnam": 1300,
+  "Indore_Varanasi": 900,
+  "Indore_Agra": 600,
+  "Indore_Amritsar": 1250,
+  "Indore_Bhubaneswar": 1350,
+  "Indore_Guwahati": 2100,
+  "Indore_Ranchi": 1100,
+  "Indore_Coimbatore": 1650,
+  "Indore_Madurai": 1800,
+  "Indore_Goa": 1000,
+  "Indore_Raipur": 750,
+  "Bhopal_Patna": 900,
+  "Bhopal_Vadodara": 550,
+  "Bhopal_Surat": 650,
+  "Bhopal_Chandigarh": 1020,
+  "Bhopal_Kochi": 1850,
+  "Bhopal_Visakhapatnam": 1050,
+  "Bhopal_Varanasi": 750,
+  "Bhopal_Agra": 570,
+  "Bhopal_Amritsar": 1220,
+  "Bhopal_Bhubaneswar": 1150,
+  "Bhopal_Guwahati": 1950,
+  "Bhopal_Ranchi": 900,
+  "Bhopal_Coimbatore": 1750,
+  "Bhopal_Madurai": 1900,
+  "Bhopal_Goa": 1150,
+  "Bhopal_Raipur": 610,
+  "Patna_Vadodara": 1650,
+  "Patna_Surat": 1750,
+  "Patna_Chandigarh": 1250,
+  "Patna_Kochi": 2550,
+  "Patna_Visakhapatnam": 1150,
+  "Patna_Varanasi": 250,
+  "Patna_Agra": 850,
+  "Patna_Amritsar": 1450,
+  "Patna_Bhubaneswar": 850,
+  "Patna_Guwahati": 900,
+  "Patna_Ranchi": 330,
+  "Patna_Coimbatore": 2400,
+  "Patna_Madurai": 2550,
+  "Patna_Goa": 2200,
+  "Patna_Raipur": 850,
+  "Vadodara_Surat": 150,
+  "Vadodara_Chandigarh": 1250,
+  "Vadodara_Kochi": 1700,
+  "Vadodara_Visakhapatnam": 1600,
+  "Vadodara_Varanasi": 1250,
+  "Vadodara_Agra": 950,
+  "Vadodara_Amritsar": 1450,
+  "Vadodara_Bhubaneswar": 1750,
+  "Vadodara_Guwahati": 2600,
+  "Vadodara_Ranchi": 1450,
+  "Vadodara_Coimbatore": 1650,
+  "Vadodara_Madurai": 1800,
+  "Vadodara_Goa": 950,
+  "Vadodara_Raipur": 1100,
+  "Surat_Chandigarh": 1350,
+  "Surat_Kochi": 1550,
+  "Surat_Visakhapatnam": 1500,
+  "Surat_Varanasi": 1350,
+  "Surat_Agra": 1050,
+  "Surat_Amritsar": 1550,
+  "Surat_Bhubaneswar": 1650,
+  "Surat_Guwahati": 2700,
+  "Surat_Ranchi": 1550,
+  "Surat_Coimbatore": 1500,
+  "Surat_Madurai": 1650,
+  "Surat_Goa": 800,
+  "Surat_Raipur": 1050,
+  "Chandigarh_Kochi": 2900,
+  "Chandigarh_Visakhapatnam": 2050,
+  "Chandigarh_Varanasi": 1050,
+  "Chandigarh_Agra": 460,
+  "Chandigarh_Amritsar": 225,
+  "Chandigarh_Bhubaneswar": 1900,
+  "Chandigarh_Guwahati": 2150,
+  "Chandigarh_Ranchi": 1450,
+  "Chandigarh_Coimbatore": 2700,
+  "Chandigarh_Madurai": 2850,
+  "Chandigarh_Goa": 2150,
+  "Chandigarh_Raipur": 1400,
+  "Kochi_Visakhapatnam": 1350,
+  "Kochi_Varanasi": 2450,
+  "Kochi_Agra": 2450,
+  "Kochi_Amritsar": 3100,
+  "Kochi_Bhubaneswar": 1750,
+  "Kochi_Guwahati": 3250,
+  "Kochi_Ranchi": 2250,
+  "Kochi_Coimbatore": 190,
+  "Kochi_Madurai": 270,
+  "Kochi_Goa": 800,
+  "Kochi_Raipur": 1900,
+  "Visakhapatnam_Varanasi": 1050,
+  "Visakhapatnam_Agra": 1550,
+  "Visakhapatnam_Amritsar": 2250,
+  "Visakhapatnam_Bhubaneswar": 450,
+  "Visakhapatnam_Guwahati": 1850,
+  "Visakhapatnam_Ranchi": 850,
+  "Visakhapatnam_Coimbatore": 1150,
+  "Visakhapatnam_Madurai": 1250,
+  "Visakhapatnam_Goa": 1150,
+  "Visakhapatnam_Raipur": 550,
+  "Varanasi_Agra": 600,
+  "Varanasi_Amritsar": 1250,
+  "Varanasi_Bhubaneswar": 850,
+  "Varanasi_Guwahati": 1150,
+  "Varanasi_Ranchi": 450,
+  "Varanasi_Coimbatore": 2150,
+  "Varanasi_Madurai": 2300,
+  "Varanasi_Goa": 1950,
+  "Varanasi_Raipur": 700,
+  "Agra_Amritsar": 660,
+  "Agra_Bhubaneswar": 1450,
+  "Agra_Guwahati": 1750,
+  "Agra_Ranchi": 1000,
+  "Agra_Coimbatore": 2250,
+  "Agra_Madurai": 2400,
+  "Agra_Goa": 1700,
+  "Agra_Raipur": 950,
+  "Amritsar_Bhubaneswar": 2100,
+  "Amritsar_Guwahati": 2350,
+  "Amritsar_Ranchi": 1650,
+  "Amritsar_Coimbatore": 2900,
+  "Amritsar_Madurai": 3050,
+  "Amritsar_Goa": 2350,
+  "Amritsar_Raipur": 1600,
+  "Bhubaneswar_Guwahati": 1050,
+  "Bhubaneswar_Ranchi": 450,
+  "Bhubaneswar_Coimbatore": 1550,
+  "Bhubaneswar_Madurai": 1650,
+  "Bhubaneswar_Goa": 1550,
+  "Bhubaneswar_Raipur": 550,
+  "Guwahati_Ranchi": 950,
+  "Guwahati_Coimbatore": 2950,
+  "Guwahati_Madurai": 3100,
+  "Guwahati_Goa": 3100,
+  "Guwahati_Raipur": 1450,
+  "Ranchi_Coimbatore": 2000,
+  "Ranchi_Madurai": 2150,
+  "Ranchi_Goa": 1850,
+  "Ranchi_Raipur": 500,
+  "Coimbatore_Madurai": 220,
+  "Coimbatore_Goa": 750,
+  "Coimbatore_Raipur": 1550,
+  "Madurai_Goa": 950,
+  "Madurai_Raipur": 1700,
+  "Goa_Raipur": 1200,
+  "Mumbai_Nashik": 165,
+  "Pune_Nashik": 210,
+  "Nagpur_Nashik": 700,
+  "Mumbai_Aurangabad": 360,
+  "Pune_Aurangabad": 235,
+  "Nagpur_Aurangabad": 500,
+  "Mumbai_Solapur": 400,
+  "Pune_Solapur": 250,
+  "Nagpur_Solapur": 600,
+  "Ahmedabad_Rajkot": 215,
+  "Surat_Rajkot": 450,
+  "Vadodara_Rajkot": 280,
+  "Ahmedabad_Bhavnagar": 170,
+  "Surat_Bhavnagar": 360,
+  "Vadodara_Bhavnagar": 200,
+  "Ahmedabad_Jamnagar": 310,
+  "Surat_Jamnagar": 550,
+  "Vadodara_Jamnagar": 380,
+  "Lucknow_Allahabad": 200,
+  "Kanpur_Allahabad": 210,
+  "Varanasi_Allahabad": 120,
+  "Agra_Allahabad": 480,
+  "Lucknow_Gorakhpur": 270,
+  "Kanpur_Gorakhpur": 350,
+  "Varanasi_Gorakhpur": 200,
+  "Patna_Gaya": 100,
+  "Patna_Muzaffarpur": 75,
+  "Patna_Bhagalpur": 220,
+  "Chandigarh_Ludhiana": 105,
+  "Chandigarh_Jalandhar": 145,
+  "Chandigarh_Patiala": 70,
+  "Amritsar_Ludhiana": 140,
+  "Amritsar_Jalandhar": 80,
+  "Kochi_Trivandrum": 200,
+  "Kochi_Kozhikode": 180,
+  "Kochi_Thrissur": 85,
+  "Kochi_Alleppey": 55,
+  "Trivandrum_Kozhikode": 380,
+  "Bengaluru_Mysore": 145,
+  "Bengaluru_Mangaluru": 350,
+  "Bengaluru_Hubli": 410,
+  "Chennai_Salem": 340,
+  "Chennai_Trichy": 330,
+  "Chennai_Tirunelveli": 620,
+  "Madurai_Salem": 230,
+  "Madurai_Trichy": 135,
+  "Madurai_Tirunelveli": 160,
+  "Coimbatore_Salem": 165,
+  "Coimbatore_Trichy": 215,
+  "Kolkata_Durgapur": 170,
+  "Kolkata_Asansol": 210,
+  "Kolkata_Siliguri": 580,
+  "Kolkata_Darjeeling": 620,
+  "Bhubaneswar_Cuttack": 25,
+  "Bhubaneswar_Puri": 60,
+  "Bhubaneswar_Rourkela": 330,
+  "Bhubaneswar_Sambalpur": 280,
+  "New Delhi_Dehradun": 250,
+  "New Delhi_Shimla": 340,
+  "New Delhi_Haridwar": 220,
+  "New Delhi_Rishikesh": 240,
+  "New Delhi_Mathura": 180,
+  "New Delhi_Gwalior": 350,
+  "Jaipur_Udaipur": 390,
+  "Jaipur_Jodhpur": 330,
+  "Jaipur_Ajmer": 135,
+  "Jaipur_Bikaner": 330,
+  "Jaipur_Kota": 250,
+  "Indore_Ujjain": 55,
+  "Bhopal_Ujjain": 190,
+  "Bhopal_Gwalior": 430,
+  "Bhopal_Jabalpur": 310,
+  "Indore_Jabalpur": 500,
+  "Raipur_Bilaspur": 120,
+  "Raipur_Bhilai": 30
 };
 
+function normalizeCity(name) {
+  if (!name) return "";
+  let s = name.toLowerCase().trim();
+  s = s.replace(/\([^)]*\)/g, "").trim();
+  const stripWords = ["junction", "jn", "central", "cantt", "terminus", "terminal", "isbt", "airport", "city", "camp", "road", "railway station"];
+  for (const term of stripWords) {
+    s = s.replace(new RegExp(`\\b${term}\\b`, "gi"), "");
+  }
+  s = s.trim();
+
+  if (s.includes("delhi")) return "New Delhi";
+  if (s.includes("bangalore") || s.includes("bengaluru")) return "Bengaluru";
+  if (s.includes("bombay") || s.includes("mumbai")) return "Mumbai";
+  if (s.includes("calcutta") || s.includes("kolkata")) return "Kolkata";
+  if (s.includes("madras") || s.includes("chennai")) return "Chennai";
+  if (s.includes("bihar") || s.includes("patna")) return "Patna";
+  if (s.includes("trivandrum") || s.includes("thiruvananthapuram")) return "Trivandrum";
+  if (s.includes("baroda") || s.includes("vadodara")) return "Vadodara";
+  if (s.includes("cochin") || s.includes("kochi")) return "Kochi";
+  if (s.includes("vizag") || s.includes("visakhapatnam")) return "Visakhapatnam";
+  if (s.includes("banaras") || s.includes("kashi") || s.includes("varanasi")) return "Varanasi";
+  if (s.includes("prayagraj") || s.includes("allahabad")) return "Allahabad";
+
+  return s.split(/\s+/).map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+}
+
 function lookupDistance(from, to) {
-  if (!from || !to || from.toLowerCase() === to.toLowerCase()) return 450;
-  const f = from.trim();
-  const t = to.trim();
+  if (!from || !to) return 500;
+  const c1 = normalizeCity(from);
+  const c2 = normalizeCity(to);
+  if (c1.toLowerCase() === c2.toLowerCase()) return 0;
+
+  // 1. Direct key match (bidirectional)
+  const k1 = `${c1}_${c2}`;
+  const k2 = `${c2}_${c1}`;
+  if (CITY_DISTANCES[k1]) return CITY_DISTANCES[k1];
+  if (CITY_DISTANCES[k2]) return CITY_DISTANCES[k2];
+
+  // 2. Loose substring check
+  const fLower = from.toLowerCase();
+  const tLower = to.toLowerCase();
   for (const k in CITY_DISTANCES) {
-    const [c1, c2] = k.split("_");
+    const [cityA, cityB] = k.split("_");
+    const ca = cityA.toLowerCase();
+    const cb = cityB.toLowerCase();
     if (
-      (f.toLowerCase().includes(c1.toLowerCase()) && t.toLowerCase().includes(c2.toLowerCase())) ||
-      (f.toLowerCase().includes(c2.toLowerCase()) && t.toLowerCase().includes(c1.toLowerCase()))
+      (fLower.includes(ca) && tLower.includes(cb)) ||
+      (fLower.includes(cb) && tLower.includes(ca))
     ) {
       return CITY_DISTANCES[k];
     }
   }
+
   return 500;
 }
 
@@ -87,15 +619,9 @@ export function TravelScreen({ onBack, onNavigate, initialTab = "train" }) {
   const [guestsCount, setGuestsCount] = useState(2);
   const [roomsCount, setRoomsCount] = useState(1);
 
-  // AI Route calculation state
-  const [isAiCalculating, setIsAiCalculating] = useState(false);
-  const [aiNote, setAiNote] = useState("🤖 Calibrated Route: Bihar to Chennai (~2,075 KM via IRCTC)");
-  const [aiTrains, setAiTrains] = useState(null);
-  const [aiBuses, setAiBuses] = useState(null);
-  const [aiFlights, setAiFlights] = useState(null);
-
   // Checkout modal state
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [passengerName, setPassengerName] = useState(profile?.full_name || "");
   const [passengerAge, setPassengerAge] = useState(28);
   const [passengerGender, setPassengerGender] = useState("Male");
@@ -141,44 +667,23 @@ export function TravelScreen({ onBack, onNavigate, initialTab = "train" }) {
     }
   }, [activeTab]);
 
-  // AI Route and Distance Lookup function
-  const handleAiRouteLookup = async (origin, destination, mode = "train") => {
-    if (!origin || !destination) return;
-    setIsAiCalculating(true);
-    setAiNote("🤖 Querying transit AI & track matrix for real distance...");
-    try {
-      const data = await TravelAPI.getAIRouteInfo(origin, destination, mode);
-      if (data.rail_distance_km) {
-        setTrainDistance(Math.round(data.rail_distance_km));
-      }
-      if (data.road_distance_km) {
-        setBusDistance(Math.round(data.road_distance_km));
-      }
-      if (data.trains && data.trains.length > 0) {
-        setAiTrains(data.trains);
-      }
-      if (data.buses && data.buses.length > 0) {
-        setAiBuses(data.buses);
-      }
-      if (data.flights && data.flights.length > 0) {
-        setAiFlights(data.flights);
-      }
-      setAiNote(`🤖 ${data.notes || "Real Route Verified"} &bull; ~${Math.round(data.rail_distance_km || 0)} KM (${data.estimated_rail_time || ""})`);
-    } catch (err) {
-      console.warn("AI route lookup note:", err);
-      const dist = lookupDistance(origin, destination);
-      setTrainDistance(dist);
-      setAiNote(`Distance: ~${dist} KM (Matrix Calibrated)`);
-    } finally {
-      setIsAiCalculating(false);
-    }
-  };
+  // Automatic distance calculation from static lookup table
+  useEffect(() => {
+    const dist = lookupDistance(trainFrom, trainTo);
+    if (dist > 0) setTrainDistance(dist);
+  }, [trainFrom, trainTo]);
+
+  useEffect(() => {
+    const dist = lookupDistance(busFrom, busTo);
+    if (dist > 0) setBusDistance(dist);
+  }, [busFrom, busTo]);
 
   // Quick route apply helper
   const applyQuickRoute = (from, to) => {
     setTrainFrom(from);
     setTrainTo(to);
-    handleAiRouteLookup(from, to, "train");
+    const d = lookupDistance(from, to);
+    if (d > 0) setTrainDistance(d);
   };
 
   // Handle PDF View
@@ -229,31 +734,20 @@ export function TravelScreen({ onBack, onNavigate, initialTab = "train" }) {
   }, [checkInDate, checkOutDate]);
 
   // Train rate formula as requested:
-  // Sleeper (SL): 1.0 Rs / km
-  // 3rd AC (3A): 1.8 Rs / km
-  // 2nd AC (2A): 3.0 Rs / km
-  // 1st AC (1A): 4.0 Rs / km
+  // Sleeper (SL): 0.7 Rs / km
+  // 3rd AC (3A): 1.2 Rs / km
+  // 2nd AC (2A): 2.0 Rs / km
+  // 1st AC (1A): 3.0 Rs / km
   const trainOptions = useMemo(() => {
     const dist = trainDistance > 0 ? trainDistance : 500;
+    const hours = Math.max(2, Math.round(dist / 65));
+    const mins = Math.round(((dist % 65) / 65) * 60);
+    const calcDuration = `${hours}h ${mins > 0 ? (mins < 10 ? "0" + mins : mins) + "m" : "15m"}`;
 
-    if (aiTrains && aiTrains.length > 0) {
-      return aiTrains.map((t) => ({
-        trainNo: t.number || "12296",
-        name: t.name || "Superfast Express",
-        depart: t.departure || "08:15 PM",
-        arrive: t.arrival || "06:45 AM",
-        duration: t.duration || "34h 30m",
-        classes: [
-          { code: "SL", label: "Sleeper", ratePerKm: 1.0, price: Math.round(dist * 1.0), seats: "AVL 82" },
-          { code: "3A", label: "3rd AC", ratePerKm: 1.8, price: Math.round(dist * 1.8), seats: "AVL 36" },
-          { code: "2A", label: "2nd AC", ratePerKm: 3.0, price: Math.round(dist * 3.0), seats: "AVL 12" },
-          { code: "1A", label: "1st AC", ratePerKm: 4.0, price: Math.round(dist * 4.0), seats: "AVL 04" },
-        ],
-      }));
-    }
-
-    // Default route options (including Bihar to Chennai if selected)
-    const isBiharChennai = (trainFrom.toLowerCase().includes("bihar") || trainFrom.toLowerCase().includes("patna")) && trainTo.toLowerCase().includes("chennai");
+    // Specific route: Bihar / Patna to Chennai
+    const isBiharChennai =
+      (trainFrom.toLowerCase().includes("bihar") || trainFrom.toLowerCase().includes("patna")) &&
+      trainTo.toLowerCase().includes("chennai");
 
     if (isBiharChennai) {
       return [
@@ -264,10 +758,10 @@ export function TravelScreen({ onBack, onNavigate, initialTab = "train" }) {
           arrive: "06:45 AM (Day 3)",
           duration: "34h 30m",
           classes: [
-            { code: "SL", label: "Sleeper", ratePerKm: 1.0, price: Math.round(dist * 1.0), seats: "AVL 114" },
-            { code: "3A", label: "3rd AC", ratePerKm: 1.8, price: Math.round(dist * 1.8), seats: "AVL 48" },
-            { code: "2A", label: "2nd AC", ratePerKm: 3.0, price: Math.round(dist * 3.0), seats: "AVL 14" },
-            { code: "1A", label: "1st AC", ratePerKm: 4.0, price: Math.round(dist * 4.0), seats: "AVL 04" },
+            { code: "SL", label: "Sleeper", ratePerKm: 0.7, price: Math.round(dist * 0.7), seats: "AVL 114" },
+            { code: "3A", label: "3rd AC", ratePerKm: 1.2, price: Math.round(dist * 1.2), seats: "AVL 48" },
+            { code: "2A", label: "2nd AC", ratePerKm: 2.0, price: Math.round(dist * 2.0), seats: "AVL 14" },
+            { code: "1A", label: "1st AC", ratePerKm: 3.0, price: Math.round(dist * 3.0), seats: "AVL 04" },
           ],
         },
         {
@@ -277,9 +771,9 @@ export function TravelScreen({ onBack, onNavigate, initialTab = "train" }) {
           arrive: "07:15 PM (Day 2)",
           duration: "35h 55m",
           classes: [
-            { code: "SL", label: "Sleeper", ratePerKm: 1.0, price: Math.round(dist * 1.0), seats: "RAC 08" },
-            { code: "3A", label: "3rd AC", ratePerKm: 1.8, price: Math.round(dist * 1.8), seats: "AVL 24" },
-            { code: "2A", label: "2nd AC", ratePerKm: 3.0, price: Math.round(dist * 3.0), seats: "AVL 06" },
+            { code: "SL", label: "Sleeper", ratePerKm: 0.7, price: Math.round(dist * 0.7), seats: "RAC 08" },
+            { code: "3A", label: "3rd AC", ratePerKm: 1.2, price: Math.round(dist * 1.2), seats: "AVL 24" },
+            { code: "2A", label: "2nd AC", ratePerKm: 2.0, price: Math.round(dist * 2.0), seats: "AVL 06" },
           ],
         },
         {
@@ -289,9 +783,9 @@ export function TravelScreen({ onBack, onNavigate, initialTab = "train" }) {
           arrive: "11:55 PM (Day 2)",
           duration: "33h 55m",
           classes: [
-            { code: "SL", label: "Sleeper", ratePerKm: 1.0, price: Math.round(dist * 1.0), seats: "AVL 52" },
-            { code: "3A", label: "3rd AC", ratePerKm: 1.8, price: Math.round(dist * 1.8), seats: "AVL 18" },
-            { code: "2A", label: "2nd AC", ratePerKm: 3.0, price: Math.round(dist * 3.0), seats: "AVL 08" },
+            { code: "SL", label: "Sleeper", ratePerKm: 0.7, price: Math.round(dist * 0.7), seats: "AVL 52" },
+            { code: "3A", label: "3rd AC", ratePerKm: 1.2, price: Math.round(dist * 1.2), seats: "AVL 18" },
+            { code: "2A", label: "2nd AC", ratePerKm: 2.0, price: Math.round(dist * 2.0), seats: "AVL 08" },
           ],
         },
         {
@@ -301,8 +795,8 @@ export function TravelScreen({ onBack, onNavigate, initialTab = "train" }) {
           arrive: "06:50 AM (Day 3)",
           duration: "34h 25m",
           classes: [
-            { code: "3A", label: "3rd AC", ratePerKm: 1.8, price: Math.round(dist * 1.8), seats: "AVL 64" },
-            { code: "2A", label: "2nd AC", ratePerKm: 3.0, price: Math.round(dist * 3.0), seats: "AVL 20" },
+            { code: "3A", label: "3rd AC", ratePerKm: 1.2, price: Math.round(dist * 1.2), seats: "AVL 64" },
+            { code: "2A", label: "2nd AC", ratePerKm: 2.0, price: Math.round(dist * 2.0), seats: "AVL 20" },
           ],
         },
       ];
@@ -314,11 +808,11 @@ export function TravelScreen({ onBack, onNavigate, initialTab = "train" }) {
         name: "Vande Bharat Express",
         depart: "06:00 AM",
         arrive: "02:00 PM",
-        duration: "8h 00m",
+        duration: calcDuration,
         classes: [
-          { code: "SL", label: "Sleeper", ratePerKm: 1.0, price: Math.round(dist * 1.0), seats: "AVL 80" },
-          { code: "3A", label: "3rd AC", ratePerKm: 1.8, price: Math.round(dist * 1.8), seats: "AVL 48" },
-          { code: "2A", label: "2nd AC", ratePerKm: 3.0, price: Math.round(dist * 3.0), seats: "AVL 16" },
+          { code: "SL", label: "Sleeper", ratePerKm: 0.7, price: Math.round(dist * 0.7), seats: "AVL 80" },
+          { code: "3A", label: "3rd AC", ratePerKm: 1.2, price: Math.round(dist * 1.2), seats: "AVL 48" },
+          { code: "2A", label: "2nd AC", ratePerKm: 2.0, price: Math.round(dist * 2.0), seats: "AVL 16" },
         ],
       },
       {
@@ -326,11 +820,11 @@ export function TravelScreen({ onBack, onNavigate, initialTab = "train" }) {
         name: "Tejas Rajdhani Express",
         depart: "04:55 PM",
         arrive: "08:35 AM",
-        duration: "15h 40m",
+        duration: calcDuration,
         classes: [
-          { code: "3A", label: "3rd AC", ratePerKm: 1.8, price: Math.round(dist * 1.8), seats: "AVL 32" },
-          { code: "2A", label: "2nd AC", ratePerKm: 3.0, price: Math.round(dist * 3.0), seats: "AVL 14" },
-          { code: "1A", label: "1st AC", ratePerKm: 4.0, price: Math.round(dist * 4.0), seats: "AVL 04" },
+          { code: "3A", label: "3rd AC", ratePerKm: 1.2, price: Math.round(dist * 1.2), seats: "AVL 32" },
+          { code: "2A", label: "2nd AC", ratePerKm: 2.0, price: Math.round(dist * 2.0), seats: "AVL 14" },
+          { code: "1A", label: "1st AC", ratePerKm: 3.0, price: Math.round(dist * 3.0), seats: "AVL 04" },
         ],
       },
       {
@@ -338,11 +832,11 @@ export function TravelScreen({ onBack, onNavigate, initialTab = "train" }) {
         name: "Shatabdi Express",
         depart: "06:10 AM",
         arrive: "11:45 AM",
-        duration: "5h 35m",
+        duration: calcDuration,
         classes: [
-          { code: "SL", label: "Sleeper", ratePerKm: 1.0, price: Math.round(dist * 1.0), seats: "AVL 120" },
-          { code: "3A", label: "3rd AC", ratePerKm: 1.8, price: Math.round(dist * 1.8), seats: "AVL 45" },
-          { code: "2A", label: "2nd AC", ratePerKm: 3.0, price: Math.round(dist * 3.0), seats: "AVL 18" },
+          { code: "SL", label: "Sleeper", ratePerKm: 0.7, price: Math.round(dist * 0.7), seats: "AVL 120" },
+          { code: "3A", label: "3rd AC", ratePerKm: 1.2, price: Math.round(dist * 1.2), seats: "AVL 45" },
+          { code: "2A", label: "2nd AC", ratePerKm: 2.0, price: Math.round(dist * 2.0), seats: "AVL 18" },
         ],
       },
       {
@@ -350,16 +844,16 @@ export function TravelScreen({ onBack, onNavigate, initialTab = "train" }) {
         name: "Mahabodhi Superfast Exp",
         depart: "12:50 PM",
         arrive: "09:10 PM",
-        duration: "8h 20m",
+        duration: calcDuration,
         classes: [
-          { code: "SL", label: "Sleeper", ratePerKm: 1.0, price: Math.round(dist * 1.0), seats: "RAC 12" },
-          { code: "3A", label: "3rd AC", ratePerKm: 1.8, price: Math.round(dist * 1.8), seats: "AVL 28" },
-          { code: "2A", label: "2nd AC", ratePerKm: 3.0, price: Math.round(dist * 3.0), seats: "AVL 09" },
-          { code: "1A", label: "1st AC", ratePerKm: 4.0, price: Math.round(dist * 4.0), seats: "AVL 02" },
+          { code: "SL", label: "Sleeper", ratePerKm: 0.7, price: Math.round(dist * 0.7), seats: "RAC 12" },
+          { code: "3A", label: "3rd AC", ratePerKm: 1.2, price: Math.round(dist * 1.2), seats: "AVL 28" },
+          { code: "2A", label: "2nd AC", ratePerKm: 2.0, price: Math.round(dist * 2.0), seats: "AVL 09" },
+          { code: "1A", label: "1st AC", ratePerKm: 3.0, price: Math.round(dist * 3.0), seats: "AVL 02" },
         ],
       },
     ];
-  }, [trainDistance, aiTrains, trainFrom, trainTo]);
+  }, [trainDistance, trainFrom, trainTo]);
 
   // Demo Flights
   const flightOptions = useMemo(() => {
@@ -415,7 +909,7 @@ export function TravelScreen({ onBack, onNavigate, initialTab = "train" }) {
         arrive: "12:30 PM",
         duration: "5h 30m",
         rating: "4.7★",
-        price: Math.round(dist * 1.5),
+        price: Math.round(dist * 1.2),
         amenities: ["WiFi", "Live Tracking", "Water"],
       },
       {
@@ -425,7 +919,7 @@ export function TravelScreen({ onBack, onNavigate, initialTab = "train" }) {
         arrive: "05:00 AM",
         duration: "6h 30m",
         rating: "4.8★",
-        price: Math.round(dist * 2.2),
+        price: Math.round(dist * 1.6),
         amenities: ["Blanket", "Charging", "Snacks"],
       },
       {
@@ -435,7 +929,7 @@ export function TravelScreen({ onBack, onNavigate, initialTab = "train" }) {
         arrive: "07:30 PM",
         duration: "5h 15m",
         rating: "4.6★",
-        price: Math.round(dist * 1.8),
+        price: Math.round(dist * 1.4),
         amenities: ["Clean Air", "CCTV", "WiFi"],
       },
       {
@@ -445,7 +939,7 @@ export function TravelScreen({ onBack, onNavigate, initialTab = "train" }) {
         arrive: "05:45 AM",
         duration: "6h 30m",
         rating: "4.5★",
-        price: Math.round(dist * 2.6),
+        price: Math.round(dist * 2.0),
         amenities: ["Recliner", "Water", "USB"],
       },
     ];
@@ -496,12 +990,13 @@ export function TravelScreen({ onBack, onNavigate, initialTab = "train" }) {
   // Initiate Booking
   const openBookingModal = (bookingData) => {
     setSelectedBooking(bookingData);
+    setShowPaymentModal(false);
     setPin("");
     setBookingError("");
   };
 
   // Submit Booking
-  const handleConfirmBooking = async () => {
+  const handleConfirmBooking = async (enteredPin, mode = "normal") => {
     if (!selectedBooking) return;
     setBookingError("");
 
@@ -510,7 +1005,7 @@ export function TravelScreen({ onBack, onNavigate, initialTab = "train" }) {
       return;
     }
 
-    if (profile?.has_upi_pin && !pin) {
+    if (profile?.has_upi_pin && !enteredPin) {
       setBookingError("Please enter your 6-digit UPI PIN");
       return;
     }
@@ -539,12 +1034,13 @@ export function TravelScreen({ onBack, onNavigate, initialTab = "train" }) {
         passenger_gender: passengerGender,
         seat_or_room_no: selectedBooking.seatOrRoom || (selectedBooking.type === "train" ? `B2 - ${Math.floor(Math.random() * 60) + 1} (${berthPreference})` : selectedBooking.type === "hotel" ? `Room ${Math.floor(Math.random() * 300) + 101}` : `${Math.floor(Math.random() * 25) + 1}A`),
         amount: selectedBooking.amount,
-        pin: pin || null,
+        pin: enteredPin || null,
       };
 
       const result = await TravelAPI.book(payload);
       await refreshProfile?.();
       await loadBookings();
+      setShowPaymentModal(false);
       setSelectedBooking(null);
       setConfirmedBooking(result);
     } catch (err) {
@@ -569,7 +1065,7 @@ export function TravelScreen({ onBack, onNavigate, initialTab = "train" }) {
           </button>
           <div>
             <h2 className="text-[19px] font-extrabold text-textLight leading-tight">Travel & Transit</h2>
-            <p className="text-[11px] text-muted">AI-Powered Routes & Instant Wallet Booking</p>
+            <p className="text-[11px] text-muted">Direct Route Search & Instant Wallet Booking</p>
           </div>
         </div>
 
@@ -658,16 +1154,10 @@ export function TravelScreen({ onBack, onNavigate, initialTab = "train" }) {
                 <span className="text-xs font-bold text-accent uppercase tracking-wider flex items-center gap-1.5">
                   <span>🚆</span> IRCTC Train Booking
                 </span>
-                <button
-                  type="button"
-                  onClick={() => handleAiRouteLookup(trainFrom, trainTo, "train")}
-                  disabled={isAiCalculating}
-                  className="px-2.5 py-1 rounded-lg bg-accent/15 border border-accent/40 text-accent hover:bg-accent/25 text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
-                  title="Query AI for real railway track distance"
-                >
-                  <span>✨</span>
-                  <span>{isAiCalculating ? "Calculating..." : "AI Calculate Route"}</span>
-                </button>
+                <span className="px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-[10px] font-bold flex items-center gap-1">
+                  <span>⚡</span>
+                  <span>Instant Rates</span>
+                </span>
               </div>
 
               {/* Free text search inputs */}
@@ -692,7 +1182,6 @@ export function TravelScreen({ onBack, onNavigate, initialTab = "train" }) {
                       const temp = trainFrom;
                       setTrainFrom(trainTo);
                       setTrainTo(temp);
-                      handleAiRouteLookup(trainTo, temp, "train");
                     }}
                     className="w-7 h-7 rounded-full bg-accent text-white flex items-center justify-center text-xs shadow-md hover:scale-110 active:scale-90 transition-transform"
                     title="Swap stations"
@@ -748,7 +1237,7 @@ export function TravelScreen({ onBack, onNavigate, initialTab = "train" }) {
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-[10px] uppercase font-bold text-muted block">Real Track Distance</label>
-                    <span className="text-[9px] text-accent font-bold">AI Calibrated</span>
+                    <span className="text-[9px] text-accent font-bold">Standard Railway Route</span>
                   </div>
                   <div className="relative">
                     <input
@@ -762,26 +1251,12 @@ export function TravelScreen({ onBack, onNavigate, initialTab = "train" }) {
                 </div>
               </div>
 
-              {/* AI Status / Note Banner */}
-              {aiNote && (
-                <div className="mt-2.5 p-2 rounded-xl bg-accent/[0.08] border border-accent/25 text-[10px] font-semibold text-textLight flex items-center justify-between">
-                  <span className="truncate">{aiNote}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleAiRouteLookup(trainFrom, trainTo, "train")}
-                    className="text-accent underline font-bold ml-2 shrink-0"
-                  >
-                    Recalculate
-                  </button>
-                </div>
-              )}
-
               {/* Rate Card Legend */}
               <div className="mt-2.5 p-2 rounded-xl bg-surf border border-line flex items-center justify-between text-[10px] font-semibold text-textLight flex-wrap gap-1">
-                <span>SL: <strong className="text-accent">₹1/km</strong></span>
-                <span>3A: <strong className="text-accent">₹1.8/km</strong></span>
-                <span>2A: <strong className="text-accent">₹3/km</strong></span>
-                <span>1A: <strong className="text-accent">₹4/km</strong></span>
+                <span>SL: <strong className="text-accent">₹0.7/km</strong></span>
+                <span>3A: <strong className="text-accent">₹1.2/km</strong></span>
+                <span>2A: <strong className="text-accent">₹2/km</strong></span>
+                <span>1A: <strong className="text-accent">₹3/km</strong></span>
               </div>
             </Card>
 
@@ -987,15 +1462,7 @@ export function TravelScreen({ onBack, onNavigate, initialTab = "train" }) {
             <Card className="p-4 border-line">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-bold text-red-400 uppercase tracking-wider">🚌 Intercity Bus Tickets</span>
-                <button
-                  type="button"
-                  onClick={() => handleAiRouteLookup(busFrom, busTo, "bus")}
-                  disabled={isAiCalculating}
-                  className="px-2.5 py-1 rounded-lg bg-accent/15 border border-accent/40 text-accent hover:bg-accent/25 text-[10px] font-bold flex items-center gap-1 transition-all cursor-pointer disabled:opacity-50"
-                >
-                  <span>✨</span>
-                  <span>{isAiCalculating ? "Calculating..." : "AI Calculate Distance"}</span>
-                </button>
+                <span className="text-[10px] text-muted">Fixed Distance Tariff</span>
               </div>
 
               <div className="grid grid-cols-2 gap-2 mb-3">
@@ -1433,65 +1900,52 @@ export function TravelScreen({ onBack, onNavigate, initialTab = "train" }) {
               )}
             </div>
 
-            {/* Wallet Balance & PIN Section */}
-            <div className="bg-surf/60 rounded-2xl p-3.5 border border-line mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-bold text-muted">RenoPay Wallet Balance</span>
-                <span className="text-sm font-mono font-extrabold text-textLight">
-                  {fmt(profile?.account?.balance ?? 0)}
-                </span>
-              </div>
-
-              {(profile?.account?.balance ?? 0) < selectedBooking.amount ? (
-                <div className="p-2.5 rounded-xl bg-danger/10 border border-danger/30 text-danger text-xs font-semibold">
-                  ⚠️ Insufficient balance to pay {fmt(selectedBooking.amount)}. Please add money to your wallet.
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedBooking(null);
-                      onNavigate?.("addmoney");
-                    }}
-                    className="block mt-1.5 text-accent underline font-bold"
-                  >
-                    Go to Add Money →
-                  </button>
-                </div>
-              ) : (
-                profile?.has_upi_pin && (
-                  <div>
-                    <label className="text-[10px] uppercase font-bold text-muted block mb-1">Enter 6-Digit UPI PIN</label>
-                    <input
-                      type="password"
-                      maxLength={6}
-                      value={pin}
-                      onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
-                      placeholder="••••••"
-                      className="w-full bg-bg border border-line rounded-xl px-3 py-2 text-center text-base tracking-[6px] font-mono text-textLight font-bold outline-none focus:border-accent"
-                    />
-                  </div>
-                )
-              )}
-            </div>
-
             {bookingError && <p className="text-danger text-xs font-semibold mb-3">{bookingError}</p>}
 
             {/* Action Buttons */}
-            <div className="flex gap-2">
-              <Btn variant="dark" onClick={() => setSelectedBooking(null)} className="flex-1 py-2.5">
+            <div className="flex gap-2 pt-2">
+              <Btn variant="dark" onClick={() => setSelectedBooking(null)} className="flex-1 py-2.5 text-xs font-semibold">
                 Cancel
               </Btn>
               <Btn
                 variant="teal"
-                disabled={submitting || (profile?.account?.balance ?? 0) < selectedBooking.amount}
-                onClick={handleConfirmBooking}
-                className="flex-1 py-2.5 font-bold"
+                onClick={() => {
+                  if (!passengerName.trim()) {
+                    setBookingError("Please enter passenger/guest full name");
+                    return;
+                  }
+                  setBookingError("");
+                  setShowPaymentModal(true);
+                }}
+                className="flex-1 py-2.5 font-bold text-xs flex items-center justify-center gap-1 cursor-pointer"
               >
-                {submitting ? "Booking..." : `Pay ${fmt(selectedBooking.amount)}`}
+                Proceed to Pay ({fmt(selectedBooking.amount)}) →
               </Btn>
             </div>
           </div>
         </div>
       )}
+
+      {/* ===================== PAYMENT METHOD MODAL (NORMAL VS ADVANCE PAY) ===================== */}
+      <PaymentMethodModal
+        isOpen={showPaymentModal && !!selectedBooking}
+        onClose={() => setShowPaymentModal(false)}
+        title={`${selectedBooking?.operator || "Ticket"} Booking`}
+        subtitle={`${selectedBooking?.from} ➔ ${selectedBooking?.to} • ${selectedBooking?.travelClass}`}
+        amount={selectedBooking?.amount || 0}
+        recipient={selectedBooking?.operator}
+        accountBalance={profile?.account?.balance ?? 0}
+        onAddMoney={() => {
+          setShowPaymentModal(false);
+          setSelectedBooking(null);
+          onNavigate?.("addmoney");
+        }}
+        onConfirm={async (enteredPin, mode) => {
+          await handleConfirmBooking(enteredPin, mode);
+        }}
+        loading={submitting}
+        error={bookingError}
+      />
 
       {/* ===================== CONFIRMED TICKET SUCCESS MODAL ===================== */}
       {confirmedBooking && (

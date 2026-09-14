@@ -20,7 +20,7 @@ import iconUpilite from "../assets/actions/upilite.png";
 import iconGold from "../assets/actions/gold.png";
 import iconLedger from "../assets/actions/ledger.png";
 import iconVaults from "../assets/actions/vaults.png";
-import { FlightIcon, BusIcon, TrainIcon, HotelIcon } from "../components/TravelIcons";
+import { TravelActionIcon, LoanActionIcon, RechargeActionIcon, InvestActionIcon } from "../components/FinanceModuleIcons";
 
 const QUICK_ACTIONS_1 = [
   { icon: iconPay, l: "Pay", s: "pay" },
@@ -39,6 +39,12 @@ const QUICK_ACTIONS_2 = [
 const QUICK_ACTIONS_3 = [
   { icon: iconGold, l: "Gold", s: "gold" },
   { icon: iconLedger, l: "Reports", s: "ledger" },
+  { icon: TravelActionIcon, l: "Travel", s: "travel", isComponent: true },
+  { icon: LoanActionIcon, l: "Loans", s: "loans", isComponent: true },
+  { icon: RechargeActionIcon, l: "Recharge", s: "recharge", isComponent: true },
+];
+const QUICK_ACTIONS_4 = [
+  { icon: InvestActionIcon, l: "Invest", s: "invest", isComponent: true },
   { icon: iconVaults, l: "Vaults", s: "vaults" },
 ];
 
@@ -258,51 +264,35 @@ export function HomeScreen({ onNavigate }) {
             </button>
           ))}
         </div>
-        <div className="grid grid-cols-3 gap-2">
-          {QUICK_ACTIONS_3.map((a) => (
-            <button key={a.s} className="group btn bg-card border border-line rounded-[20px] py-2.5 px-1 flex flex-col items-center gap-1.5 hover:border-accent/40 hover:bg-card/80 transition-all active:scale-95 cursor-pointer" onClick={() => onNavigate(a.s)}>
-              <img src={a.icon} alt={a.l} className="w-[38px] h-[38px] object-contain drop-shadow-md transition-transform group-hover:scale-105" />
-              <span className="text-[10px] text-textLight font-semibold tracking-tight">{a.l}</span>
-            </button>
-          ))}
+        <div className="grid grid-cols-5 gap-2">
+          {QUICK_ACTIONS_3.map((a) => {
+            const IconComp = a.isComponent ? a.icon : null;
+            return (
+              <button key={a.s} className="group btn bg-card border border-line rounded-[20px] py-2.5 px-1 flex flex-col items-center gap-1.5 hover:border-accent/40 hover:bg-card/80 transition-all active:scale-95 cursor-pointer" onClick={() => onNavigate(a.s)}>
+                {IconComp ? (
+                  <IconComp className="w-[38px] h-[38px] transition-transform group-hover:scale-105 drop-shadow-md" />
+                ) : (
+                  <img src={a.icon} alt={a.l} className="w-[38px] h-[38px] object-contain drop-shadow-md transition-transform group-hover:scale-105" />
+                )}
+                <span className="text-[10px] text-textLight font-semibold tracking-tight">{a.l}</span>
+              </button>
+            );
+          })}
         </div>
-
-        {/* Travel & Transit Section matching reference screenshot */}
-        <div className="mt-2 mb-1">
-          <div className="flex justify-between items-center mb-2.5 px-0.5">
-            <h3 className="text-base font-extrabold text-textLight">Travel & Transit</h3>
-            <button
-              onClick={() => onNavigate("travel", { tab: "train" })}
-              className="text-accent text-xs font-semibold hover:underline"
-            >
-              Bookings →
-            </button>
-          </div>
-
-          <div className="grid grid-cols-4 gap-2.5">
-            {[
-              { id: "flight", label: "Flight", icon: FlightIcon },
-              { id: "bus", label: "Bus", icon: BusIcon },
-              { id: "train", label: "Train", icon: TrainIcon },
-              { id: "hotel", label: "Hotel", icon: HotelIcon },
-            ].map((item) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => onNavigate("travel", { tab: item.id })}
-                  className="group flex flex-col items-center justify-center p-1.5 transition-all active:scale-95 cursor-pointer"
-                >
-                  <div className="w-[68px] h-[54px] rounded-2xl bg-[#201c19] border border-line/70 hover:border-accent/50 flex items-center justify-center mb-1.5 transition-all group-hover:scale-105 group-hover:shadow-accentGlow shadow-sm">
-                    <Icon className="w-9 h-9 object-contain drop-shadow-sm" />
-                  </div>
-                  <span className="text-[11px] font-semibold text-textLight tracking-tight group-hover:text-accent transition-colors">
-                    {item.label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+        <div className="grid grid-cols-5 gap-2">
+          {QUICK_ACTIONS_4.map((a) => {
+            const IconComp = a.isComponent ? a.icon : null;
+            return (
+              <button key={a.s} className="group btn bg-card border border-line rounded-[20px] py-2.5 px-1 flex flex-col items-center gap-1.5 hover:border-accent/40 hover:bg-card/80 transition-all active:scale-95 cursor-pointer" onClick={() => onNavigate(a.s)}>
+                {IconComp ? (
+                  <IconComp className="w-[38px] h-[38px] transition-transform group-hover:scale-105 drop-shadow-md" />
+                ) : (
+                  <img src={a.icon} alt={a.l} className="w-[38px] h-[38px] object-contain drop-shadow-md transition-transform group-hover:scale-105" />
+                )}
+                <span className="text-[10px] text-textLight font-semibold tracking-tight">{a.l}</span>
+              </button>
+            );
+          })}
         </div>
 
         <div>

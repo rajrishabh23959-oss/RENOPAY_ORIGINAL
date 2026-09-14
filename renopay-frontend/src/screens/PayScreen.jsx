@@ -444,15 +444,38 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
               )}
             </Card>
 
-            {/* ── Payment Mode Toggle ── */}
-            <div className="ns-mode-toggle">
-              <button className={`ns-mode-btn ${payMode === "classic" ? "ns-mode-active" : ""}`} onClick={() => setPayMode("classic")} type="button">
-                ⌨️ Keypad
+            {/* ── Payment Mode Toggle: Normal Pay vs Advance Pay ── */}
+            <div className="grid grid-cols-2 gap-2 bg-surf/90 p-1.5 rounded-2xl border border-line mb-2">
+              <button
+                className={`py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
+                  payMode === "classic"
+                    ? "bg-accent text-white shadow-accentGlow"
+                    : "text-muted hover:text-textLight"
+                }`}
+                onClick={() => setPayMode("classic")}
+                type="button"
+              >
+                <span>⚡</span>
+                <span>Normal Pay</span>
               </button>
-              <button className={`ns-mode-btn ${payMode === "slider" ? "ns-mode-active" : ""}`} onClick={() => setPayMode("slider")} type="button">
-                💵 Note Slider
+              <button
+                className={`py-2 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all ${
+                  payMode === "slider"
+                    ? "bg-accent text-white shadow-accentGlow"
+                    : "text-muted hover:text-textLight"
+                }`}
+                onClick={() => setPayMode("slider")}
+                type="button"
+              >
+                <span>🚀</span>
+                <span>Advance Pay</span>
               </button>
             </div>
+            <p className="text-[10px] text-muted text-center mb-3">
+              {payMode === "classic"
+                ? "⚡ Normal Pay: Direct amount entry + 6-digit UPI PIN"
+                : "🚀 Advance Pay: RenoPay's multi-sensory interactive note slider + UPI PIN"}
+            </p>
 
             {payMode === "classic" ? (
               /* ── Classic Keypad Mode (original) ── */
