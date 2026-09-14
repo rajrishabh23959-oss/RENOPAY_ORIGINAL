@@ -753,10 +753,22 @@ export function RechargeScreen({ onBack, onNavigate, initialTab = "mobile" }) {
 
       {/* Add Teacher Modal */}
       {showAddTeacherModal && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 animate-fadeUp">
-          <div className="w-full max-w-sm bg-card border border-line rounded-3xl p-5 shadow-2xl">
-            <h3 className="text-base font-extrabold text-textLight mb-1">Add Teacher / Coaching Institute</h3>
-            <p className="text-xs text-muted mb-3">Set up teacher details & UPI ID for effortless monthly tuition fees.</p>
+        <div className="fixed inset-0 z-[9999] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in">
+          <div className="w-full max-w-sm bg-card border border-line rounded-3xl p-5 shadow-2xl relative my-auto max-h-[92vh] overflow-y-auto scrollbar-none">
+            <div className="flex items-start justify-between mb-2 pb-1 border-b border-line/40">
+              <div className="pr-2">
+                <h3 className="text-base font-extrabold text-textLight leading-snug">Add Teacher / Institute</h3>
+                <p className="text-xs text-muted mt-0.5">Set up teacher details & UPI ID for tuition fees.</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddTeacherModal(false)}
+                className="w-7 h-7 rounded-full bg-surf flex items-center justify-center text-muted hover:text-white cursor-pointer text-xs shrink-0"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
 
             <form onSubmit={handleSaveTeacher} className="space-y-3">
               <div>

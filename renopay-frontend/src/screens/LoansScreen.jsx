@@ -758,14 +758,26 @@ export function LoansScreen({ onBack, onNavigate, initialTab = "personal" }) {
 
       {/* Loan Disbursal Authorization Modal */}
       {modalMode === "apply" && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 animate-fadeUp">
-          <div className="w-full max-w-sm bg-card border border-line rounded-3xl p-5 shadow-2xl">
-            <h3 className="text-base font-extrabold text-textLight mb-1">
-              Confirm Loan Disbursal
-            </h3>
-            <p className="text-xs text-muted mb-3">
-              Disbursing {fmt(pendingLoanData?.principal || 0)} directly into your RenoPay Wallet balance.
-            </p>
+        <div className="fixed inset-0 z-[9999] bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-fade-in">
+          <div className="w-full max-w-sm bg-card border border-line rounded-3xl p-5 shadow-2xl relative my-auto max-h-[92vh] overflow-y-auto scrollbar-none">
+            <div className="flex items-start justify-between mb-2 pb-1 border-b border-line/40">
+              <div className="pr-2">
+                <h3 className="text-base font-extrabold text-textLight leading-snug">
+                  Confirm Loan Disbursal
+                </h3>
+                <p className="text-xs text-muted mt-0.5">
+                  Disbursing {fmt(pendingLoanData?.principal || 0)} into RenoPay Wallet.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalMode(null)}
+                className="w-7 h-7 rounded-full bg-surf flex items-center justify-center text-muted hover:text-white cursor-pointer text-xs shrink-0"
+                aria-label="Close"
+              >
+                ✕
+              </button>
+            </div>
 
             {modalError && (
               <div className="p-2.5 rounded-xl bg-red-500/15 border border-red-500/30 text-red-300 text-xs mb-3 font-semibold">
