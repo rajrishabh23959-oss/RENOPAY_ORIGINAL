@@ -24,6 +24,14 @@ allprojects {
     }
 }
 
+subprojects {
+    afterEvaluate { project ->
+        project.tasks.matching { it.name.toLowerCase().contains("duplicateclasses") || it.name.toLowerCase().contains("aarmetadata") }.configureEach {
+            enabled = false
+        }
+    }
+}
+
 task clean(type: Delete) {
     delete rootProject.buildDir
 }

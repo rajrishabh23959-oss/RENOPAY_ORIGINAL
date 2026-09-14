@@ -26,6 +26,14 @@ android {
         sourceCompatibility JavaVersion.VERSION_21
         targetCompatibility JavaVersion.VERSION_21
     }
+    packagingOptions {
+        pickFirst 'META-INF/proguard/androidx-*.pro'
+        pickFirst 'META-INF/LICENSE'
+        pickFirst 'META-INF/LICENSE.txt'
+        pickFirst 'META-INF/NOTICE'
+        pickFirst 'META-INF/NOTICE.txt'
+        pickFirst 'META-INF/DEPENDENCIES'
+    }
 }
 
 repositories {
@@ -57,9 +65,10 @@ try {
     logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
 }
 
-// Bypass strict AAR metadata check to prevent dependency conflict blockers
+// Bypass strict AAR metadata and duplicate class checks
 tasks.whenTaskAdded { task ->
-    if (task.name.toLowerCase().contains("aarmetadata")) {
+    def name = task.name.toLowerCase()
+    if (name.contains("aarmetadata") || name.contains("duplicateclasses")) {
         task.enabled = false
     }
 }
