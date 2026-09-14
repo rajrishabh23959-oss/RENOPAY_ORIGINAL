@@ -16,6 +16,16 @@ const POPULAR_PLANS = [
   { id: "P7", price: 29, validity: "Active Base", data: "2.0 GB", calls: "Data Only", desc: "Data top-up for live streaming", tag: "Add-on" },
 ];
 
+const ELECTRICITY_BOARDS = {
+  "Bihar": ["North Bihar Power (NBPDCL)", "South Bihar Power (SBPDCL)"],
+  "Delhi": ["BSES Rajdhani Power", "BSES Yamuna Power", "Tata Power DDL"],
+  "Maharashtra": ["MSEDCL (Mahavitaran)", "Tata Power Mumbai", "Adani Electricity Mumbai"],
+  "Uttar Pradesh": ["UPPCL (Rural)", "UPPCL (Urban)", "Torrent Power"],
+  "Karnataka": ["BESCOM (Bengaluru)", "HESCOM", "MESCOM"],
+  "West Bengal": ["WBSEDCL", "CESC Kolkata"],
+  "Gujarat": ["UGVCL", "DGVCL", "PGVCL", "MGVCL"],
+};
+
 export function RechargeScreen({ onBack, onNavigate, initialTab = "mobile" }) {
   const { profile, refreshProfile } = useAuth();
   const [activeTab, setActiveTab] = useState(initialTab); // "mobile" | "electricity" | "tuition" | "loan_emi"
@@ -23,6 +33,7 @@ export function RechargeScreen({ onBack, onNavigate, initialTab = "mobile" }) {
   // Mobile Recharge State
   const [mobileNum, setMobileNum] = useState("9876543210");
   const [operator, setOperator] = useState("Jio Telecom");
+  const [circle, setCircle] = useState("Bihar & Jharkhand");
   const [recipientName, setRecipientName] = useState(profile?.full_name || "Self");
   const [planCategory, setPlanCategory] = useState("All");
   const [selectedPlan, setSelectedPlan] = useState(POPULAR_PLANS[0]);
@@ -42,6 +53,7 @@ export function RechargeScreen({ onBack, onNavigate, initialTab = "mobile" }) {
   const [selectedBoard, setSelectedBoard] = useState("North Bihar Power (NBPDCL)");
   const [consumerNo, setConsumerNo] = useState("108492049281");
   const [billAmount, setBillAmount] = useState(1480);
+  const [billFetched, setBillFetched] = useState(true);
 
   // Active Loans for EMI repayment
   const [loans, setLoans] = useState([]);
