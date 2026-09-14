@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import * as pdfjsLib from "pdfjs-dist";
+import { downloadOrSharePdf } from "../lib/download";
 
 // Configure pdfjs worker
 try {
@@ -121,16 +122,9 @@ export function PdfPreviewModal({ isOpen, onClose, pdfBlob, title = "PDF Preview
 
   if (!isOpen) return null;
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (!pdfBlob) return;
-    const url = URL.createObjectURL(pdfBlob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    await downloadOrSharePdf(pdfBlob, filename);
   };
 
   const handleOpenNewTab = () => {

@@ -272,12 +272,28 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
   };
 
   // Speech-to-Text (STT)
+  // Speech-to-Text (STT)
   const toggleSpeechRecognition = () => {
+    // 1. If running in Android APK with native AndroidSTT
+    if (window.AndroidSTT?.startListening) {
+      window.__onNativeSpeechResult = (spokenText) => {
+        setIsListening(false);
+        if (spokenText) {
+          setInput(spokenText);
+          handleSend(spokenText);
+        }
+      };
+      setIsListening(true);
+      window.AndroidSTT.startListening(currentLang);
+      return;
+    }
+
+    // 2. Browser Web Speech API
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      alert("Speech recognition is not supported in this browser. Please use Chrome, Edge, or Safari.");
+      alert("Voice input: Tap the microphone on your phone keyboard (Gboard), or use Chrome/Edge on web!");
       return;
     }
 
@@ -319,6 +335,15 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
 
   // Text-to-Speech (TTS) with Robust Pause/Resume & Replay
   const startSpeechUtterance = (textToSpeak, msgId, fullOriginalText, offset = 0) => {
+    // 1. If running in Android APK with native AndroidTTS
+    if (window.AndroidTTS?.speak) {
+      setSpeakingMessageId(msgId);
+      setSpeechStatus("playing");
+      window.AndroidTTS.speak(textToSpeak, currentLang);
+      return;
+    }
+
+    // 2. Browser speechSynthesis
     if (!window.speechSynthesis) return;
 
     if (resumeTimerRef.current) {
@@ -327,12 +352,22 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
     }
 
     window.speechSynthesis.cancel();
+    window.speechSynthesis.resume?.();
 
     const utterance = new SpeechSynthesisUtterance(textToSpeak);
     const langObj = LANGUAGES.find((l) => l.code === currentLang) || LANGUAGES[0];
     utterance.lang = langObj.locale;
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
+
+    const voices = window.speechSynthesis.getVoices?.() || [];
+    if (voices.length > 0) {
+      const match =
+        voices.find((v) => v.lang === langObj.locale || v.lang.startsWith(langObj.code)) ||
+        voices.find((v) => v.lang.startsWith("en")) ||
+        voices[0];
+      if (match) utterance.voice = match;
+    }
 
     currentUtteranceRef.current = utterance;
     window.__saathiUtterance = utterance;
@@ -349,7 +384,6 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
     };
 
     utterance.onend = () => {
-      // Keep speakingMessageId so replay button appears in place of pause/play!
       setSpeechStatus("ended");
       currentUtteranceRef.current = null;
       window.__saathiUtterance = null;
@@ -435,6 +469,9 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
 
   const stopSpeech = (e) => {
     e?.stopPropagation();
+    if (window.AndroidTTS?.stop) {
+      window.AndroidTTS.stop();
+    }
     if (resumeTimerRef.current) {
       clearTimeout(resumeTimerRef.current);
       resumeTimerRef.current = null;

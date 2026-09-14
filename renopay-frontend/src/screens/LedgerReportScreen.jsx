@@ -4,6 +4,7 @@ import { Card, Btn, Badge } from "../components/ui";
 import { fmt, ago } from "../lib/format";
 import { PdfPreviewModal } from "../components/PdfPreviewModal";
 import { DatePickerInput } from "../components/DatePickerInput";
+import { downloadOrSharePdf } from "../lib/download";
 
 /**
  * LedgerReportScreen — PDF Report Generation.
@@ -64,15 +65,9 @@ export function LedgerReportScreen({ onBack }) {
         to: toDate,
         txn_ref: reportType === "transaction_receipt" ? txnRef : undefined,
       });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
       const ext = blob.type?.includes("html") ? "html" : "pdf";
-      a.download = `RenoPay_${reportType}_${fromDate}.${ext}`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const filename = `RenoPay_${reportType}_${fromDate}.${ext}`;
+      await downloadOrSharePdf(blob, filename);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 4000);
     } catch (e) {

@@ -4,6 +4,7 @@ import { useRenoSocket } from "../hooks/useRenoSocket";
 import { Badge, TrustBadge, Card } from "../components/ui";
 import { fmt, ago } from "../lib/format";
 import { PdfPreviewModal } from "../components/PdfPreviewModal";
+import { downloadOrSharePdf } from "../lib/download";
 
 export function HistoryScreen({ onBack }) {
   const [txns, setTxns] = useState([]);
@@ -32,14 +33,7 @@ export function HistoryScreen({ onBack }) {
         type: "transaction_receipt",
         txn_ref: txn_ref,
       });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Receipt_${txn_ref}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      await downloadOrSharePdf(blob, `Receipt_${txn_ref}.pdf`);
     } catch (e) {
       alert("Failed to download PDF receipt: " + (e?.response?.data?.detail || e.message));
     } finally {

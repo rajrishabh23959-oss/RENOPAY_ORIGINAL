@@ -5,6 +5,7 @@ import { PaymentAPI, FinancialAPI } from "../lib/api";
 import { fmt } from "../lib/format";
 import { Card, Btn, Badge } from "../components/ui";
 import { PaymentMethodModal } from "../components/PaymentMethodModal";
+import { downloadOrSharePdf } from "../lib/download";
 
 const BEST_SIP_FUNDS = [
   {
@@ -151,14 +152,7 @@ export function MutualFundsScreen({ onBack, onNavigate, initialTab = "bestsip" }
     if (!txnRef) return;
     try {
       const blob = await FinancialAPI.getReceiptPdf(txnRef);
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Receipt_${txnRef}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      await downloadOrSharePdf(blob, `Receipt_${txnRef}.pdf`);
     } catch (e) {
       alert("Failed to download PDF receipt: " + (e?.response?.data?.detail || e.message));
     }

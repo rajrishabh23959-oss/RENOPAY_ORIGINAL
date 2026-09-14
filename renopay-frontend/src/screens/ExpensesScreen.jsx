@@ -3,6 +3,7 @@ import { AnalyticsAPI } from "../lib/api";
 import { Card, Btn, Badge } from "../components/ui";
 import { fmt } from "../lib/format";
 import { PdfPreviewModal } from "../components/PdfPreviewModal";
+import { downloadOrSharePdf } from "../lib/download";
 
 const CATEGORY_ICONS = {
   Food: "🍔",
@@ -112,14 +113,7 @@ export function ExpensesScreen({ onBack }) {
     setErr("");
     try {
       const { blob, fname } = await fetchPdfBlob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = fname;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      await downloadOrSharePdf(blob, fname);
     } catch (e) {
       setErr("Could not download PDF. Please try again.");
     } finally {

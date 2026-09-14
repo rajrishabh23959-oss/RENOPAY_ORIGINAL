@@ -70,6 +70,7 @@ function extractEntities(transcript) {
 }
 
 /* ── Main Component ──────────────────────────────────────────────────────── */
+/* ── Main Component ────────────────────────────────────────────────        */
 export function VoiceUPIScreen({ onBack, onNavigatePay }) {
   const [lang, setLang] = useState("en-IN");
   const [listening, setListening] = useState(false);
@@ -84,79 +85,112 @@ export function VoiceUPIScreen({ onBack, onNavigatePay }) {
   const [waveBars, setWaveBars] = useState(Array(12).fill(20));
 
   useEffect(() => {
+    const isNative = !!window.AndroidSTT;
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) { setSupported(false); return; }
+    if (!SpeechRecognition && !isNative) { setSupported(false); return; }
+    setSupported(true);
 
-    const recog = new SpeechRecognition();
-    recog.continuous = false;
-    recog.interimResults = true;
-    recog.lang = lang;
+    if (SpeechRecognition) {
+      const recog = new SpeechRecognition();
+      recog.continuous = false;
+      recog.interimResults = true;
+      recog.lang = lang;
 
-    recog.onstart = () => {
+      recog.onstart = () => {
+        setListening(true);
+        setTranscript("");
+        setEntities(null);
+        setResult(null);
+        setError("");
+        // Animate wave bars randomly
+        waveTimerRef.current = setInterval(() => {
+          setWaveBars(Array.from({ length: 12 }, () => Math.floor(Math.random() * 80 + 20)));
+        }, 150);
+      };
+
+      recog.onresult = (evt) => {
+        const interim = Array.from(evt.results).map(r => r[0].transcript).join(" ");
+        setTranscript(interim);
+      };
+
+      recog.onend = async () => {
+        clearInterval(waveTimerRef.current);
+        setWaveBars(Array(12).fill(20));
+        setListening(false);
+        const finalText = transcript || "";
+        if (!finalText.trim()) { setError("No speech detected. Tap the mic and try again."); return; }
+        handleFinalTranscript(finalText);
+      };
+
+      recog.onerror = (e) => {
+        clearInterval(waveTimerRef.current);
+        setWaveBars(Array(12).fill(20));
+        setListening(false);
+        setError(e.error === "no-speech" ? "No speech detected." : `Error: ${e.error}`);
+      };
+
+      recogRef.current = recog;
+      return () => { recog.abort(); clearInterval(waveTimerRef.current); };
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lang]);
+
+  const handleFinalTranscript = async (finalText) => {
+    const ext = extractEntities(finalText);
+    setEntities(ext);
+
+    if (!ext.amount || !ext.recipient) {
+      setError("Could not extract amount or recipient. Please try again.");
+      return;
+    }
+
+    // Validate via backend
+    setValidating(true);
+    try {
+      const res = await PaymentAPI.voiceParse({
+        amount: ext.amount,
+        recipient: ext.recipient,
+        note: ext.note,
+        transcript: finalText,
+        confidence: ext.confidence,
+        language: lang,
+      });
+      setResult(res);
+      setValidating(false);
+    } catch {
+      setValidating(false);
+      setError("Validation failed. Please check your connection.");
+    }
+  };
+
+  const startListening = () => {
+    if (window.AndroidSTT?.startListening) {
       setListening(true);
       setTranscript("");
       setEntities(null);
       setResult(null);
       setError("");
-      // Animate wave bars randomly
-      waveTimerRef.current = setInterval(() => {
-        setWaveBars(Array.from({ length: 12 }, () => Math.floor(Math.random() * 80 + 20)));
-      }, 150);
-    };
+      window.__onNativeSpeechResult = (text) => {
+        setListening(false);
+        setTranscript(text);
+        if (text && text.trim()) {
+          handleFinalTranscript(text);
+        } else {
+          setError("No speech detected. Tap the mic and try again.");
+        }
+      };
+      window.AndroidSTT.startListening(lang);
+      return;
+    }
+    recogRef.current?.start();
+  };
 
-    recog.onresult = (evt) => {
-      const interim = Array.from(evt.results).map(r => r[0].transcript).join(" ");
-      setTranscript(interim);
-    };
-
-    recog.onend = async () => {
-      clearInterval(waveTimerRef.current);
-      setWaveBars(Array(12).fill(20));
-      setListening(false);
-      const finalText = transcript || "";
-      if (!finalText.trim()) { setError("No speech detected. Tap the mic and try again."); return; }
-
-      const ext = extractEntities(finalText);
-      setEntities(ext);
-
-      if (!ext.amount || !ext.recipient) {
-        setError("Could not extract amount or recipient. Please try again.");
-        return;
-      }
-
-      // Validate via backend
-      setValidating(true);
-      try {
-        const res = await PaymentAPI.voiceParse({
-          amount: ext.amount,
-          recipient: ext.recipient,
-          note: ext.note,
-          transcript: finalText,
-          confidence: ext.confidence,
-          language: lang,
-        });
-        setResult(res);
-        setValidating(false);
-      } catch {
-        setValidating(false);
-        setError("Validation failed. Please check your connection.");
-      }
-    };
-
-    recog.onerror = (e) => {
-      clearInterval(waveTimerRef.current);
-      setWaveBars(Array(12).fill(20));
-      setListening(false);
-      setError(e.error === "no-speech" ? "No speech detected." : `Error: ${e.error}`);
-    };
-
-    recogRef.current = recog;
-    return () => { recog.abort(); clearInterval(waveTimerRef.current); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lang]);
-
-  const startListening = () => recogRef.current?.start();
-  const stopListening = () => recogRef.current?.stop();
+  const stopListening = () => {
+    if (recogRef.current) {
+      recogRef.current.stop();
+    }
+    setListening(false);
+  };
 
   const handleProceed = () => {
     if (!result || !entities) return;
