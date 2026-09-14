@@ -34,6 +34,14 @@ export function LoginScreen({ onDone, initialMode = "login" }) {
       setErr("Please enter your registered phone number");
       return;
     }
+    if (cleanPhone.length < 10) {
+      setErr("Please enter a valid 10-digit phone number");
+      return;
+    }
+    if (loginPin.trim() && loginPin.trim().length !== 6) {
+      setErr("PIN must be exactly 6 digits (or leave empty if not set)");
+      return;
+    }
     setLoading(true);
     try {
       await login(cleanPhone, loginPin.trim() || null);
@@ -41,13 +49,21 @@ export function LoginScreen({ onDone, initialMode = "login" }) {
       onDone?.();
     } catch (e2) {
       const detail = e2.response?.data?.detail;
-      let msg = "Invalid phone number or PIN";
+      let msg = "";
       if (typeof detail === "string") {
         msg = detail;
       } else if (Array.isArray(detail)) {
         msg = detail.map((d) => d.msg || d.message).join(", ");
       } else if (detail?.message) {
         msg = detail.message;
+      } else if (e2.response?.status === 404) {
+        msg = "No account found with this number. Please click Register to create your account!";
+      } else if (e2.response?.status === 401) {
+        msg = "Incorrect PIN. Please try again.";
+      } else if (!e2.response) {
+        msg = "Unable to connect to RenoPay server. Please check your internet connection.";
+      } else {
+        msg = "Invalid phone number or PIN";
       }
       setErr(msg);
     } finally {
@@ -107,6 +123,8 @@ export function LoginScreen({ onDone, initialMode = "login" }) {
         msg = detail.map((d) => d.msg || d.message).join(", ");
       } else if (detail?.message) {
         msg = detail.message;
+      } else if (!e2.response) {
+        msg = "Unable to connect to RenoPay server. Please check your internet connection.";
       }
       setErr(msg);
     } finally {

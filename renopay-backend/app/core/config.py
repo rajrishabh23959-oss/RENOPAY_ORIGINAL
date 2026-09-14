@@ -128,6 +128,10 @@ class Settings(BaseSettings):
         "http://10.0.2.2:8000",
         "http://10.0.2.2:5173",
         "https://renopay-original.vercel.app",
+        "https://localhost",
+        "http://localhost",
+        "capacitor://localhost",
+        "ionic://localhost",
     ]
 
     # --- AI Assistant (Saathi) ---
