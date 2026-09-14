@@ -1,6 +1,15 @@
 import axios from "axios";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+const isNativeApp =
+  typeof window !== "undefined" &&
+  (window.Capacitor?.isNativePlatform?.() ||
+    window.location.protocol === "capacitor:" ||
+    window.location.protocol === "file:" ||
+    (window.location.hostname === "localhost" && !window.location.port));
+
+const BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  (isNativeApp ? "https://renopay-original.vercel.app/api" : "/api");
 
 export const http = axios.create({ baseURL: BASE_URL });
 
