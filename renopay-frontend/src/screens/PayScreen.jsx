@@ -9,6 +9,7 @@ import { NoteSlider } from "../components/NoteSlider";
 import { fmt } from "../lib/format";
 import { PdfPreviewModal } from "../components/PdfPreviewModal";
 import { parseUniversalUpiQr } from "./ScanScreen";
+import { downloadOrSharePdf } from "../lib/download";
 
 const CATS = [
   { id: "Food", icon: "🍔" }, { id: "Shopping", icon: "🛍️" }, { id: "Transport", icon: "🚗" },
@@ -238,14 +239,7 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
         type: "transaction_receipt",
         txn_ref: result.txn_ref,
       });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Receipt_${result.txn_ref}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      await downloadOrSharePdf(blob, `Receipt_${result.txn_ref}.pdf`);
     } catch (e) {
       setDownloadError("Failed to download PDF receipt. Please try again.");
     } finally {
@@ -315,7 +309,7 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
   };
 
   return (
-    <div className="min-h-screen bg-bg pb-10">
+    <div className="min-h-screen bg-bg pb-[140px]">
       <div className="pt-[50px] pb-[18px] px-[22px] flex items-center gap-3">
         <button className="btn bg-card border border-line text-textLight rounded-xl px-3.5 py-2.5 text-base" onClick={onBack}>←</button>
         <h2 className="text-[22px] font-extrabold text-textLight">Send Money</h2>
@@ -420,7 +414,7 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
             {/* Manual UPI ID Card */}
             <form onSubmit={handleResolveSubmit}>
               <Card className="p-4 sm:p-5 mb-4 border-accent/[.2]">
-                <p className="text-muted text-[11px] tracking-wide mb-2 uppercase">Pay to (UPI ID)</p>
+                <p className="text-muted text-[11px] tracking-wide mb-2 uppercase font-bold">Pay to (UPI ID)</p>
                 <input
                   placeholder="e.g. merchant@paytm or user@renopay"
                   value={vpa}
@@ -433,8 +427,15 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
                   <span>or</span>
                   <button type="button" className="text-accent hover:underline cursor-pointer" onClick={() => { setVpa("groceries@paytm"); resolveVpa("groceries@paytm", "City Supermarket"); }}>groceries@paytm</button>
                 </div>
+
+                <button
+                  type="submit"
+                  className="w-full mt-4 py-3.5 px-5 rounded-2xl bg-gradient-to-r from-accent to-[#e0560a] hover:from-accent/90 hover:to-[#e0560a]/90 active:scale-[0.98] text-white font-extrabold text-sm shadow-lg shadow-accent/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                >
+                  <span>Proceed to Pay</span>
+                  <span className="text-base">→</span>
+                </button>
               </Card>
-              <Btn type="submit">Find & Pay →</Btn>
             </form>
           </div>
         )}
