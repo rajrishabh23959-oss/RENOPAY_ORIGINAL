@@ -232,4 +232,16 @@ export const AIAPI = {
   deleteSession: (session_id) => http.delete(`/ai/sessions/${session_id}`).then((r) => r.data),
 };
 
+// ---------- Travel & Transit ----------
+export const TravelAPI = {
+  book: (payload) => http.post("/travel/book", payload).then((r) => r.data),
+  getBookings: (limit = 30) => http.get("/travel/bookings", { params: { limit } }).then((r) => r.data),
+  getTicketPdf: async (booking_id) => {
+    const r = await http.get(`/travel/ticket/${booking_id}/pdf`, { responseType: "blob" });
+    return r.data;
+  },
+  getAIRouteInfo: (origin, destination, mode = "train") =>
+    http.post("/travel/ai-route-info", { origin, destination, mode }).then((r) => r.data),
+};
+
 

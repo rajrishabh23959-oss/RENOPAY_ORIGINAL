@@ -87,16 +87,22 @@ export function HistoryScreen({ onBack }) {
           ))}
         </div>
         {shown.length === 0 && <p className="text-muted text-center py-9">No transactions</p>}
-        {shown.map((t) => (
-          <Card key={t.txn_ref} className="p-3.5 mb-2.5 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center text-base shrink-0">💳</div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-semibold truncate text-textLight">{t.description}</p>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <TrustBadge score={t.trust_score} />
-                <p className="text-muted text-[10px]">{ago(t.created_at)}</p>
+        {shown.map((t) => {
+          const descLower = (t.description || "").toLowerCase();
+          const isTravel = t.category === "Transport" || descLower.includes("booking");
+          const travelIcon = descLower.includes("flight") ? "✈️" : descLower.includes("bus") ? "🚌" : descLower.includes("hotel") ? "🏨" : "🚆";
+          return (
+            <Card key={t.txn_ref} className="p-3.5 mb-2.5 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-accent/20 flex items-center justify-center text-base shrink-0">
+                {isTravel ? travelIcon : "💳"}
               </div>
-            </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[13px] font-semibold truncate text-textLight">{t.description}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <TrustBadge score={t.trust_score} />
+                  <p className="text-muted text-[10px]">{ago(t.created_at)}</p>
+                </div>
+              </div>
             <div className="text-right shrink-0 flex flex-col items-end gap-1">
               <p className="font-mono font-bold text-[13px]" style={{ color: t.type === "credit" ? "#22C55E" : "#ff3d60" }}>
                 {t.type === "credit" ? "+" : "-"}{fmt(t.amount)}
@@ -126,7 +132,8 @@ export function HistoryScreen({ onBack }) {
               </div>
             </div>
           </Card>
-        ))}
+        );
+      })}
       </div>
 
       {/* Receipt PDF Preview Modal */}

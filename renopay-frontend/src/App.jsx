@@ -22,16 +22,21 @@ import { QRScreen } from "./screens/QRScreen";
 import { DigitalGoldScreen } from "./screens/DigitalGoldScreen";
 import { LedgerReportScreen } from "./screens/LedgerReportScreen";
 import { AccountingScreen } from "./screens/AccountingScreen";
+import { TravelScreen } from "./screens/TravelScreen";
 
 function AppShell() {
   const { profile, loading } = useAuth();
   const [screen, setScreen] = useState("home");
   const [tab, setTab] = useState("home");
   const [payPrefill, setPayPrefill] = useState(null);
+  const [travelPrefillTab, setTravelPrefillTab] = useState("train");
 
   const go = (s, data) => {
     if (["home", "pay", "expenses", "history", "profile", "accounting"].includes(s)) setTab(s);
     setPayPrefill(s === "pay" ? data ?? null : null);
+    if (s === "travel") {
+      setTravelPrefillTab(typeof data === "string" ? data : data?.tab || "train");
+    }
     setScreen(s);
   };
 
@@ -74,6 +79,13 @@ function AppShell() {
       {screen === "gold"          && <DigitalGoldScreen onBack={() => go("home")} />}
       {screen === "ledger"        && <LedgerReportScreen onBack={() => go("home")} />}
       {screen === "accounting"    && <AccountingScreen onBack={() => go("home")} />}
+      {screen === "travel"        && (
+        <TravelScreen
+          onBack={() => go("home")}
+          onNavigate={go}
+          initialTab={travelPrefillTab}
+        />
+      )}
       <AIAssistant currentScreen={screen} onNavigate={go} />
       <Nav active={tab} onNavigate={go} />
     </div>

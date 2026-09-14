@@ -20,6 +20,7 @@ import iconUpilite from "../assets/actions/upilite.png";
 import iconGold from "../assets/actions/gold.png";
 import iconLedger from "../assets/actions/ledger.png";
 import iconVaults from "../assets/actions/vaults.png";
+import { FlightIcon, BusIcon, TrainIcon, HotelIcon } from "../components/TravelIcons";
 
 const QUICK_ACTIONS_1 = [
   { icon: iconPay, l: "Pay", s: "pay" },
@@ -264,6 +265,44 @@ export function HomeScreen({ onNavigate }) {
               <span className="text-[10px] text-textLight font-semibold tracking-tight">{a.l}</span>
             </button>
           ))}
+        </div>
+
+        {/* Travel & Transit Section matching reference screenshot */}
+        <div className="mt-2 mb-1">
+          <div className="flex justify-between items-center mb-2.5 px-0.5">
+            <h3 className="text-base font-extrabold text-textLight">Travel & Transit</h3>
+            <button
+              onClick={() => onNavigate("travel", { tab: "train" })}
+              className="text-accent text-xs font-semibold hover:underline"
+            >
+              Bookings →
+            </button>
+          </div>
+
+          <div className="grid grid-cols-4 gap-2.5">
+            {[
+              { id: "flight", label: "Flight", icon: FlightIcon },
+              { id: "bus", label: "Bus", icon: BusIcon },
+              { id: "train", label: "Train", icon: TrainIcon },
+              { id: "hotel", label: "Hotel", icon: HotelIcon },
+            ].map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => onNavigate("travel", { tab: item.id })}
+                  className="group flex flex-col items-center justify-center p-1.5 transition-all active:scale-95 cursor-pointer"
+                >
+                  <div className="w-[68px] h-[54px] rounded-2xl bg-[#201c19] border border-line/70 hover:border-accent/50 flex items-center justify-center mb-1.5 transition-all group-hover:scale-105 group-hover:shadow-accentGlow shadow-sm">
+                    <Icon className="w-9 h-9 object-contain drop-shadow-sm" />
+                  </div>
+                  <span className="text-[11px] font-semibold text-textLight tracking-tight group-hover:text-accent transition-colors">
+                    {item.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div>

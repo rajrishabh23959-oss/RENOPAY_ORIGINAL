@@ -50,6 +50,7 @@ ReportType = Literal[
     "payee_ledger",
     "trial_balance",
     "expense_report",
+    "travel_ticket",
 ]
 
 # ── Shared CSS ─────────────────────────────────────────────────────────────────
@@ -1098,6 +1099,312 @@ body {
 
 </body>
 </html>""",
+    "travel_ticket": """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>RenoPay — Travel & Transit E-Ticket</title>
+<style>
+{{ css }}
+body {
+    background-color: #f8fafc;
+    padding: 12px;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    color: #0f172a;
+}
+.ticket-wrapper {
+    width: 100%;
+    max-width: 720px;
+    margin: 0 auto;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+.ticket-header {
+    background: linear-gradient(135deg, #162a45 0%, #0d1b2a 100%);
+    color: #ffffff;
+    padding: 18px 24px;
+}
+.ticket-header-title {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+.ticket-header-title span {
+    color: #ff6a1a;
+}
+.ticket-type-pill {
+    display: inline-block;
+    background: rgba(255, 106, 26, 0.2);
+    border: 1px solid #ff6a1a;
+    color: #ff8a3d;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.pnr-strip {
+    background: #f1f5f9;
+    border-bottom: 2px dashed #cbd5e1;
+    padding: 12px 24px;
+}
+.badge-confirmed {
+    background-color: #15803d;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 4px 14px;
+    border-radius: 4px;
+    text-transform: uppercase;
+}
+.journey-box {
+    padding: 20px 24px;
+}
+.route-display {
+    width: 100%;
+    margin-bottom: 16px;
+}
+.city-name {
+    font-size: 18px;
+    font-weight: 800;
+    color: #162a45;
+}
+.city-time {
+    font-size: 14px;
+    font-weight: 700;
+    color: #ff6a1a;
+    margin-top: 2px;
+}
+.city-date {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 1px;
+}
+.info-grid {
+    width: 100%;
+    border-collapse: collapse;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 18px;
+}
+.info-grid td {
+    padding: 10px 14px;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 11px;
+}
+.info-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    color: #64748b;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 2px;
+}
+.info-value {
+    font-size: 12px;
+    font-weight: 700;
+    color: #1e293b;
+}
+.passenger-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 18px;
+}
+.passenger-table th {
+    background-color: #162a45;
+    color: #ffffff;
+    font-size: 10px;
+    text-transform: uppercase;
+    padding: 8px 12px;
+    text-align: left;
+}
+.passenger-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 11px;
+}
+.fare-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 8px;
+}
+.fare-table td {
+    padding: 6px 12px;
+    font-size: 11px;
+}
+.fare-total {
+    border-top: 2px solid #162a45;
+    font-size: 14px;
+    font-weight: 800;
+    color: #162a45;
+}
+.ticket-footer {
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    padding: 14px 24px;
+    font-size: 9.5px;
+    color: #64748b;
+    line-height: 1.4;
+}
+.barcode {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 18px;
+    letter-spacing: 4px;
+    color: #334155;
+    text-align: center;
+    margin-top: 8px;
+}
+</style>
+</head>
+<body>
+<div class="ticket-wrapper">
+    <!-- Header -->
+    <div class="ticket-header">
+        <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+                <td valign="middle">
+                    <div class="ticket-header-title">Reno<span>Pay</span> Travel & Transit</div>
+                    <div style="font-size: 10px; color: #94a3b8; margin-top: 3px;">Official Electronic Reservation Slip & Boarding Pass</div>
+                </td>
+                <td valign="middle" align="right">
+                    <span class="ticket-type-pill">{{ booking_type | upper }}</span>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- PNR & Status Strip -->
+    <div class="pnr-strip">
+        <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+                <td valign="middle">
+                    <span style="font-size: 10px; color: #64748b; font-weight: 700; text-transform: uppercase;">PNR / Booking Reference</span><br>
+                    <span style="font-family: Courier, monospace; font-size: 15px; font-weight: 800; color: #162a45; letter-spacing: 1px;">{{ pnr_or_ticket_no }}</span>
+                </td>
+                <td valign="middle" align="right">
+                    <span class="badge-confirmed">CONFIRMED</span>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Journey Details -->
+    <div class="journey-box">
+        <table class="route-display" cellpadding="0" cellspacing="0">
+            <tr>
+                <td width="42%" valign="top">
+                    <div style="font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: 700;">FROM / ORIGIN</div>
+                    <div class="city-name">{{ from_location }}</div>
+                    <div class="city-time">{{ departure_time }}</div>
+                    <div class="city-date">{{ departure_date }}</div>
+                </td>
+                <td width="16%" align="center" valign="middle">
+                    <div style="font-size: 20px; color: #ff6a1a;">&#10230;</div>
+                    {% if distance_km > 0 %}
+                    <div style="font-size: 10px; font-weight: 700; color: #64748b; margin-top: 2px;">{{ distance_km }} KM</div>
+                    {% endif %}
+                </td>
+                <td width="42%" align="right" valign="top">
+                    <div style="font-size: 10px; color: #64748b; text-transform: uppercase; font-weight: 700;">TO / DESTINATION</div>
+                    <div class="city-name">{{ to_location }}</div>
+                    <div class="city-time">{{ arrival_time }}</div>
+                    <div class="city-date">{{ arrival_date or departure_date }}</div>
+                </td>
+            </tr>
+        </table>
+
+        <table class="info-grid" cellpadding="0" cellspacing="0">
+            <tr>
+                <td width="33%">
+                    <span class="info-label">Service / Carrier</span>
+                    <span class="info-value">{{ operator_name }}</span>
+                    {% if service_number %}<span style="font-size: 10px; color: #64748b;"> ({{ service_number }})</span>{% endif %}
+                </td>
+                <td width="33%">
+                    <span class="info-label">Class / Category</span>
+                    <span class="info-value" style="color: #ff6a1a;">{{ travel_class }}</span>
+                </td>
+                <td width="34%">
+                    <span class="info-label">Seat / Berth / Room</span>
+                    <span class="info-value">{{ seat_or_room_no or "Assigned at Check-in" }}</span>
+                </td>
+            </tr>
+        </table>
+
+        <!-- Passenger Details Table -->
+        <table class="passenger-table" cellpadding="0" cellspacing="0">
+            <thead>
+                <tr>
+                    <th width="8%">#</th>
+                    <th width="45%">Passenger / Guest Name</th>
+                    <th width="22%">Age / Gender</th>
+                    <th width="25%" align="right">Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>1</td>
+                    <td style="font-weight: 700; color: #162a45;">{{ passenger_name }}</td>
+                    <td style="color: #475569;">{{ passenger_meta or "Adult" }}</td>
+                    <td align="right"><span style="color: #15803d; font-weight: 700;">Confirmed (CNF)</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Fare Breakdown & Payment Confirmation -->
+        <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin-top: 10px;">
+            <div style="font-size: 11px; font-weight: 800; color: #162a45; text-transform: uppercase; margin-bottom: 6px;">
+                Payment & Fare Breakdown (Paid via RenoPay Wallet)
+            </div>
+            <table class="fare-table" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td style="color: #475569;">Base Fare {% if rate_desc %}<span style="font-size: 10px; color: #64748b;">({{ rate_desc }})</span>{% endif %}</td>
+                    <td align="right" style="font-family: Courier, monospace; font-weight: 600;">Rs. {{ base_fare_fmt }}</td>
+                </tr>
+                <tr>
+                    <td style="color: #475569;">Taxes & Convenience Fee (GST)</td>
+                    <td align="right" style="font-family: Courier, monospace; font-weight: 600;">Rs. {{ tax_fmt }}</td>
+                </tr>
+                <tr class="fare-total">
+                    <td style="padding-top: 8px;">Total Amount Paid</td>
+                    <td align="right" style="padding-top: 8px; font-family: Courier, monospace; color: #15803d;">Rs. {{ total_fare_fmt }}</td>
+                </tr>
+            </table>
+
+            <div style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed #cbd5e1; font-size: 10px; color: #64748b;">
+                <table width="100%">
+                    <tr>
+                        <td><strong>RenoPay Txn Ref:</strong> <span style="font-family: Courier, monospace; color: #162a45;">{{ txn_ref }}</span></td>
+                        <td align="right"><strong>Booked At:</strong> {{ booked_at }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <div class="barcode">
+            ||| | | |||| || | ||||| ||| | ||| |||| | | ||
+        </div>
+        <div style="text-align: center; font-size: 9px; color: #94a3b8; font-family: Courier, monospace; margin-top: 2px;">
+            VERIFIED-DIGITAL-TOKEN-{{ pnr_or_ticket_no }}
+        </div>
+    </div>
+
+    <!-- Terms & Footer -->
+    <div class="ticket-footer">
+        <strong>Important Instructions:</strong>
+        <ul style="margin-left: 16px; margin-top: 4px;">
+            <li>Please carry an original Government-issued Photo ID (Aadhaar, Passport, PAN card, or Voter ID) during travel.</li>
+            <li>For trains and buses, report at boarding point at least 30 minutes prior to departure; for domestic flights, arrive at airport 2 hours prior.</li>
+            <li>This e-ticket is securely issued and guaranteed by <strong>RenoPay Virtual Banking & Transit Services</strong>.</li>
+        </ul>
+    </div>
+</div>
+</body>
+</html>""",
 }
 
 
@@ -1353,4 +1660,69 @@ def build_expense_report_data(
         "avg_spend_fmt": f"{avg_spend:,.2f}",
         "health_label": health_label,
         "txns": itemized_txns,
+    }
+
+
+def build_travel_ticket_data(booking, txn=None, user=None) -> dict:
+    """Prepare context data for the travel_ticket PDF template."""
+    now_ist = datetime.now(IST)
+    booked_time = to_ist(booking.created_at) if booking.created_at else now_ist
+
+    base_fare_paise = booking.base_fare_paise or booking.amount_paise
+    tax_paise = booking.tax_paise or (booking.amount_paise - base_fare_paise)
+
+    rate_desc = ""
+    if booking.booking_type == "train" and booking.distance_km > 0:
+        c = booking.travel_class.lower()
+        if "sleep" in c or "sl" in c:
+            rate_desc = f"{booking.distance_km:.0f} km × ₹1.0 / km"
+        elif "3a" in c or "3rd" in c:
+            rate_desc = f"{booking.distance_km:.0f} km × ₹1.8 / km"
+        elif "2a" in c or "2nd" in c:
+            rate_desc = f"{booking.distance_km:.0f} km × ₹3.0 / km"
+        elif "1a" in c or "1st" in c:
+            rate_desc = f"{booking.distance_km:.0f} km × ₹4.0 / km"
+        else:
+            rate_desc = f"{booking.distance_km:.0f} km distance fare"
+    elif booking.booking_type == "bus" and booking.distance_km > 0:
+        rate_desc = f"{booking.distance_km:.0f} km route transit"
+    elif booking.booking_type == "hotel":
+        rate_desc = "Room charge"
+
+    passenger_meta = "Adult (General)"
+    if booking.passenger_details:
+        try:
+            import json
+            p_data = json.loads(booking.passenger_details)
+            if isinstance(p_data, dict):
+                age = p_data.get("age")
+                gender = p_data.get("gender")
+                if age and gender:
+                    passenger_meta = f"{age} Yrs / {gender.capitalize()}"
+        except Exception:
+            pass
+
+    return {
+        "booking_type": str(booking.booking_type.value if hasattr(booking.booking_type, "value") else booking.booking_type),
+        "pnr_or_ticket_no": booking.pnr_or_ticket_no,
+        "operator_name": booking.operator_name,
+        "service_number": booking.service_number or "",
+        "from_location": booking.from_location,
+        "to_location": booking.to_location,
+        "departure_date": booking.departure_date,
+        "departure_time": booking.departure_time or "08:00 AM",
+        "arrival_date": booking.arrival_date or booking.departure_date,
+        "arrival_time": booking.arrival_time or "04:30 PM",
+        "distance_km": booking.distance_km or 0.0,
+        "travel_class": booking.travel_class,
+        "seat_or_room_no": booking.seat_or_room_no or "Seat Assigned",
+        "passenger_name": booking.passenger_name or (user.full_name if user else "Passenger"),
+        "passenger_meta": passenger_meta,
+        "base_fare_fmt": f"{base_fare_paise / 100:,.2f}",
+        "tax_fmt": f"{tax_paise / 100:,.2f}",
+        "total_fare_fmt": f"{booking.amount_paise / 100:,.2f}",
+        "rate_desc": rate_desc,
+        "txn_ref": booking.txn_ref,
+        "booked_at": booked_time.strftime("%d %b %Y, %I:%M %p IST"),
+        "generated_at": now_ist.strftime("%d %b %Y, %I:%M %p IST"),
     }
