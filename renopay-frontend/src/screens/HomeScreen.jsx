@@ -15,7 +15,6 @@ import iconSavings from "../assets/actions/savings.png";
 import iconAddMoney from "../assets/actions/addmoney.png";
 import iconExpenses from "../assets/actions/expenses.png";
 import iconRewards from "../assets/actions/rewards.png";
-import iconHistory from "../assets/actions/history.png";
 import iconUpilite from "../assets/actions/upilite.png";
 import iconGold from "../assets/actions/gold.png";
 import iconLedger from "../assets/actions/ledger.png";
@@ -27,23 +26,22 @@ const QUICK_ACTIONS_1 = [
   { icon: iconRequests, l: "Request", s: "requests" },
   { icon: iconSplit, l: "Split", s: "split" },
   { icon: iconSubs, l: "Subs", s: "subscriptions" },
-  { icon: iconSavings, l: "Goals", s: "savings" },
 ];
 const QUICK_ACTIONS_2 = [
+  { icon: iconSavings, l: "Goals", s: "savings" },
   { icon: iconAddMoney, l: "Add ₹", s: "addmoney" },
   { icon: iconExpenses, l: "Tracker", s: "expenses" },
   { icon: iconRewards, l: "Rewards", s: "rewards" },
-  { icon: iconHistory, l: "History", s: "history" },
-  { icon: iconUpilite, l: "UPI Lite", s: "upilite" },
 ];
 const QUICK_ACTIONS_3 = [
+  { icon: iconUpilite, l: "UPI Lite", s: "upilite" },
   { icon: iconGold, l: "Gold", s: "gold" },
   { icon: iconLedger, l: "Reports", s: "ledger" },
   { icon: TravelActionIcon, l: "Travel", s: "travel", isComponent: true },
-  { icon: LoanActionIcon, l: "Loans", s: "loans", isComponent: true },
-  { icon: RechargeActionIcon, l: "Recharge", s: "recharge", isComponent: true },
 ];
 const QUICK_ACTIONS_4 = [
+  { icon: LoanActionIcon, l: "Loans", s: "loans", isComponent: true },
+  { icon: RechargeActionIcon, l: "Recharge", s: "recharge", isComponent: true },
   { icon: InvestActionIcon, l: "Invest", s: "invest", isComponent: true },
   { icon: iconVaults, l: "Vaults", s: "vaults" },
 ];
@@ -248,7 +246,7 @@ export function HomeScreen({ onNavigate }) {
         {/* Glow divider before quick actions */}
         <div className="glow-divider my-1"></div>
 
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-4 gap-2.5">
           {QUICK_ACTIONS_1.map((a) => (
             <button key={a.s} className="group btn bg-card border border-line rounded-[20px] py-2.5 px-1 flex flex-col items-center gap-1.5 hover:border-accent/40 hover:bg-card/80 transition-all active:scale-95 cursor-pointer" onClick={() => onNavigate(a.s)}>
               <img src={a.icon} alt={a.l} className="w-[38px] h-[38px] object-contain drop-shadow-md transition-transform group-hover:scale-105" />
@@ -256,7 +254,7 @@ export function HomeScreen({ onNavigate }) {
             </button>
           ))}
         </div>
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-4 gap-2.5">
           {QUICK_ACTIONS_2.map((a) => (
             <button key={a.s} className="group btn bg-card border border-line rounded-[20px] py-2.5 px-1 flex flex-col items-center gap-1.5 hover:border-accent/40 hover:bg-card/80 transition-all active:scale-95 cursor-pointer" onClick={() => onNavigate(a.s)}>
               <img src={a.icon} alt={a.l} className="w-[38px] h-[38px] object-contain drop-shadow-md transition-transform group-hover:scale-105" />
@@ -264,7 +262,7 @@ export function HomeScreen({ onNavigate }) {
             </button>
           ))}
         </div>
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-4 gap-2.5">
           {QUICK_ACTIONS_3.map((a) => {
             const IconComp = a.isComponent ? a.icon : null;
             return (
@@ -279,7 +277,7 @@ export function HomeScreen({ onNavigate }) {
             );
           })}
         </div>
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-4 gap-2.5">
           {QUICK_ACTIONS_4.map((a) => {
             const IconComp = a.isComponent ? a.icon : null;
             return (
