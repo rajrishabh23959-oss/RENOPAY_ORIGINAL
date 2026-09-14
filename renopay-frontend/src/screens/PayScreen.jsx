@@ -54,6 +54,7 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
   const rafRef = useRef(null);
   const fileInputRef = useRef(null);
   const [cameraStatus, setCameraStatus] = useState("starting"); // starting | active | denied | unsupported
+  const [cameraRetry, setCameraRetry] = useState(0);
   const [uploadingQr, setUploadingQr] = useState(false);
 
   const stopCamera = () => {
@@ -158,6 +159,7 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
     }
 
     let cancelled = false;
+    setCameraStatus("starting");
     (async () => {
       if (!navigator.mediaDevices?.getUserMedia) {
         setCameraStatus("unsupported");
@@ -188,7 +190,7 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
       cancelled = true;
       stopCamera();
     };
-  }, [step]);
+  }, [step, cameraRetry]);
 
 
   useEffect(() => {
@@ -362,10 +364,20 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
               </div>
 
               {cameraStatus === "denied" && (
-                <div className="relative z-10 text-center p-6 bg-black/85 rounded-2xl max-w-xs border border-line">
+                <div className="relative z-10 text-center p-6 bg-black/90 rounded-2xl max-w-xs border border-line flex flex-col items-center">
                   <span className="text-3xl">📷</span>
                   <p className="text-xs font-bold text-white mt-2">Camera permission denied</p>
-                  <p className="text-[11px] text-muted mt-1">Please allow camera in browser settings or enter UPI ID below.</p>
+                  <p className="text-[11px] text-muted mt-1">Please allow camera in device settings or tap retry below.</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCameraStatus("starting");
+                      setCameraRetry((c) => c + 1);
+                    }}
+                    className="mt-3.5 px-4 py-2 bg-accent hover:bg-accent/90 active:scale-95 text-white text-[12px] font-bold rounded-xl transition shadow-lg shadow-accent/30 pointer-events-auto"
+                  >
+                    🔄 Grant & Retry Camera
+                  </button>
                 </div>
               )}
               {cameraStatus === "unsupported" && (

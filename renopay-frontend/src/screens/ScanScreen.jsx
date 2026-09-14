@@ -144,6 +144,7 @@ export function ScanScreen({ onBack, onSuccess }) {
   const [vpa, setVpa] = useState("");
   const [err, setErr] = useState("");
   const [cameraStatus, setCameraStatus] = useState("starting"); // starting | active | denied | unsupported
+  const [cameraRetry, setCameraRetry] = useState(0);
   const [detected, setDetected] = useState(null);
   const [detectedName, setDetectedName] = useState("");
   const [detectedApp, setDetectedApp] = useState("");
@@ -223,6 +224,7 @@ export function ScanScreen({ onBack, onSuccess }) {
       return;
     }
     let cancelled = false;
+    setCameraStatus("starting");
 
     (async () => {
       if (!navigator.mediaDevices?.getUserMedia) {
@@ -246,7 +248,7 @@ export function ScanScreen({ onBack, onSuccess }) {
 
     return () => { cancelled = true; stopCamera(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode]);
+  }, [mode, cameraRetry]);
 
   const handleImageUpload = (e) => {
     const file = e.target.files?.[0];
@@ -367,8 +369,20 @@ export function ScanScreen({ onBack, onSuccess }) {
               )}
               {cameraStatus === "denied" && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/85 p-6 text-center">
-                  <p className="text-warn text-sm mb-3">Camera access denied. Use "Upload QR" or "UPI ID" instead, or grant browser camera permissions.</p>
-                  <Btn variant="dark" onClick={() => setMode("upload")}>Switch to Upload QR</Btn>
+                  <p className="text-warn text-sm mb-3">Camera access denied. Please grant camera permission in App Settings or tap retry below.</p>
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCameraStatus("starting");
+                        setCameraRetry((c) => c + 1);
+                      }}
+                      className="px-4 py-2 bg-accent hover:bg-accent/90 active:scale-95 text-white text-[12px] font-bold rounded-xl transition shadow-lg shadow-accent/30"
+                    >
+                      🔄 Grant & Retry Camera
+                    </button>
+                    <Btn variant="dark" onClick={() => setMode("upload")}>Switch to Upload QR</Btn>
+                  </div>
                 </div>
               )}
               {cameraStatus === "unsupported" && (
