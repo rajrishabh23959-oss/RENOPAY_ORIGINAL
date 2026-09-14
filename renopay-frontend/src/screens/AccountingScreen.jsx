@@ -5,6 +5,7 @@ import { fmt } from "../lib/format";
 import { useAuth } from "../context/AuthContext";
 import { PdfPreviewModal } from "../components/PdfPreviewModal";
 import { DatePickerInput } from "../components/DatePickerInput";
+import { downloadOrSharePdf } from "../lib/download";
 
 function formatDateStr(d) {
   return d.toISOString().split("T")[0];
@@ -292,15 +293,8 @@ export function AccountingScreen({ onBack }) {
         from: fromDate || undefined,
         to: toDate || undefined,
       });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
       const filename = `RenoPay_Accounting_Pack${fromDate ? `_${fromDate}` : ""}${toDate ? `_to_${toDate}` : ""}.pdf`;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      await downloadOrSharePdf(blob, filename);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 4000);
     } catch (e) {
@@ -411,14 +405,8 @@ export function AccountingScreen({ onBack }) {
         from: from || undefined,
         to: to || undefined,
       });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = filename || `RenoPay_${type}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      const fname = filename || `RenoPay_${type}.pdf`;
+      await downloadOrSharePdf(blob, fname);
     } catch (e) {
       console.error("Download report failed:", e);
       let msg = "Failed to download report. Try again.";

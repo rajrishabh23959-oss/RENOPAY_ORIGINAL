@@ -5,6 +5,7 @@ import { AccountAPI, AuthAPI, GoldAPI } from "../lib/api";
 import { getDeviceFingerprint, getDeviceLabel, fmt } from "../lib/format";
 import { Btn, Badge, Card } from "../components/ui";
 import { PINPad } from "../components/PINPad";
+import { downloadOrShareFile } from "../lib/download";
 
 export function ProfileScreen({ onBack, onLoggedOut }) {
   const { profile, logout, refreshProfile } = useAuth();
@@ -157,10 +158,8 @@ export function ProfileScreen({ onBack, onLoggedOut }) {
       ctx.fillText("Powered by RenoPay SentinAI Engine", width / 2, 755);
 
       const downloadUrl = c.toDataURL("image/png");
-      const link = document.createElement("a");
-      link.href = downloadUrl;
-      link.download = `renopay-qr-${profile.account.vpa.replace(/[^a-zA-Z0-9_-]/g, "_")}.png`;
-      link.click();
+      const filename = `renopay-qr-${profile.account.vpa.replace(/[^a-zA-Z0-9_-]/g, "_")}.png`;
+      await downloadOrShareFile(downloadUrl, filename, "image/png");
     } catch (e) {
       console.error("QR download error:", e);
       setQrErr("Failed to generate download image");

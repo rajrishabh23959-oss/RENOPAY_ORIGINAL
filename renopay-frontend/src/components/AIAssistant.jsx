@@ -333,14 +333,36 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
     }
   };
 
+  // Handle Android Native TTS speech callbacks
+  useEffect(() => {
+    window.__onSaathiSpeechStart = () => {
+      setSpeechStatus("playing");
+    };
+    window.__onSaathiSpeechEnd = () => {
+      setSpeechStatus("ended");
+      setSpeakingMessageId(null);
+      currentUtteranceRef.current = null;
+      window.__saathiUtterance = null;
+    };
+    return () => {
+      delete window.__onSaathiSpeechStart;
+      delete window.__onSaathiSpeechEnd;
+    };
+  }, []);
+
   // Text-to-Speech (TTS) with Robust Pause/Resume & Replay
   const startSpeechUtterance = (textToSpeak, msgId, fullOriginalText, offset = 0) => {
+    setSpeakingMessageId(msgId);
+    setSpeechStatus("playing");
+
     // 1. If running in Android APK with native AndroidTTS
-    if (window.AndroidTTS?.speak) {
-      setSpeakingMessageId(msgId);
-      setSpeechStatus("playing");
-      window.AndroidTTS.speak(textToSpeak, currentLang);
-      return;
+    if (window.AndroidTTS && typeof window.AndroidTTS.speak === "function") {
+      try {
+        window.AndroidTTS.speak(textToSpeak, currentLang);
+        return;
+      } catch (err) {
+        console.warn("AndroidTTS speak error, trying Web Speech fallback:", err);
+      }
     }
 
     // 2. Browser speechSynthesis
@@ -402,7 +424,13 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
   };
 
   const toggleSpeechSynthesis = (msgId, text) => {
-    if (!window.speechSynthesis) return;
+    const hasAndroidTts = !!(window.AndroidTTS && typeof window.AndroidTTS.speak === "function");
+    const hasWebTts = !!(window.speechSynthesis);
+
+    if (!hasAndroidTts && !hasWebTts) {
+      alert("Speech synthesis is not supported on this device.");
+      return;
+    }
 
     if (speakingMessageId === msgId && speechStatus !== "idle") {
       stopSpeech();
@@ -435,6 +463,16 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
 
   const toggleSpeechPause = (e) => {
     e?.stopPropagation();
+    if (window.AndroidTTS && typeof window.AndroidTTS.stop === "function") {
+      if (speechStatus === "playing") {
+        window.AndroidTTS.stop();
+        setSpeechStatus("paused");
+      } else {
+        replaySpeech();
+      }
+      return;
+    }
+
     if (!window.speechSynthesis) return;
 
     if (speechStatus === "paused") {
@@ -469,15 +507,21 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
 
   const stopSpeech = (e) => {
     e?.stopPropagation();
-    if (window.AndroidTTS?.stop) {
-      window.AndroidTTS.stop();
+    if (window.AndroidTTS && typeof window.AndroidTTS.stop === "function") {
+      try {
+        window.AndroidTTS.stop();
+      } catch (err) {
+        console.warn("AndroidTTS stop error:", err);
+      }
     }
     if (resumeTimerRef.current) {
       clearTimeout(resumeTimerRef.current);
       resumeTimerRef.current = null;
     }
     if (window.speechSynthesis) {
-      window.speechSynthesis.cancel();
+      try {
+        window.speechSynthesis.cancel();
+      } catch (err) {}
     }
     currentUtteranceRef.current = null;
     window.__saathiUtterance = null;
