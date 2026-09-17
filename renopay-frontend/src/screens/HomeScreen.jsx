@@ -19,6 +19,7 @@ import iconUpilite from "../assets/actions/upilite.png";
 import iconGold from "../assets/actions/gold.png";
 import iconLedger from "../assets/actions/ledger.png";
 import iconVaults from "../assets/actions/vaults.png";
+import iconAccount from "../assets/actions/account.png";
 import { TravelActionIcon, LoanActionIcon, RechargeActionIcon, InvestActionIcon } from "../components/FinanceModuleIcons";
 
 const QUICK_ACTIONS_1 = [
@@ -142,10 +143,14 @@ export function HomeScreen({ onNavigate }) {
               </svg>
             </button>
             <button
-              className="btn w-[46px] h-[46px] rounded-full overflow-hidden border-2 border-accent/[.33] p-0 flex items-center justify-center bg-gradient-to-br from-accent to-[#B8420E] text-lg font-extrabold"
+              className="btn w-[46px] h-[46px] rounded-full overflow-hidden border-2 border-accent/[.33] p-0 flex items-center justify-center bg-[#151210] text-lg font-extrabold shadow-md"
               onClick={() => onNavigate("profile")}
             >
-              {profile.avatar_url ? <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" /> : profile.full_name[0]}
+              {profile.avatar_url ? (
+                <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <img src={iconAccount} alt="Account" className="w-full h-full object-cover" />
+              )}
             </button>
           </div>
         </div>

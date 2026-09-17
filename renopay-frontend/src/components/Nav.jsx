@@ -1,12 +1,15 @@
 import { useAuth } from "../context/AuthContext";
 import iconAccounting from "../assets/actions/accounting.png";
+import iconHome from "../assets/actions/home.png";
+import iconHistory from "../assets/actions/history.png";
+import iconAccount from "../assets/actions/account.png";
 
 const ITEMS = [
-  { id: "home", icon: "🏠", l: "Home" },
+  { id: "home", l: "Home" },
   { id: "pay", icon: "💸", l: "Pay" },
-  { id: "accounting", icon: iconAccounting, l: "Accounting" },
-  { id: "history", icon: "📋", l: "History" },
-  { id: "profile", icon: "👤", l: "Profile" },
+  { id: "accounting", l: "Accounting" },
+  { id: "history", l: "History" },
+  { id: "profile", l: "Profile" },
 ];
 
 export function Nav({ active, onNavigate }) {
@@ -24,13 +27,37 @@ export function Nav({ active, onNavigate }) {
           {active === n.id && (
             <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 w-[26px] h-[3px] rounded bg-accent shadow-[0_0_8px_#FF6A1A]" />
           )}
-          {n.id === "profile" && profile?.avatar_url ? (
+          {n.id === "profile" ? (
             <div className="w-[26px] h-[26px] rounded-full overflow-hidden flex items-center justify-center mt-0.5">
               <img
-                src={profile.avatar_url}
+                src={profile?.avatar_url || iconAccount}
                 alt="Profile"
                 className={`w-full h-full object-cover rounded-full border-2 transition-all ${
                   active === "profile" ? "border-accent shadow-[0_0_8px_#FF6A1A]" : "border-white/30"
+                }`}
+              />
+            </div>
+          ) : n.id === "home" ? (
+            <div className="w-[26px] h-[26px] flex items-center justify-center mt-0.5">
+              <img
+                src={iconHome}
+                alt="Home"
+                className={`w-full h-full object-cover rounded-md transition-all ${
+                  active === "home"
+                    ? "scale-110 drop-shadow-[0_0_8px_#FF6A1A] ring-2 ring-accent"
+                    : "opacity-80 hover:opacity-100"
+                }`}
+              />
+            </div>
+          ) : n.id === "history" ? (
+            <div className="w-[26px] h-[26px] flex items-center justify-center mt-0.5">
+              <img
+                src={iconHistory}
+                alt="History"
+                className={`w-full h-full object-cover rounded-md transition-all ${
+                  active === "history"
+                    ? "scale-110 drop-shadow-[0_0_8px_#FF6A1A] ring-2 ring-accent"
+                    : "opacity-80 hover:opacity-100"
                 }`}
               />
             </div>
@@ -39,7 +66,7 @@ export function Nav({ active, onNavigate }) {
               <img
                 src={iconAccounting}
                 alt="Accounting"
-                className={`w-full h-full object-contain rounded-full transition-all ${
+                className={`w-full h-full object-cover rounded-md transition-all ${
                   active === "accounting"
                     ? "scale-110 drop-shadow-[0_0_8px_#FF6A1A] ring-2 ring-accent"
                     : "opacity-80 hover:opacity-100"

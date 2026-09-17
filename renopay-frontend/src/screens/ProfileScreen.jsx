@@ -6,6 +6,7 @@ import { getDeviceFingerprint, getDeviceLabel, fmt } from "../lib/format";
 import { Btn, Badge, Card } from "../components/ui";
 import { PINPad } from "../components/PINPad";
 import { downloadOrShareFile } from "../lib/download";
+import iconAccount from "../assets/actions/account.png";
 
 export function ProfileScreen({ onBack, onLoggedOut }) {
   const { profile, logout, refreshProfile } = useAuth();
@@ -445,9 +446,11 @@ export function ProfileScreen({ onBack, onLoggedOut }) {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span className="text-white drop-shadow font-black">
-                    {profile.full_name ? profile.full_name[0].toUpperCase() : "U"}
-                  </span>
+                  <img
+                    src={iconAccount}
+                    alt={profile.full_name || "Account"}
+                    className="w-full h-full object-cover"
+                  />
                 )}
 
                 {/* Uploading Spinner Overlay */}
