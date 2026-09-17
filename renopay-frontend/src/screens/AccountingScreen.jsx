@@ -135,8 +135,13 @@ export function AccountingScreen({ onBack }) {
 
   const [trialAsOf, setTrialAsOf] = useState("");
 
-  const [complianceFrom, setComplianceFrom] = useState("");
-  const [complianceTo, setComplianceTo] = useState("");
+  const [pnlFrom, setPnlFrom] = useState("");
+  const [pnlTo, setPnlTo] = useState("");
+
+  const [bsAsOf, setBsAsOf] = useState("");
+
+  const [cfFrom, setCfFrom] = useState("");
+  const [cfTo, setCfTo] = useState("");
 
   // PDF Preview Modal state
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
@@ -152,6 +157,9 @@ export function AccountingScreen({ onBack }) {
   const [payeeLedger, setPayeeLedger] = useState(null);
   const [selectedPayee, setSelectedPayee] = useState("");
   const [trialBalance, setTrialBalance] = useState(null);
+  const [pnlData, setPnLData] = useState(null);
+  const [balanceSheetData, setBalanceSheetData] = useState(null);
+  const [cashFlowData, setCashFlowData] = useState(null);
 
   // Phase 2 state
   const [gstReport, setGstReport] = useState(null);
@@ -226,6 +234,33 @@ export function AccountingScreen({ onBack }) {
     }
   };
 
+  const fetchPnL = async (f, t) => {
+    try {
+      const data = await AccountingAPI.getPnL(f || undefined, t || undefined);
+      setPnLData(data);
+    } catch (e) {
+      console.error("fetchPnL error:", e);
+    }
+  };
+
+  const fetchBalanceSheet = async (asOf) => {
+    try {
+      const data = await AccountingAPI.getBalanceSheet(asOf || undefined);
+      setBalanceSheetData(data);
+    } catch (e) {
+      console.error("fetchBalanceSheet error:", e);
+    }
+  };
+
+  const fetchCashFlow = async (f, t) => {
+    try {
+      const data = await AccountingAPI.getCashFlow(f || undefined, t || undefined);
+      setCashFlowData(data);
+    } catch (e) {
+      console.error("fetchCashFlow error:", e);
+    }
+  };
+
   const fetchCompliance = async (f, t) => {
     try {
       const data = await AccountingAPI.getGstReport(f || undefined, t || undefined);
@@ -254,6 +289,12 @@ export function AccountingScreen({ onBack }) {
         fetchPayeeLedger(selectedPayee, payeeFrom, payeeTo);
       } else if (activeTab === "trial") {
         fetchTrialBalance(trialAsOf);
+      } else if (activeTab === "pnl") {
+        fetchPnL(pnlFrom, pnlTo);
+      } else if (activeTab === "balance_sheet") {
+        fetchBalanceSheet(bsAsOf);
+      } else if (activeTab === "cash_flow") {
+        fetchCashFlow(cfFrom, cfTo);
       } else if (activeTab === "compliance") {
         fetchCompliance(complianceFrom, complianceTo);
       } else if (activeTab === "invoices") {
@@ -520,7 +561,7 @@ export function AccountingScreen({ onBack }) {
                       <Badge variant="gold" className="text-[9px] py-0 px-1.5">All-in-One Pack</Badge>
                     </div>
                     <p className="text-muted text-[11px] mt-0.5">
-                      Journal, General Ledger, Payee & Trial Balance in one bundle
+                      Journal, Ledgers, Trial Balance, P&amp;L, Balance Sheet &amp; Cash Flow in one bundle
                     </p>
                   </div>
                 </div>
@@ -531,82 +572,91 @@ export function AccountingScreen({ onBack }) {
               </div>
 
               {fullPackOpen && (
-                <div className="mt-3.5 pt-3.5 border-t border-line/70">
-                  <div className="bg-surf/80 border border-line rounded-xl p-3 mb-3.5">
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-[11px] font-bold text-textLight uppercase tracking-wider">
-                        Filter by Date Range...
-                      </label>
-                      <span className="text-[10px] text-muted font-mono">
-                        {datePreset === "all" ? "All Time Records" : `${fromDate || "Start"} → ${toDate || "End"}`}
-                      </span>
-                    </div>
-
-                    {/* Preset Chips */}
-                    <div className="flex flex-wrap gap-1.5 mb-2">
+                <div className="mt-3.5 pt-3.5 border-t border-line/60 flex flex-col gap-3">
+                  {/* Quick Presets */}
+                  <div>
+                    <label className="block text-[10px] text-muted font-bold mb-1.5 uppercase tracking-wider">
+                      Report Period Preset
+                    </label>
+                    <div className="grid grid-cols-4 gap-1.5">
                       {[
                         { id: "all", label: "All Time" },
                         { id: "this_month", label: "This Month" },
                         { id: "last_30", label: "Last 30 Days" },
                         { id: "last_month", label: "Last Month" },
-                        { id: "custom", label: "Custom Range" },
                       ].map((p) => (
                         <button
                           key={p.id}
                           type="button"
                           onClick={() => applyDatePreset(p.id)}
-                          className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all ${datePreset === p.id
-                              ? "bg-accent text-white shadow-sm"
-                              : "bg-card border border-line text-muted hover:text-white"
+                          className={`py-1.5 px-2 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer truncate ${datePreset === p.id
+                            ? "bg-accent text-white border-accent shadow-accentGlow"
+                            : "bg-surf text-text border-line hover:border-accent/50"
                             }`}
                         >
                           {p.label}
                         </button>
                       ))}
                     </div>
-
-                    {/* Custom Date Inputs */}
-                    {datePreset === "custom" && (
-                      <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-line/60">
-                        <div>
-                          <label className="block text-[10px] text-muted font-bold mb-1">From Date</label>
-                          <DatePickerInput
-                            value={fromDate}
-                            onChange={(e) => setFromDate(e.target.value)}
-                            title="From Date"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] text-muted font-bold mb-1">To Date</label>
-                          <DatePickerInput
-                            value={toDate}
-                            onChange={(e) => setToDate(e.target.value)}
-                            title="To Date"
-                          />
-                        </div>
-                      </div>
-                    )}
                   </div>
 
-                  {/* Error and Success alerts */}
+                  {/* Custom Date Range with Calendar Pickers */}
+                  <div className="bg-surf/70 p-2.5 rounded-xl border border-line/60">
+                    <div className="text-[10px] text-muted font-bold uppercase tracking-wider mb-2">
+                      Custom Date Range (IST)
+                    </div>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="block text-[9px] text-muted font-bold mb-1 uppercase tracking-wider">
+                          From Date
+                        </label>
+                        <DatePickerInput
+                          value={fromDate}
+                          onChange={(e) => {
+                            setFromDate(e.target.value);
+                            setDatePreset("custom");
+                          }}
+                          title="From Date"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[9px] text-muted font-bold mb-1 uppercase tracking-wider">
+                          To Date
+                        </label>
+                        <DatePickerInput
+                          value={toDate}
+                          onChange={(e) => {
+                            setToDate(e.target.value);
+                            setDatePreset("custom");
+                          }}
+                          title="To Date"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Feedback Messages */}
                   {error && (
-                    <p className="text-danger text-xs text-center bg-danger/5 border border-danger/20 rounded-xl px-4 py-2 mb-3">
-                      {error}
-                    </p>
-                  )}
-                  {success && (
-                    <div className="bg-success/10 border border-success/30 rounded-xl px-4 py-2.5 mb-3 text-center">
-                      <p className="text-success font-semibold text-xs">✅ Full Accounting Pack Downloaded!</p>
+                    <div className="text-[11px] text-danger bg-danger/10 border border-danger/30 rounded-lg p-2 flex items-center gap-1.5">
+                      <span>⚠️</span>
+                      <span>{error}</span>
                     </div>
                   )}
 
-                  {/* Dual Action Buttons: View and Download */}
-                  <div className="grid grid-cols-2 gap-2.5">
+                  {success && (
+                    <div className="text-[11px] text-teal bg-teal/10 border border-teal/30 rounded-lg p-2 flex items-center gap-1.5">
+                      <span>✓</span>
+                      <span>Report generated &amp; downloaded successfully!</span>
+                    </div>
+                  )}
+
+                  {/* Action Buttons: View and Download */}
+                  <div className="grid grid-cols-2 gap-2 pt-1">
                     <button
                       type="button"
+                      disabled={downloading || viewing}
                       onClick={handleViewPdf}
-                      disabled={viewing || downloading}
-                      className="w-full py-2.5 px-3 rounded-xl text-[12px] font-bold bg-card border border-accent/50 text-accent hover:bg-accent/10 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-40 shadow-sm cursor-pointer"
+                      className="py-2.5 px-3 rounded-xl text-[12px] font-bold bg-card border border-accent/40 text-accent hover:bg-accent/10 active:scale-98 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                     >
                       {viewing ? (
                         <>
@@ -616,16 +666,15 @@ export function AccountingScreen({ onBack }) {
                       ) : (
                         <>
                           <span>👁</span>
-                          <span>View Full Pack</span>
+                          <span>View Full PDF</span>
                         </>
                       )}
                     </button>
-
                     <button
                       type="button"
-                      onClick={handleDownload}
                       disabled={downloading || viewing}
-                      className="w-full py-2.5 px-3 rounded-xl text-[12px] font-bold bg-accent text-white shadow-accentGlow hover:brightness-110 transition-all flex items-center justify-center gap-1.5 disabled:opacity-40 cursor-pointer"
+                      onClick={handleDownload}
+                      className="py-2.5 px-3 rounded-xl text-[12px] font-bold bg-accent text-white hover:brightness-110 shadow-accentGlow active:scale-98 transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                     >
                       {downloading ? (
                         <>
@@ -646,7 +695,7 @@ export function AccountingScreen({ onBack }) {
 
             {/* Tabs */}
             <div className="flex gap-2 overflow-x-auto pb-1 mt-2 no-scrollbar">
-              {["journal", "general", "payee", "trial", "compliance", "invoices"].map((t) => (
+              {["journal", "general", "payee", "trial", "pnl", "balance_sheet", "cash_flow", "compliance", "invoices"].map((t) => (
                 <button
                   key={t}
                   onClick={() => setActiveTab(t)}
@@ -657,6 +706,9 @@ export function AccountingScreen({ onBack }) {
                   {t === "general" && "General Ledger"}
                   {t === "payee" && "Payee Ledger"}
                   {t === "trial" && "Trial Balance"}
+                  {t === "pnl" && "P&L Statement"}
+                  {t === "balance_sheet" && "Balance Sheet"}
+                  {t === "cash_flow" && "Cash Flow"}
                   {t === "compliance" && "Compliance"}
                   {t === "invoices" && "Invoices"}
                 </button>
@@ -947,6 +999,469 @@ export function AccountingScreen({ onBack }) {
                       </div>
                     </div>
                   </>
+                )}
+              </Card>
+            )}
+
+            {/* P&L Statement Tab */}
+            {activeTab === "pnl" && (
+              <Card className="p-4">
+                <div className="flex justify-between items-center mb-3">
+                  <div>
+                    <h3 className="text-[12px] font-bold text-textLight tracking-wider uppercase">Profit &amp; Loss Statement</h3>
+                    <p className="text-[10px] text-muted">Income Statement &bull; Total Income − Total Expenses = Net Profit/Loss</p>
+                  </div>
+                  <Badge variant="teal">Double Entry</Badge>
+                </div>
+
+                <SectionDateFilterBar
+                  from={pnlFrom}
+                  to={pnlTo}
+                  onFromChange={setPnlFrom}
+                  onToChange={setPnlTo}
+                  onApply={() => fetchPnL(pnlFrom, pnlTo)}
+                  onViewPdf={() => handleViewSectionPdf(
+                    "profit_loss",
+                    pnlFrom,
+                    pnlTo,
+                    "Profit & Loss Statement",
+                    `Profit_Loss_${pnlFrom || "all"}_to_${pnlTo || "now"}.pdf`
+                  )}
+                  onDownloadPdf={() => handleDownloadSectionPdf(
+                    "profit_loss",
+                    pnlFrom,
+                    pnlTo,
+                    `Profit_Loss_${pnlFrom || "all"}_to_${pnlTo || "now"}.pdf`
+                  )}
+                  viewLabel="View P&amp;L PDF"
+                  downloadLabel="Download PDF"
+                  title="P&amp;L Date Range Filter"
+                />
+
+                {pnlData && (
+                  <div className="flex flex-col gap-4 mt-3">
+                    {/* Metric Cards */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-card border border-line rounded-xl p-2.5 flex flex-col">
+                        <span className="text-[10px] text-muted font-medium">Total Income</span>
+                        <span className="text-[13px] font-bold font-mono text-teal mt-0.5">
+                          + ₹{pnlData.income.total.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <div className="bg-card border border-line rounded-xl p-2.5 flex flex-col">
+                        <span className="text-[10px] text-muted font-medium">Total Expenses</span>
+                        <span className="text-[13px] font-bold font-mono text-danger mt-0.5">
+                          - ₹{pnlData.expenses.total.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <div className={`rounded-xl p-2.5 flex flex-col border ${pnlData.is_profit ? "bg-teal/10 border-teal/30" : "bg-danger/10 border-danger/30"}`}>
+                        <span className="text-[10px] text-muted font-medium">Net {pnlData.is_profit ? "Profit" : "Loss"}</span>
+                        <span className={`text-[13px] font-bold font-mono mt-0.5 ${pnlData.is_profit ? "text-teal" : "text-danger"}`}>
+                          {pnlData.is_profit ? "+" : "-"} ₹{Math.abs(pnlData.net_profit).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Income Breakdown */}
+                    <div className="border border-line rounded-xl overflow-hidden text-[11px]">
+                      <div className="bg-card px-3 py-2 border-b border-line flex justify-between items-center">
+                        <span className="font-bold text-textLight">Income Accounts</span>
+                        <span className="font-mono text-teal font-bold">+ ₹{pnlData.income.total.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="text-muted border-b border-line bg-surf/50">
+                            <th className="px-3 py-1.5 font-semibold">Code</th>
+                            <th className="py-1.5 font-semibold">Category / Account</th>
+                            <th className="px-3 py-1.5 font-semibold text-right">Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pnlData.income.rows.length === 0 ? (
+                            <tr>
+                              <td colSpan={3} className="px-3 py-3 text-center text-muted text-xs">No income recorded in this period</td>
+                            </tr>
+                          ) : (
+                            pnlData.income.rows.map((r, i) => (
+                              <tr key={i} className="border-b border-line/50 last:border-none">
+                                <td className="px-3 py-2 font-mono text-muted">{r.code}</td>
+                                <td className="py-2 text-textLight font-medium">{r.name}</td>
+                                <td className="px-3 py-2 text-right font-mono text-teal font-bold">
+                                  + ₹{r.amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Expense Breakdown */}
+                    <div className="border border-line rounded-xl overflow-hidden text-[11px]">
+                      <div className="bg-card px-3 py-2 border-b border-line flex justify-between items-center">
+                        <span className="font-bold text-textLight">Expense Accounts</span>
+                        <span className="font-mono text-danger font-bold">- ₹{pnlData.expenses.total.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="text-muted border-b border-line bg-surf/50">
+                            <th className="px-3 py-1.5 font-semibold">Code</th>
+                            <th className="py-1.5 font-semibold">Category / Account</th>
+                            <th className="px-3 py-1.5 font-semibold text-right">Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pnlData.expenses.rows.length === 0 ? (
+                            <tr>
+                              <td colSpan={3} className="px-3 py-3 text-center text-muted text-xs">No expenses recorded in this period</td>
+                            </tr>
+                          ) : (
+                            pnlData.expenses.rows.map((r, i) => (
+                              <tr key={i} className="border-b border-line/50 last:border-none">
+                                <td className="px-3 py-2 font-mono text-muted">{r.code}</td>
+                                <td className="py-2 text-textLight font-medium">{r.name}</td>
+                                <td className="px-3 py-2 text-right font-mono text-danger font-bold">
+                                  - ₹{r.amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Net Profit Summary Row */}
+                    <div className="p-3 rounded-xl bg-card border border-line flex justify-between items-center text-xs">
+                      <div>
+                        <div className="font-bold text-textLight">Net {pnlData.is_profit ? "Profit" : "Loss"} Result</div>
+                        <div className="text-[10px] text-muted">Feeds Retained Earnings on the Balance Sheet</div>
+                      </div>
+                      <span className={`text-[14px] font-bold font-mono ${pnlData.is_profit ? "text-teal" : "text-danger"}`}>
+                        {pnlData.is_profit ? "+" : "-"} ₹{Math.abs(pnlData.net_profit).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </Card>
+            )}
+
+            {/* Balance Sheet Tab */}
+            {activeTab === "balance_sheet" && (
+              <Card className="p-4">
+                <div className="flex justify-between items-center mb-3">
+                  <div>
+                    <h3 className="text-[12px] font-bold text-textLight tracking-wider uppercase">Balance Sheet</h3>
+                    <p className="text-[10px] text-muted">Statement of Financial Position &bull; Assets = Liabilities + Equity</p>
+                  </div>
+                  <Badge variant={balanceSheetData?.balanced ? "teal" : "danger"}>
+                    {balanceSheetData?.balanced ? "Balanced" : "Review"}
+                  </Badge>
+                </div>
+
+                <SectionDateFilterBar
+                  singleDate={true}
+                  singleDateLabel="As-of Date"
+                  from={bsAsOf}
+                  onFromChange={setBsAsOf}
+                  onApply={() => fetchBalanceSheet(bsAsOf)}
+                  onViewPdf={() => handleViewSectionPdf(
+                    "balance_sheet",
+                    undefined,
+                    bsAsOf,
+                    "Balance Sheet Statement",
+                    `Balance_Sheet_${bsAsOf || "latest"}.pdf`
+                  )}
+                  onDownloadPdf={() => handleDownloadSectionPdf(
+                    "balance_sheet",
+                    undefined,
+                    bsAsOf,
+                    `Balance_Sheet_${bsAsOf || "latest"}.pdf`
+                  )}
+                  viewLabel="View Balance Sheet PDF"
+                  downloadLabel="Download PDF"
+                  title="Balance Sheet As-Of Filter"
+                />
+
+                {balanceSheetData && (
+                  <div className="flex flex-col gap-4 mt-3">
+                    {/* Status Pill */}
+                    <div className={`p-3 rounded-xl border flex items-center justify-between text-xs ${balanceSheetData.balanced ? "bg-teal/10 border-teal/30 text-teal" : "bg-danger/10 border-danger/30 text-danger"}`}>
+                      <div className="flex items-center gap-2">
+                        <span>{balanceSheetData.balanced ? "✓" : "⚠️"}</span>
+                        <span className="font-bold">
+                          {balanceSheetData.balanced
+                            ? "Assets = Liabilities + Equity (Balanced Statement)"
+                            : "Imbalance detected between Assets and (Liabilities + Equity)"}
+                        </span>
+                      </div>
+                      <span className="font-mono font-bold">
+                        ₹{balanceSheetData.total_assets.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+
+                    {/* Assets */}
+                    <div className="border border-line rounded-xl overflow-hidden text-[11px]">
+                      <div className="bg-card px-3 py-2 border-b border-line flex justify-between items-center">
+                        <span className="font-bold text-textLight">Assets (Cash, Digital Wallets, Receivables)</span>
+                        <span className="font-mono text-teal font-bold">₹{balanceSheetData.total_assets.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="text-muted border-b border-line bg-surf/50">
+                            <th className="px-3 py-1.5 font-semibold">Code</th>
+                            <th className="py-1.5 font-semibold">Account</th>
+                            <th className="px-3 py-1.5 font-semibold text-right">Balance</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {balanceSheetData.assets.rows.map((r, i) => (
+                            <tr key={i} className="border-b border-line/50 last:border-none">
+                              <td className="px-3 py-2 font-mono text-muted">{r.code}</td>
+                              <td className="py-2 text-textLight font-medium">{r.name}</td>
+                              <td className="px-3 py-2 text-right font-mono text-textLight font-semibold">
+                                ₹{r.balance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Liabilities */}
+                    <div className="border border-line rounded-xl overflow-hidden text-[11px]">
+                      <div className="bg-card px-3 py-2 border-b border-line flex justify-between items-center">
+                        <span className="font-bold text-textLight">Liabilities &amp; Obligations</span>
+                        <span className="font-mono text-danger font-bold">₹{balanceSheetData.liabilities.total.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="text-muted border-b border-line bg-surf/50">
+                            <th className="px-3 py-1.5 font-semibold">Code</th>
+                            <th className="py-1.5 font-semibold">Account</th>
+                            <th className="px-3 py-1.5 font-semibold text-right">Balance</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {balanceSheetData.liabilities.rows.length === 0 ? (
+                            <tr>
+                              <td colSpan={3} className="px-3 py-3 text-center text-muted text-xs">No liabilities or debt outstanding</td>
+                            </tr>
+                          ) : (
+                            balanceSheetData.liabilities.rows.map((r, i) => (
+                              <tr key={i} className="border-b border-line/50 last:border-none">
+                                <td className="px-3 py-2 font-mono text-muted">{r.code}</td>
+                                <td className="py-2 text-textLight font-medium">{r.name}</td>
+                                <td className="px-3 py-2 text-right font-mono text-textLight font-semibold">
+                                  ₹{r.balance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Equity */}
+                    <div className="border border-line rounded-xl overflow-hidden text-[11px]">
+                      <div className="bg-card px-3 py-2 border-b border-line flex justify-between items-center">
+                        <span className="font-bold text-textLight">Owner's Equity &amp; Retained Earnings</span>
+                        <span className="font-mono text-accent font-bold">₹{balanceSheetData.equity.total.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                      </div>
+                      <table className="w-full text-left">
+                        <thead>
+                          <tr className="text-muted border-b border-line bg-surf/50">
+                            <th className="px-3 py-1.5 font-semibold">Code</th>
+                            <th className="py-1.5 font-semibold">Account</th>
+                            <th className="px-3 py-1.5 font-semibold text-right">Balance</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {balanceSheetData.equity.rows.map((r, i) => (
+                            <tr key={i} className="border-b border-line/50 last:border-none">
+                              <td className="px-3 py-2 font-mono text-muted">{r.code}</td>
+                              <td className="py-2 text-textLight font-medium">{r.name}</td>
+                              <td className="px-3 py-2 text-right font-mono text-textLight font-semibold">
+                                ₹{r.balance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Total Comparison */}
+                    <div className="mt-2 pt-3 border-t border-line flex justify-between items-center font-bold text-xs">
+                      <div>
+                        <span className="text-muted">Total Liab + Equity: </span>
+                        <span className="font-mono text-textLight">
+                          ₹{balanceSheetData.total_liabilities_equity.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-muted">Total Assets: </span>
+                        <span className="font-mono text-teal">
+                          ₹{balanceSheetData.total_assets.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </Card>
+            )}
+
+            {/* Cash Flow Statement Tab */}
+            {activeTab === "cash_flow" && (
+              <Card className="p-4">
+                <div className="flex justify-between items-center mb-3">
+                  <div>
+                    <h3 className="text-[12px] font-bold text-textLight tracking-wider uppercase">Cash Flow Statement</h3>
+                    <p className="text-[10px] text-muted">Direct Method &bull; UPI &amp; Digital Cash Reconciled</p>
+                  </div>
+                  <Badge variant="teal">Direct Method</Badge>
+                </div>
+
+                <SectionDateFilterBar
+                  from={cfFrom}
+                  to={cfTo}
+                  onFromChange={setCfFrom}
+                  onToChange={setCfTo}
+                  onApply={() => fetchCashFlow(cfFrom, cfTo)}
+                  onViewPdf={() => handleViewSectionPdf(
+                    "cash_flow",
+                    cfFrom,
+                    cfTo,
+                    "Cash Flow Statement",
+                    `Cash_Flow_${cfFrom || "all"}_to_${cfTo || "now"}.pdf`
+                  )}
+                  onDownloadPdf={() => handleDownloadSectionPdf(
+                    "cash_flow",
+                    cfFrom,
+                    cfTo,
+                    `Cash_Flow_${cfFrom || "all"}_to_${cfTo || "now"}.pdf`
+                  )}
+                  viewLabel="View Cash Flow PDF"
+                  downloadLabel="Download PDF"
+                  title="Cash Flow Date Range Filter"
+                />
+
+                {cashFlowData && (
+                  <div className="flex flex-col gap-4 mt-3">
+                    {/* Metric Cards */}
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-card border border-line rounded-xl p-2.5 flex flex-col">
+                        <span className="text-[10px] text-muted font-medium">Opening Cash</span>
+                        <span className="text-[13px] font-bold font-mono text-textLight mt-0.5">
+                          ₹{cashFlowData.opening_balance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <div className="bg-card border border-line rounded-xl p-2.5 flex flex-col">
+                        <span className="text-[10px] text-muted font-medium">Net Change</span>
+                        <span className={`text-[13px] font-bold font-mono mt-0.5 ${cashFlowData.net_change >= 0 ? "text-teal" : "text-danger"}`}>
+                          {cashFlowData.net_change >= 0 ? "+" : "-"} ₹{Math.abs(cashFlowData.net_change).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <div className="bg-accent/10 border border-accent/30 rounded-xl p-2.5 flex flex-col">
+                        <span className="text-[10px] text-accent font-medium">Closing Cash</span>
+                        <span className="text-[13px] font-bold font-mono text-accent mt-0.5">
+                          ₹{cashFlowData.closing_balance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 1. Operating Activities */}
+                    <div className="border border-line rounded-xl overflow-hidden text-[11px]">
+                      <div className="bg-card px-3 py-2 border-b border-line flex justify-between items-center">
+                        <span className="font-bold text-textLight">1. Operating Activities (Sales &amp; Day-to-Day Expenses)</span>
+                        <span className={`font-mono font-bold ${cashFlowData.operating.net >= 0 ? "text-teal" : "text-danger"}`}>
+                          {cashFlowData.operating.net >= 0 ? "+" : "-"} ₹{Math.abs(cashFlowData.operating.net).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <div className="p-3 bg-surf flex flex-col gap-1.5">
+                        {cashFlowData.operating.inflows.map((r, i) => (
+                          <div key={`in-${i}`} className="flex justify-between items-center">
+                            <span className="text-textLight">Inflow: {r.name}</span>
+                            <span className="font-mono text-teal font-medium">+ ₹{r.amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          </div>
+                        ))}
+                        {cashFlowData.operating.outflows.map((r, i) => (
+                          <div key={`out-${i}`} className="flex justify-between items-center">
+                            <span className="text-textLight">Outflow: {r.name}</span>
+                            <span className="font-mono text-danger font-medium">- ₹{r.amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          </div>
+                        ))}
+                        {cashFlowData.operating.inflows.length === 0 && cashFlowData.operating.outflows.length === 0 && (
+                          <p className="text-muted text-center text-xs py-1">No operating cash movements in period</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 2. Investing Activities */}
+                    <div className="border border-line rounded-xl overflow-hidden text-[11px]">
+                      <div className="bg-card px-3 py-2 border-b border-line flex justify-between items-center">
+                        <span className="font-bold text-textLight">2. Investing Activities (Digital Gold &amp; Assets)</span>
+                        <span className={`font-mono font-bold ${cashFlowData.investing.net >= 0 ? "text-teal" : "text-danger"}`}>
+                          {cashFlowData.investing.net >= 0 ? "+" : "-"} ₹{Math.abs(cashFlowData.investing.net).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <div className="p-3 bg-surf flex flex-col gap-1.5">
+                        {cashFlowData.investing.inflows.map((r, i) => (
+                          <div key={`in-${i}`} className="flex justify-between items-center">
+                            <span className="text-textLight">{r.name}</span>
+                            <span className="font-mono text-teal font-medium">+ ₹{r.amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          </div>
+                        ))}
+                        {cashFlowData.investing.outflows.map((r, i) => (
+                          <div key={`out-${i}`} className="flex justify-between items-center">
+                            <span className="text-textLight">{r.name}</span>
+                            <span className="font-mono text-danger font-medium">- ₹{r.amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          </div>
+                        ))}
+                        {cashFlowData.investing.inflows.length === 0 && cashFlowData.investing.outflows.length === 0 && (
+                          <p className="text-muted text-center text-xs py-1">No investing transactions in period</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 3. Financing Activities */}
+                    <div className="border border-line rounded-xl overflow-hidden text-[11px]">
+                      <div className="bg-card px-3 py-2 border-b border-line flex justify-between items-center">
+                        <span className="font-bold text-textLight">3. Financing Activities (Capital &amp; Loans)</span>
+                        <span className={`font-mono font-bold ${cashFlowData.financing.net >= 0 ? "text-teal" : "text-danger"}`}>
+                          {cashFlowData.financing.net >= 0 ? "+" : "-"} ₹{Math.abs(cashFlowData.financing.net).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                      <div className="p-3 bg-surf flex flex-col gap-1.5">
+                        {cashFlowData.financing.inflows.map((r, i) => (
+                          <div key={`in-${i}`} className="flex justify-between items-center">
+                            <span className="text-textLight">{r.name}</span>
+                            <span className="font-mono text-teal font-medium">+ ₹{r.amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          </div>
+                        ))}
+                        {cashFlowData.financing.outflows.map((r, i) => (
+                          <div key={`out-${i}`} className="flex justify-between items-center">
+                            <span className="text-textLight">{r.name}</span>
+                            <span className="font-mono text-danger font-medium">- ₹{r.amount.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          </div>
+                        ))}
+                        {cashFlowData.financing.inflows.length === 0 && cashFlowData.financing.outflows.length === 0 && (
+                          <p className="text-muted text-center text-xs py-1">No financing transactions in period</p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Closing Reconciliation */}
+                    <div className="p-3 rounded-xl bg-card border border-line flex justify-between items-center text-xs">
+                      <div>
+                        <div className="font-bold text-textLight">Closing Balance Reconciliation</div>
+                        <div className="text-[10px] text-muted">
+                          Opening (₹{cashFlowData.opening_balance.toFixed(2)}) + Net Cash Movement ({cashFlowData.net_change >= 0 ? "+" : "-"}₹{Math.abs(cashFlowData.net_change).toFixed(2)})
+                        </div>
+                      </div>
+                      <span className="text-[14px] font-bold font-mono text-accent">
+                        = ₹{cashFlowData.closing_balance.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </div>
                 )}
               </Card>
             )}

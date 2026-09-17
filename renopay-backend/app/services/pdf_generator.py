@@ -44,6 +44,7 @@ ReportType = Literal[
     "transaction_receipt",
     "balance_sheet",
     "profit_loss",
+    "cash_flow",
     "full_accounting_pack",
     "journal",
     "general_ledger",
@@ -458,6 +459,246 @@ body {
     </table>
     {% endif %}
 
+    {% if pnl %}
+    <div class="page-break"></div>
+    <div class="section-title">5. Profit &amp; Loss Statement (Income Statement)</div>
+    <div class="sub-section-title">Income &amp; Revenue</div>
+    <table class="report-table" cellpadding="0" cellspacing="0">
+        <thead>
+            <tr>
+                <th width="15%">Account</th>
+                <th width="65%">Category / Particulars</th>
+                <th width="20%" align="right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in pnl.income_rows %}
+            <tr class="{{ 'even' if loop.index is even else 'odd' }}">
+                <td style="font-family: Courier, monospace;">{{ r.code }}</td>
+                <td>{{ r.name }}</td>
+                <td align="right" style="color: #15803d; font-weight: bold;">+ {{ r.amount }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td colspan="2" align="right" style="border-right: none;">Total Income</td>
+                <td align="right" style="color: #15803d;">{{ pnl.total_income }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="sub-section-title">Operating &amp; Direct Expenses</div>
+    <table class="report-table" cellpadding="0" cellspacing="0">
+        <thead>
+            <tr>
+                <th width="15%">Account</th>
+                <th width="65%">Category / Particulars</th>
+                <th width="20%" align="right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in pnl.expense_rows %}
+            <tr class="{{ 'even' if loop.index is even else 'odd' }}">
+                <td style="font-family: Courier, monospace;">{{ r.code }}</td>
+                <td>{{ r.name }}</td>
+                <td align="right" style="color: #dc2626; font-weight: bold;">- {{ r.amount }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td colspan="2" align="right" style="border-right: none;">Total Expenses</td>
+                <td align="right" style="color: #dc2626;">{{ pnl.total_expenses }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table class="report-table" cellpadding="0" cellspacing="0" style="margin-top: 10px;">
+        <tbody>
+            <tr class="closing-row">
+                <td width="70%" style="font-size: 11px; font-weight: bold;">NET {{ 'PROFIT' if pnl.is_profit else 'LOSS' }} (Total Income − Total Expenses)</td>
+                <td width="30%" align="right" style="font-size: 13px; font-weight: bold; color: {{ '#15803d' if pnl.is_profit else '#dc2626' }};">
+                    {{ '+' if pnl.is_profit else '-' }} {{ pnl.net_profit }}
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    {% endif %}
+
+    {% if balance_sheet %}
+    <div class="page-break"></div>
+    <div class="section-title">6. Balance Sheet (Statement of Financial Position)</div>
+    <div class="sub-section-title">Assets (Cash, Digital Wallets, Receivables)</div>
+    <table class="report-table" cellpadding="0" cellspacing="0">
+        <thead>
+            <tr>
+                <th width="15%">Code</th>
+                <th width="65%">Account</th>
+                <th width="20%" align="right">Balance</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in balance_sheet.assets %}
+            <tr class="{{ 'even' if loop.index is even else 'odd' }}">
+                <td style="font-family: Courier, monospace;">{{ r.code }}</td>
+                <td>{{ r.name }}</td>
+                <td align="right">{{ r.balance }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td colspan="2" align="right" style="border-right: none;">Total Assets</td>
+                <td align="right" style="color: #162a45;">{{ balance_sheet.total_assets }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="sub-section-title">Liabilities &amp; Obligations</div>
+    <table class="report-table" cellpadding="0" cellspacing="0">
+        <thead>
+            <tr>
+                <th width="15%">Code</th>
+                <th width="65%">Account</th>
+                <th width="20%" align="right">Balance</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in balance_sheet.liabilities %}
+            <tr class="{{ 'even' if loop.index is even else 'odd' }}">
+                <td style="font-family: Courier, monospace;">{{ r.code }}</td>
+                <td>{{ r.name }}</td>
+                <td align="right">{{ r.balance }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td colspan="2" align="right" style="border-right: none;">Total Liabilities</td>
+                <td align="right">{{ balance_sheet.total_liabilities }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="sub-section-title">Owner's Equity &amp; Retained Earnings</div>
+    <table class="report-table" cellpadding="0" cellspacing="0">
+        <thead>
+            <tr>
+                <th width="15%">Code</th>
+                <th width="65%">Account</th>
+                <th width="20%" align="right">Balance</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in balance_sheet.equity %}
+            <tr class="{{ 'even' if loop.index is even else 'odd' }}">
+                <td style="font-family: Courier, monospace;">{{ r.code }}</td>
+                <td>{{ r.name }}</td>
+                <td align="right">{{ r.balance }}</td>
+            </tr>
+            {% endfor %}
+            <tr class="total-row">
+                <td colspan="2" align="right" style="border-right: none;">Total Equity</td>
+                <td align="right">{{ balance_sheet.total_equity }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table class="report-table" cellpadding="0" cellspacing="0" style="margin-top: 10px;">
+        <tbody>
+            <tr class="closing-row">
+                <td width="70%" style="font-size: 11px; font-weight: bold;">TOTAL LIABILITIES &amp; EQUITY</td>
+                <td width="30%" align="right" style="font-size: 12px; font-weight: bold;">{{ balance_sheet.total_liabilities_equity }}</td>
+            </tr>
+            <tr>
+                <td colspan="2" align="center" style="background: #f8fafc; font-size: 10px; font-weight: bold; color: {{ '#15803d' if balance_sheet.balanced else '#dc2626' }};">
+                    {{ '✓ Assets = Liabilities + Equity (Balanced Statement)' if balance_sheet.balanced else '⚠ Attention: Imbalance detected in Assets vs Liabilities+Equity' }}
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    {% endif %}
+
+    {% if cash_flow %}
+    <div class="page-break"></div>
+    <div class="section-title">7. Cash Flow Statement (Digital Cash &amp; Bank Movement)</div>
+    <table class="report-table" cellpadding="0" cellspacing="0">
+        <thead>
+            <tr>
+                <th width="75%">Cash Flow Component</th>
+                <th width="25%" align="right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr style="background-color: #f1f5f9; font-weight: bold;">
+                <td>Opening Cash &amp; Digital Balances</td>
+                <td align="right">{{ cash_flow.opening_balance }}</td>
+            </tr>
+            <tr class="total-row">
+                <td colspan="2" style="background-color: #f8fafc; font-size: 10.5px; color: #162a45;">Operating Activities (Collections &amp; Payments)</td>
+            </tr>
+            {% for r in cash_flow.operating_inflows %}
+            <tr class="odd">
+                <td style="padding-left: 20px;">Cash Inflow: {{ r.name }}</td>
+                <td align="right" style="color: #15803d;">+ {{ r.amount }}</td>
+            </tr>
+            {% endfor %}
+            {% for r in cash_flow.operating_outflows %}
+            <tr class="even">
+                <td style="padding-left: 20px;">Cash Outflow: {{ r.name }}</td>
+                <td align="right" style="color: #dc2626;">- {{ r.amount }}</td>
+            </tr>
+            {% endfor %}
+            <tr style="font-weight: bold; background: #fff;">
+                <td style="padding-left: 10px;">Net Cash from Operating Activities</td>
+                <td align="right">{{ cash_flow.operating_net }}</td>
+            </tr>
+
+            <tr class="total-row">
+                <td colspan="2" style="background-color: #f8fafc; font-size: 10.5px; color: #162a45;">Investing Activities (Digital Gold &amp; Investments)</td>
+            </tr>
+            {% for r in cash_flow.investing_inflows %}
+            <tr class="odd">
+                <td style="padding-left: 20px;">Cash Inflow: {{ r.name }}</td>
+                <td align="right" style="color: #15803d;">+ {{ r.amount }}</td>
+            </tr>
+            {% endfor %}
+            {% for r in cash_flow.investing_outflows %}
+            <tr class="even">
+                <td style="padding-left: 20px;">Cash Outflow: {{ r.name }}</td>
+                <td align="right" style="color: #dc2626;">- {{ r.amount }}</td>
+            </tr>
+            {% endfor %}
+            <tr style="font-weight: bold; background: #fff;">
+                <td style="padding-left: 10px;">Net Cash from Investing Activities</td>
+                <td align="right">{{ cash_flow.investing_net }}</td>
+            </tr>
+
+            <tr class="total-row">
+                <td colspan="2" style="background-color: #f8fafc; font-size: 10.5px; color: #162a45;">Financing Activities (Capital, Loans &amp; Transfers)</td>
+            </tr>
+            {% for r in cash_flow.financing_inflows %}
+            <tr class="odd">
+                <td style="padding-left: 20px;">Cash Inflow: {{ r.name }}</td>
+                <td align="right" style="color: #15803d;">+ {{ r.amount }}</td>
+            </tr>
+            {% endfor %}
+            {% for r in cash_flow.financing_outflows %}
+            <tr class="even">
+                <td style="padding-left: 20px;">Cash Outflow: {{ r.name }}</td>
+                <td align="right" style="color: #dc2626;">- {{ r.amount }}</td>
+            </tr>
+            {% endfor %}
+            <tr style="font-weight: bold; background: #fff;">
+                <td style="padding-left: 10px;">Net Cash from Financing Activities</td>
+                <td align="right">{{ cash_flow.financing_net }}</td>
+            </tr>
+
+            <tr class="total-row">
+                <td>Net Increase / (Decrease) in Cash &amp; Bank</td>
+                <td align="right" style="color: {{ '#15803d' if cash_flow.is_positive else '#dc2626' }};">{{ cash_flow.net_change }}</td>
+            </tr>
+            <tr class="closing-row">
+                <td style="font-size: 11px; font-weight: bold;">Closing Cash &amp; Digital Balances</td>
+                <td align="right" style="font-size: 12px; font-weight: bold; color: #162a45;">{{ cash_flow.closing_balance }}</td>
+            </tr>
+        </tbody>
+    </table>
+    {% endif %}
+
     <div class="footer-text">
         RenoPay Double-Entry Accounting Engine &mdash; Immutable Ledger Record &mdash; Generated {{ generated_at }}
     </div>
@@ -469,81 +710,240 @@ body {
 <body><div class="page">
 <table class="header-table" cellpadding="0" cellspacing="0">
   <tr>
-    <td><div class="logo-title">Reno<span class="logo-accent">Pay</span></div><div class="logo-sub">Balance Sheet Statement</div></td>
-    <td class="meta-box"><div><strong>{{ period }}</strong></div><div>Generated: {{ generated_at }}</div></td>
+    <td><div class="logo-title">Reno<span class="logo-accent">Pay</span></div><div class="logo-sub">Balance Sheet &mdash; Statement of Financial Position</div></td>
+    <td class="meta-box"><div><strong>As of: {{ as_of_str or period or 'Latest' }}</strong></div><div>Holder: {{ account_name }}</div><div>Generated: {{ generated_at }}</div></td>
   </tr>
 </table>
 <div class="accent-line-navy"></div><div class="accent-line-orange"></div>
+
+{% if balance_sheet and balance_sheet.assets is defined %}
+<div class="section-title">Assets (Cash, Digital Wallets, Receivables)</div>
+<table class="report-table" cellpadding="0" cellspacing="0">
+  <thead><tr><th width="15%">Code</th><th width="65%">Account</th><th width="20%" align="right">Balance</th></tr></thead>
+  <tbody>
+    {% for r in balance_sheet.assets %}
+    <tr class="{{ 'even' if loop.index is even else 'odd' }}">
+      <td style="font-family: Courier, monospace;">{{ r.code }}</td><td>{{ r.name }}</td><td align="right">{{ r.balance }}</td>
+    </tr>
+    {% endfor %}
+    <tr class="total-row"><td colspan="2" align="right" style="border-right: none;">Total Assets</td><td align="right" style="color:#162a45;">{{ balance_sheet.total_assets }}</td></tr>
+  </tbody>
+</table>
+
+<div class="section-title">Liabilities &amp; Obligations</div>
+<table class="report-table" cellpadding="0" cellspacing="0">
+  <thead><tr><th width="15%">Code</th><th width="65%">Account</th><th width="20%" align="right">Balance</th></tr></thead>
+  <tbody>
+    {% for r in balance_sheet.liabilities %}
+    <tr class="{{ 'even' if loop.index is even else 'odd' }}">
+      <td style="font-family: Courier, monospace;">{{ r.code }}</td><td>{{ r.name }}</td><td align="right">{{ r.balance }}</td>
+    </tr>
+    {% endfor %}
+    <tr class="total-row"><td colspan="2" align="right" style="border-right: none;">Total Liabilities</td><td align="right">{{ balance_sheet.total_liabilities }}</td></tr>
+  </tbody>
+</table>
+
+<div class="section-title">Owner's Equity &amp; Retained Earnings</div>
+<table class="report-table" cellpadding="0" cellspacing="0">
+  <thead><tr><th width="15%">Code</th><th width="65%">Account</th><th width="20%" align="right">Balance</th></tr></thead>
+  <tbody>
+    {% for r in balance_sheet.equity %}
+    <tr class="{{ 'even' if loop.index is even else 'odd' }}">
+      <td style="font-family: Courier, monospace;">{{ r.code }}</td><td>{{ r.name }}</td><td align="right">{{ r.balance }}</td>
+    </tr>
+    {% endfor %}
+    <tr class="total-row"><td colspan="2" align="right" style="border-right: none;">Total Equity</td><td align="right">{{ balance_sheet.total_equity }}</td></tr>
+  </tbody>
+</table>
+
+<table class="report-table" cellpadding="0" cellspacing="0" style="margin-top: 14px;">
+  <tbody>
+    <tr class="closing-row">
+      <td width="70%" style="font-size: 11px; font-weight: bold;">TOTAL LIABILITIES &amp; EQUITY</td>
+      <td width="30%" align="right" style="font-size: 12px; font-weight: bold;">{{ balance_sheet.total_liabilities_equity }}</td>
+    </tr>
+    <tr>
+      <td colspan="2" align="center" style="background: #f8fafc; font-size: 10.5px; font-weight: bold; padding: 10px; color: {{ '#15803d' if balance_sheet.balanced else '#dc2626' }};">
+        {{ '✓ Assets = Liabilities + Equity (Balanced Financial Position)' if balance_sheet.balanced else '⚠ Attention: Imbalance detected in Assets vs Liabilities+Equity' }}
+      </td>
+    </tr>
+  </tbody>
+</table>
+{% else %}
 <div class="section-title">Summary</div>
 <table class="report-table" cellpadding="6" cellspacing="0">
   <thead><tr><th>Total Income</th><th>Total Expenses</th><th>Net Balance</th></tr></thead>
   <tbody>
     <tr>
-      <td style="font-weight:bold; color:#15803d; font-size:12px;">Rs {{ "%.2f"|format(total_income) }}</td>
-      <td style="font-weight:bold; color:#dc2626; font-size:12px;">Rs {{ "%.2f"|format(total_spent) }}</td>
-      <td style="font-weight:bold; color:{{'#15803d' if net >= 0 else '#dc2626'}}; font-size:12px;">Rs {{ "%.2f"|format(net) }}</td>
+      <td style="font-weight:bold; color:#15803d; font-size:12px;">Rs {{ "%.2f"|format(total_income or 0) }}</td>
+      <td style="font-weight:bold; color:#dc2626; font-size:12px;">Rs {{ "%.2f"|format(total_spent or 0) }}</td>
+      <td style="font-weight:bold; color:{{'#15803d' if (net or 0) >= 0 else '#dc2626'}}; font-size:12px;">Rs {{ "%.2f"|format(net or 0) }}</td>
     </tr>
   </tbody>
 </table>
-<div class="section-title">Transactions Ledger</div>
-<table class="report-table" cellpadding="6" cellspacing="0">
-  <thead><tr><th>Date</th><th>Description</th><th>Category</th><th>Type</th><th align="right">Amount</th></tr></thead>
-  <tbody>
-  {% for t in transactions %}
-  <tr class="{{ 'even' if loop.index is even else 'odd' }}">
-    <td>{{ t.date }}</td>
-    <td>{{ t.description }}</td>
-    <td>{{ t.category }}</td>
-    <td style="font-weight:bold; color:{{'#15803d' if t.type == 'credit' else '#dc2626'}};">{{ t.type | upper }}</td>
-    <td align="right" style="font-weight:bold; color:{{'#15803d' if t.type == 'credit' else '#dc2626'}};">{{ '+' if t.type == 'credit' else '-' }}Rs {{ "%.2f"|format(t.amount) }}</td>
-  </tr>
-  {% endfor %}
-  </tbody>
-</table>
-<div class="footer-text">RenoPay Immutable Ledger &mdash; Generated {{ generated_at }}</div>
+{% endif %}
+<div class="footer-text">RenoPay Double-Entry Accounting Engine &mdash; Immutable Ledger Record &mdash; Generated {{ generated_at }}</div>
 </div></body></html>""",
 
     "profit_loss": """<!DOCTYPE html><html><head><meta charset="utf-8"><title>RenoPay — Profit &amp; Loss</title><style>{{ css }}</style></head>
 <body><div class="page">
 <table class="header-table" cellpadding="0" cellspacing="0">
   <tr>
-    <td><div class="logo-title">Reno<span class="logo-accent">Pay</span></div><div class="logo-sub">Income &amp; Expense Statement</div></td>
-    <td class="meta-box"><div><strong>{{ period }}</strong></div><div>Generated: {{ generated_at }}</div></td>
+    <td><div class="logo-title">Reno<span class="logo-accent">Pay</span></div><div class="logo-sub">Profit &amp; Loss &mdash; Statement of Financial Performance</div></td>
+    <td class="meta-box"><div><strong>Period: {{ period_str or period or 'All Time' }}</strong></div><div>Holder: {{ account_name }}</div><div>Generated: {{ generated_at }}</div></td>
   </tr>
 </table>
 <div class="accent-line-navy"></div><div class="accent-line-orange"></div>
+
+{% if pnl and pnl.income_rows is defined %}
+<div class="section-title">Income &amp; Revenue</div>
+<table class="report-table" cellpadding="0" cellspacing="0">
+  <thead><tr><th width="15%">Account</th><th width="65%">Category / Particulars</th><th width="20%" align="right">Amount</th></tr></thead>
+  <tbody>
+    {% for r in pnl.income_rows %}
+    <tr class="{{ 'even' if loop.index is even else 'odd' }}">
+      <td style="font-family: Courier, monospace;">{{ r.code }}</td><td>{{ r.name }}</td><td align="right" style="color: #15803d; font-weight: bold;">+ {{ r.amount }}</td>
+    </tr>
+    {% endfor %}
+    <tr class="total-row"><td colspan="2" align="right" style="border-right: none;">Total Income</td><td align="right" style="color: #15803d;">{{ pnl.total_income }}</td></tr>
+  </tbody>
+</table>
+
+<div class="section-title">Operating &amp; Direct Expenses</div>
+<table class="report-table" cellpadding="0" cellspacing="0">
+  <thead><tr><th width="15%">Account</th><th width="65%">Category / Particulars</th><th width="20%" align="right">Amount</th></tr></thead>
+  <tbody>
+    {% for r in pnl.expense_rows %}
+    <tr class="{{ 'even' if loop.index is even else 'odd' }}">
+      <td style="font-family: Courier, monospace;">{{ r.code }}</td><td>{{ r.name }}</td><td align="right" style="color: #dc2626; font-weight: bold;">- {{ r.amount }}</td>
+    </tr>
+    {% endfor %}
+    <tr class="total-row"><td colspan="2" align="right" style="border-right: none;">Total Expenses</td><td align="right" style="color: #dc2626;">{{ pnl.total_expenses }}</td></tr>
+  </tbody>
+</table>
+
+<table class="report-table" cellpadding="0" cellspacing="0" style="margin-top: 14px;">
+  <tbody>
+    <tr class="closing-row">
+      <td width="70%" style="font-size: 11px; font-weight: bold;">NET {{ 'PROFIT' if pnl.is_profit else 'LOSS' }} (Total Income − Total Expenses)</td>
+      <td width="30%" align="right" style="font-size: 13px; font-weight: bold; color: {{ '#15803d' if pnl.is_profit else '#dc2626' }};">
+        {{ '+' if pnl.is_profit else '-' }} {{ pnl.net_profit }}
+      </td>
+    </tr>
+  </tbody>
+</table>
+{% else %}
 <div class="section-title">Performance Summary</div>
 <table class="report-table" cellpadding="6" cellspacing="0">
   <thead><tr><th>Gross Income</th><th>Total Expenses</th><th>Net Result</th></tr></thead>
   <tbody>
     <tr>
-      <td style="font-weight:bold; color:#15803d; font-size:12px;">+ Rs {{ "%.2f"|format(total_income) }}</td>
-      <td style="font-weight:bold; color:#dc2626; font-size:12px;">- Rs {{ "%.2f"|format(total_spent) }}</td>
-      <td style="font-weight:bold; color:{{'#15803d' if net >= 0 else '#dc2626'}}; font-size:12px;">Rs {{ "%.2f"|format(net) }}</td>
+      <td style="font-weight:bold; color:#15803d; font-size:12px;">+ Rs {{ "%.2f"|format(total_income or 0) }}</td>
+      <td style="font-weight:bold; color:#dc2626; font-size:12px;">- Rs {{ "%.2f"|format(total_spent or 0) }}</td>
+      <td style="font-weight:bold; color:{{'#15803d' if (net or 0) >= 0 else '#dc2626'}}; font-size:12px;">Rs {{ "%.2f"|format(net or 0) }}</td>
     </tr>
   </tbody>
 </table>
-<div class="section-title">Income Categories</div>
-<table class="report-table" cellpadding="6" cellspacing="0">
-  <thead><tr><th>Category</th><th align="right">Amount</th></tr></thead>
+{% endif %}
+<div class="footer-text">RenoPay Double-Entry Accounting Engine &mdash; Immutable Ledger Record &mdash; Generated {{ generated_at }}</div>
+</div></body></html>""",
+
+    "cash_flow": """<!DOCTYPE html><html><head><meta charset="utf-8"><title>RenoPay — Cash Flow Statement</title><style>{{ css }}</style></head>
+<body><div class="page">
+<table class="header-table" cellpadding="0" cellspacing="0">
+  <tr>
+    <td><div class="logo-title">Reno<span class="logo-accent">Pay</span></div><div class="logo-sub">Cash Flow Statement &mdash; Direct Method</div></td>
+    <td class="meta-box"><div><strong>Period: {{ period_str or period or 'All Time' }}</strong></div><div>Holder: {{ account_name }}</div><div>Generated: {{ generated_at }}</div></td>
+  </tr>
+</table>
+<div class="accent-line-navy"></div><div class="accent-line-orange"></div>
+
+{% if cash_flow %}
+<div class="section-title">Cash &amp; Bank Movements Summary</div>
+<table class="report-table" cellpadding="0" cellspacing="0">
+  <thead>
+    <tr>
+      <th width="75%">Cash Flow Component</th>
+      <th width="25%" align="right">Amount</th>
+    </tr>
+  </thead>
   <tbody>
-  {% for r in income_rows %}
-  <tr class="{{ 'even' if loop.index is even else 'odd' }}"><td>{{ r.category }}</td><td align="right" style="font-weight:bold; color:#15803d;">+ Rs {{ "%.2f"|format(r.amount) }}</td></tr>
-  {% endfor %}
-  <tr class="total-row"><td style="border-right:none;">Total Income</td><td align="right" style="color:#15803d;">+ Rs {{ "%.2f"|format(total_income) }}</td></tr>
+    <tr style="background-color: #f1f5f9; font-weight: bold;">
+      <td>Opening Cash &amp; Digital Balances</td>
+      <td align="right">{{ cash_flow.opening_balance }}</td>
+    </tr>
+    <tr class="total-row">
+      <td colspan="2" style="background-color: #f8fafc; font-size: 10.5px; color: #162a45;">Operating Activities (Collections &amp; Payments)</td>
+    </tr>
+    {% for r in cash_flow.operating_inflows %}
+    <tr class="odd">
+      <td style="padding-left: 20px;">Cash Inflow: {{ r.name }}</td>
+      <td align="right" style="color: #15803d;">+ {{ r.amount }}</td>
+    </tr>
+    {% endfor %}
+    {% for r in cash_flow.operating_outflows %}
+    <tr class="even">
+      <td style="padding-left: 20px;">Cash Outflow: {{ r.name }}</td>
+      <td align="right" style="color: #dc2626;">- {{ r.amount }}</td>
+    </tr>
+    {% endfor %}
+    <tr style="font-weight: bold; background: #fff;">
+      <td style="padding-left: 10px;">Net Cash from Operating Activities</td>
+      <td align="right">{{ cash_flow.operating_net }}</td>
+    </tr>
+
+    <tr class="total-row">
+      <td colspan="2" style="background-color: #f8fafc; font-size: 10.5px; color: #162a45;">Investing Activities (Digital Gold &amp; Investments)</td>
+    </tr>
+    {% for r in cash_flow.investing_inflows %}
+    <tr class="odd">
+      <td style="padding-left: 20px;">Cash Inflow: {{ r.name }}</td>
+      <td align="right" style="color: #15803d;">+ {{ r.amount }}</td>
+    </tr>
+    {% endfor %}
+    {% for r in cash_flow.investing_outflows %}
+    <tr class="even">
+      <td style="padding-left: 20px;">Cash Outflow: {{ r.name }}</td>
+      <td align="right" style="color: #dc2626;">- {{ r.amount }}</td>
+    </tr>
+    {% endfor %}
+    <tr style="font-weight: bold; background: #fff;">
+      <td style="padding-left: 10px;">Net Cash from Investing Activities</td>
+      <td align="right">{{ cash_flow.investing_net }}</td>
+    </tr>
+
+    <tr class="total-row">
+      <td colspan="2" style="background-color: #f8fafc; font-size: 10.5px; color: #162a45;">Financing Activities (Capital, Loans &amp; Transfers)</td>
+    </tr>
+    {% for r in cash_flow.financing_inflows %}
+    <tr class="odd">
+      <td style="padding-left: 20px;">Cash Inflow: {{ r.name }}</td>
+      <td align="right" style="color: #15803d;">+ {{ r.amount }}</td>
+    </tr>
+    {% endfor %}
+    {% for r in cash_flow.financing_outflows %}
+    <tr class="even">
+      <td style="padding-left: 20px;">Cash Outflow: {{ r.name }}</td>
+      <td align="right" style="color: #dc2626;">- {{ r.amount }}</td>
+    </tr>
+    {% endfor %}
+    <tr style="font-weight: bold; background: #fff;">
+      <td style="padding-left: 10px;">Net Cash from Financing Activities</td>
+      <td align="right">{{ cash_flow.financing_net }}</td>
+    </tr>
+
+    <tr class="total-row">
+      <td>Net Increase / (Decrease) in Cash &amp; Bank</td>
+      <td align="right" style="color: {{ '#15803d' if cash_flow.is_positive else '#dc2626' }};">{{ cash_flow.net_change }}</td>
+    </tr>
+    <tr class="closing-row">
+      <td style="font-size: 11px; font-weight: bold;">Closing Cash &amp; Digital Balances</td>
+      <td align="right" style="font-size: 12px; font-weight: bold; color: #162a45;">{{ cash_flow.closing_balance }}</td>
+    </tr>
   </tbody>
 </table>
-<div class="section-title">Expense Categories</div>
-<table class="report-table" cellpadding="6" cellspacing="0">
-  <thead><tr><th>Category</th><th align="right">Amount</th><th align="right">% of Spend</th></tr></thead>
-  <tbody>
-  {% for e in expense_rows %}
-  <tr class="{{ 'even' if loop.index is even else 'odd' }}"><td>{{ e.category }}</td><td align="right" style="font-weight:bold; color:#dc2626;">- Rs {{ "%.2f"|format(e.amount) }}</td><td align="right">{{ e.percent }}%</td></tr>
-  {% endfor %}
-  <tr class="total-row"><td style="border-right:none;">Total Expenses</td><td align="right" style="color:#dc2626;">- Rs {{ "%.2f"|format(total_spent) }}</td><td style="border-left:none;"></td></tr>
-  </tbody>
-</table>
-<div class="footer-text">RenoPay Immutable Ledger &mdash; Generated {{ generated_at }}</div>
+{% endif %}
+<div class="footer-text">RenoPay Double-Entry Accounting Engine &mdash; Immutable Ledger Record &mdash; Generated {{ generated_at }}</div>
 </div></body></html>""",
 
     "journal": """<!DOCTYPE html>

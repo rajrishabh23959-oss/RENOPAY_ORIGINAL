@@ -229,6 +229,70 @@ async def get_trial_balance_api(
         "balanced": data["balanced"]
     }
 
+@router.get("/pnl")
+async def get_profit_and_loss_api(
+    from_date: str = Query(None, alias="from"),
+    to_date: str = Query(None, alias="to"),
+    account: Account = Depends(get_current_account),
+    db: AsyncSession = Depends(get_db)
+):
+    """Profit & Loss Statement (Income Statement) over a date range."""
+    dt_from = None
+    dt_to = None
+    if from_date:
+        try:
+            dt_from = datetime.strptime(from_date, "%Y-%m-%d").replace(hour=0, minute=0, second=0, tzinfo=timezone.utc)
+        except ValueError:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid from date format. Use YYYY-MM-DD")
+    if to_date:
+        try:
+            dt_to = datetime.strptime(to_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+        except ValueError:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid to date format. Use YYYY-MM-DD")
+            
+    return await accounting_engine.get_profit_and_loss(db, account.id, dt_from, dt_to)
+
+
+@router.get("/balance-sheet")
+async def get_balance_sheet_api(
+    as_of: str = Query(None),
+    account: Account = Depends(get_current_account),
+    db: AsyncSession = Depends(get_db)
+):
+    """Balance Sheet statement at a single point in time."""
+    dt_as_of = None
+    if as_of:
+        try:
+            dt_as_of = datetime.strptime(as_of, "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+        except ValueError:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid as_of date format. Use YYYY-MM-DD")
+            
+    return await accounting_engine.get_balance_sheet(db, account.id, dt_as_of)
+
+
+@router.get("/cash-flow")
+async def get_cash_flow_api(
+    from_date: str = Query(None, alias="from"),
+    to_date: str = Query(None, alias="to"),
+    account: Account = Depends(get_current_account),
+    db: AsyncSession = Depends(get_db)
+):
+    """Direct Method Cash Flow Statement tracking real digital cash movements."""
+    dt_from = None
+    dt_to = None
+    if from_date:
+        try:
+            dt_from = datetime.strptime(from_date, "%Y-%m-%d").replace(hour=0, minute=0, second=0, tzinfo=timezone.utc)
+        except ValueError:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid from date format. Use YYYY-MM-DD")
+    if to_date:
+        try:
+            dt_to = datetime.strptime(to_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59, tzinfo=timezone.utc)
+        except ValueError:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid to date format. Use YYYY-MM-DD")
+            
+    return await accounting_engine.get_cash_flow_statement(db, account.id, dt_from, dt_to)
+
 @router.get("/reports/gst")
 async def get_gst_report(
     from_date: str = Query(None, alias="from"),

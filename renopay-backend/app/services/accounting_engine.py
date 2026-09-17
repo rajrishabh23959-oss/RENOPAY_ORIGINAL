@@ -334,14 +334,101 @@ async def get_trial_balance(db: AsyncSession, account_id: uuid.UUID, as_of: date
     }
 
 
-async def get_balance_sheet_v2(db: AsyncSession, account_id: uuid.UUID, as_of: datetime = None):
-    # Assets = Liabilities + Equity
-    # Net Income needs to be rolled into Equity
+async def get_profit_and_loss(db: AsyncSession, account_id: uuid.UUID, from_date: datetime = None, to_date: datetime = None):
+    """
+    Calculates Profit & Loss Statement (Income Statement).
+    Formula: Total Income - Total Expenses = Net Profit / Loss
+    Groups Income and Expense accounts by category/head with exact debits and credits.
+    """
+    await ensure_chart_of_accounts(db, account_id)
     
     query = (
         select(
-            ChartOfAccount.account_type,
+            ChartOfAccount.id,
+            ChartOfAccount.code,
             ChartOfAccount.name,
+            ChartOfAccount.account_type,
+            func.sum(JournalLine.debit_paise).label("debit"),
+            func.sum(JournalLine.credit_paise).label("credit")
+        )
+        .join(JournalLine, ChartOfAccount.id == JournalLine.chart_account_id)
+        .join(JournalEntry, JournalLine.journal_entry_id == JournalEntry.id)
+        .where(JournalEntry.account_id == account_id)
+        .where(ChartOfAccount.account_type.in_([AccountType.INCOME, AccountType.EXPENSE]))
+    )
+    
+    if from_date:
+        query = query.where(JournalEntry.created_at >= from_date)
+    if to_date:
+        query = query.where(JournalEntry.created_at <= to_date)
+        
+    query = query.group_by(ChartOfAccount.id, ChartOfAccount.code, ChartOfAccount.name, ChartOfAccount.account_type).order_by(ChartOfAccount.code)
+    result = await db.execute(query)
+    
+    income_rows = []
+    expense_rows = []
+    total_income_paise = 0
+    total_expense_paise = 0
+    
+    for row in result.all():
+        d = int(row.debit or 0)
+        c = int(row.credit or 0)
+        clean_code = row.code.split('-')[1] if '-' in row.code else row.code
+        
+        if row.account_type == AccountType.INCOME:
+            net_income = c - d
+            if net_income != 0:
+                income_rows.append({
+                    "code": clean_code,
+                    "name": row.name,
+                    "amount_paise": net_income,
+                    "amount": net_income / 100
+                })
+                total_income_paise += net_income
+        elif row.account_type == AccountType.EXPENSE:
+            net_expense = d - c
+            if net_expense != 0:
+                expense_rows.append({
+                    "code": clean_code,
+                    "name": row.name,
+                    "amount_paise": net_expense,
+                    "amount": net_expense / 100
+                })
+                total_expense_paise += net_expense
+                
+    net_profit_paise = total_income_paise - total_expense_paise
+    
+    return {
+        "income": {
+            "rows": income_rows,
+            "total_paise": total_income_paise,
+            "total": total_income_paise / 100
+        },
+        "expenses": {
+            "rows": expense_rows,
+            "total_paise": total_expense_paise,
+            "total": total_expense_paise / 100
+        },
+        "net_profit_paise": net_profit_paise,
+        "net_profit": net_profit_paise / 100,
+        "is_profit": net_profit_paise >= 0
+    }
+
+
+async def get_balance_sheet(db: AsyncSession, account_id: uuid.UUID, as_of: datetime = None):
+    """
+    Calculates Balance Sheet at a single point in time.
+    Formula: Assets = Liabilities + Equity
+    Equity absorbs Net Income (Retained Earnings) up to as_of date.
+    """
+    await ensure_chart_of_accounts(db, account_id)
+    
+    query = (
+        select(
+            ChartOfAccount.id,
+            ChartOfAccount.code,
+            ChartOfAccount.name,
+            ChartOfAccount.account_type,
             func.sum(JournalLine.debit_paise).label("debit"),
             func.sum(JournalLine.credit_paise).label("credit")
         )
@@ -352,7 +439,7 @@ async def get_balance_sheet_v2(db: AsyncSession, account_id: uuid.UUID, as_of: d
     if as_of:
         query = query.where(JournalEntry.created_at <= as_of)
         
-    query = query.group_by(ChartOfAccount.id, ChartOfAccount.account_type, ChartOfAccount.name)
+    query = query.group_by(ChartOfAccount.id, ChartOfAccount.code, ChartOfAccount.account_type, ChartOfAccount.name).order_by(ChartOfAccount.code)
     result = await db.execute(query)
     
     assets = []
@@ -368,97 +455,246 @@ async def get_balance_sheet_v2(db: AsyncSession, account_id: uuid.UUID, as_of: d
     for row in result.all():
         d = int(row.debit or 0)
         c = int(row.credit or 0)
+        clean_code = row.code.split('-')[1] if '-' in row.code else row.code
         
         if row.account_type == AccountType.ASSET:
             bal = d - c
             if bal != 0:
-                assets.append({"name": row.name, "balance": bal})
+                assets.append({
+                    "code": clean_code,
+                    "name": row.name,
+                    "balance_paise": bal,
+                    "balance": bal / 100
+                })
                 total_assets += bal
         elif row.account_type == AccountType.LIABILITY:
             bal = c - d
             if bal != 0:
-                liabilities.append({"name": row.name, "balance": bal})
+                liabilities.append({
+                    "code": clean_code,
+                    "name": row.name,
+                    "balance_paise": bal,
+                    "balance": bal / 100
+                })
                 total_liabilities += bal
         elif row.account_type == AccountType.EQUITY:
             bal = c - d
             if bal != 0:
-                equity.append({"name": row.name, "balance": bal})
+                equity.append({
+                    "code": clean_code,
+                    "name": row.name,
+                    "balance_paise": bal,
+                    "balance": bal / 100
+                })
                 total_equity += bal
         elif row.account_type == AccountType.INCOME:
             net_income += (c - d)
         elif row.account_type == AccountType.EXPENSE:
             net_income -= (d - c)
             
-    # Roll net income into equity
+    # Roll net income into equity as Retained Earnings
     if net_income != 0:
-        equity.append({"name": "Current Year Earnings", "balance": net_income})
+        equity.append({
+            "code": "3100",
+            "name": "Retained Earnings (Net Profit)",
+            "balance_paise": net_income,
+            "balance": net_income / 100
+        })
         total_equity += net_income
         
     return {
-        "assets": assets,
-        "liabilities": liabilities,
-        "equity": equity,
-        "total_assets": total_assets,
-        "total_liabilities": total_liabilities,
-        "total_equity": total_equity,
+        "assets": {
+            "rows": assets,
+            "total_paise": total_assets,
+            "total": total_assets / 100
+        },
+        "liabilities": {
+            "rows": liabilities,
+            "total_paise": total_liabilities,
+            "total": total_liabilities / 100
+        },
+        "equity": {
+            "rows": equity,
+            "total_paise": total_equity,
+            "total": total_equity / 100
+        },
+        "total_assets_paise": total_assets,
+        "total_assets": total_assets / 100,
+        "total_liabilities_equity_paise": total_liabilities + total_equity,
+        "total_liabilities_equity": (total_liabilities + total_equity) / 100,
         "balanced": total_assets == (total_liabilities + total_equity)
     }
 
+async def get_balance_sheet_v2(db: AsyncSession, account_id: uuid.UUID, as_of: datetime = None):
+    # Compatibility wrapper
+    bs = await get_balance_sheet(db, account_id, as_of)
+    return {
+        "assets": [{"name": r["name"], "balance": r["balance_paise"]} for r in bs["assets"]["rows"]],
+        "liabilities": [{"name": r["name"], "balance": r["balance_paise"]} for r in bs["liabilities"]["rows"]],
+        "equity": [{"name": r["name"], "balance": r["balance_paise"]} for r in bs["equity"]["rows"]],
+        "total_assets": bs["total_assets_paise"],
+        "total_liabilities": bs["liabilities"]["total_paise"],
+        "total_equity": bs["equity"]["total_paise"],
+        "balanced": bs["balanced"]
+    }
 
-async def get_cash_flow(db: AsyncSession, account_id: uuid.UUID, from_date: datetime = None, to_date: datetime = None):
-    # A simple cash flow statement.
-    # Changes in Cash & Equivalents.
+
+async def get_cash_flow_statement(db: AsyncSession, account_id: uuid.UUID, from_date: datetime = None, to_date: datetime = None):
+    """
+    Direct Method Cash Flow Statement tracking movements in Cash & Equivalents (Cash/Bank 1000 and UPI Lite 1200).
+    Formula: Opening Cash + Operating Cash Flow + Investing Cash Flow + Financing Cash Flow = Closing Cash
+    """
+    await ensure_chart_of_accounts(db, account_id)
     
+    # 1. Opening balance: Net cash balance before from_date
+    opening_paise = 0
+    if from_date:
+        open_query = (
+            select(
+                func.sum(JournalLine.debit_paise).label("debit"),
+                func.sum(JournalLine.credit_paise).label("credit")
+            )
+            .join(JournalEntry, JournalLine.journal_entry_id == JournalEntry.id)
+            .join(ChartOfAccount, JournalLine.chart_account_id == ChartOfAccount.id)
+            .where(JournalEntry.account_id == account_id)
+            .where(JournalEntry.created_at < from_date)
+            .where(ChartOfAccount.code.like("%-1000") | ChartOfAccount.code.like("%-1200") | (ChartOfAccount.code == "1000") | (ChartOfAccount.code == "1200"))
+        )
+        open_res = await db.execute(open_query)
+        open_row = open_res.one_or_none()
+        if open_row:
+            d = int(open_row.debit or 0)
+            c = int(open_row.credit or 0)
+            opening_paise = d - c
+            
+    # 2. Query lines within date range
     query = (
         select(
+            ChartOfAccount.code,
             ChartOfAccount.name,
-            JournalLine.debit_paise,
-            JournalLine.credit_paise
+            ChartOfAccount.account_type,
+            func.sum(JournalLine.debit_paise).label("debit"),
+            func.sum(JournalLine.credit_paise).label("credit")
         )
+        .join(JournalLine, ChartOfAccount.id == JournalLine.chart_account_id)
         .join(JournalEntry, JournalLine.journal_entry_id == JournalEntry.id)
-        .join(ChartOfAccount, JournalLine.chart_account_id == ChartOfAccount.id)
         .where(JournalEntry.account_id == account_id)
     )
-    
     if from_date:
         query = query.where(JournalEntry.created_at >= from_date)
     if to_date:
         query = query.where(JournalEntry.created_at <= to_date)
         
+    query = query.group_by(ChartOfAccount.code, ChartOfAccount.name, ChartOfAccount.account_type)
     result = await db.execute(query)
     
-    operating = []
-    investing = []
-    financing = []
+    operating_in = []
+    operating_out = []
+    investing_in = []
+    investing_out = []
+    financing_in = []
+    financing_out = []
     
-    op_total = 0
-    inv_total = 0
-    fin_total = 0
+    op_in_total = 0
+    op_out_total = 0
+    inv_in_total = 0
+    inv_out_total = 0
+    fin_in_total = 0
+    fin_out_total = 0
     
     for row in result.all():
-        # This is a very simplified mapping.
-        d = row.debit_paise or 0
-        c = row.credit_paise or 0
-        net = d - c
+        d = int(row.debit or 0)
+        c = int(row.credit or 0)
+        clean_code = row.code.split('-')[1] if '-' in row.code else row.code
         
-        if "Gold" in row.name or "Vault" in row.name or "Savings" in row.name:
-            if net != 0:
-                investing.append({"name": row.name, "amount": net})
-                inv_total += net
-        elif "Equity" in row.name or "Payable" in row.name:
-            if net != 0:
-                financing.append({"name": row.name, "amount": net})
-                fin_total += net
+        # Exclude Cash/Bank and UPI Lite accounts themselves (we track counterparties)
+        if clean_code in ("1000", "1200"):
+            continue
+            
+        # Investing activities: Digital Gold (1100), Fixed Assets, Vaults, Investments
+        if clean_code == "1100" or "Gold" in row.name or "Investment" in row.name or "Mutual" in row.name or "Vault" in row.name:
+            # Asset increase (debit) = cash outflow for investment
+            # Asset decrease (credit) = cash inflow from disinvestment
+            if d > 0:
+                investing_out.append({"name": f"{row.name} Purchases", "amount_paise": d, "amount": d / 100})
+                inv_out_total += d
+            if c > 0:
+                investing_in.append({"name": f"{row.name} Redemptions/Sales", "amount_paise": c, "amount": c / 100})
+                inv_in_total += c
+        # Financing activities: Owner's Equity (3000), Loans (2100)
+        elif clean_code in ("3000", "2100") or "Equity" in row.name or "Loan" in row.name or "Capital" in row.name:
+            if c > 0:
+                financing_in.append({"name": f"{row.name} Injections/Proceeds", "amount_paise": c, "amount": c / 100})
+                fin_in_total += c
+            if d > 0:
+                financing_out.append({"name": f"{row.name} Repayments/Drawings", "amount_paise": d, "amount": d / 100})
+                fin_out_total += d
+        # Operating activities: Sales/Income (inflow), Expenses/Payables (outflow)
         else:
-            if net != 0:
-                operating.append({"name": row.name, "amount": net})
-                op_total += net
-                
+            if row.account_type == AccountType.INCOME or c > d:
+                net_in = c - d if c > d else c
+                if net_in > 0:
+                    operating_in.append({"name": row.name, "amount_paise": net_in, "amount": net_in / 100})
+                    op_in_total += net_in
+            if row.account_type == AccountType.EXPENSE or d > c:
+                net_out = d - c if d > c else d
+                if net_out > 0:
+                    operating_out.append({"name": row.name, "amount_paise": net_out, "amount": net_out / 100})
+                    op_out_total += net_out
+                    
+    net_operating = op_in_total - op_out_total
+    net_investing = inv_in_total - inv_out_total
+    net_financing = fin_in_total - fin_out_total
+    net_change = net_operating + net_investing + net_financing
+    closing_paise = opening_paise + net_change
+    
     return {
-        "operating": {"items": operating, "total": op_total},
-        "investing": {"items": investing, "total": inv_total},
-        "financing": {"items": financing, "total": fin_total},
-        "net_change": op_total + inv_total + fin_total
+        "opening_balance_paise": opening_paise,
+        "opening_balance": opening_paise / 100,
+        "operating": {
+            "inflows": operating_in,
+            "outflows": operating_out,
+            "inflows_total_paise": op_in_total,
+            "inflows_total": op_in_total / 100,
+            "outflows_total_paise": op_out_total,
+            "outflows_total": op_out_total / 100,
+            "net_paise": net_operating,
+            "net": net_operating / 100
+        },
+        "investing": {
+            "inflows": investing_in,
+            "outflows": investing_out,
+            "inflows_total_paise": inv_in_total,
+            "inflows_total": inv_in_total / 100,
+            "outflows_total_paise": inv_out_total,
+            "outflows_total": inv_out_total / 100,
+            "net_paise": net_investing,
+            "net": net_investing / 100
+        },
+        "financing": {
+            "inflows": financing_in,
+            "outflows": financing_out,
+            "inflows_total_paise": fin_in_total,
+            "inflows_total": fin_in_total / 100,
+            "outflows_total_paise": fin_out_total,
+            "outflows_total": fin_out_total / 100,
+            "net_paise": net_financing,
+            "net": net_financing / 100
+        },
+        "net_change_paise": net_change,
+        "net_change": net_change / 100,
+        "closing_balance_paise": closing_paise,
+        "closing_balance": closing_paise / 100
+    }
+
+async def get_cash_flow(db: AsyncSession, account_id: uuid.UUID, from_date: datetime = None, to_date: datetime = None):
+    # Compatibility wrapper
+    cf = await get_cash_flow_statement(db, account_id, from_date, to_date)
+    return {
+        "operating": {"items": [{"name": x["name"], "amount": x["amount_paise"]} for x in cf["operating"]["inflows"] + cf["operating"]["outflows"]], "total": cf["operating"]["net_paise"]},
+        "investing": {"items": [{"name": x["name"], "amount": x["amount_paise"]} for x in cf["investing"]["inflows"] + cf["investing"]["outflows"]], "total": cf["investing"]["net_paise"]},
+        "financing": {"items": [{"name": x["name"], "amount": x["amount_paise"]} for x in cf["financing"]["inflows"] + cf["financing"]["outflows"]], "total": cf["financing"]["net_paise"]},
+        "net_change": cf["net_change_paise"]
     }
 
 async def generate_gst_report(db: AsyncSession, account_id: uuid.UUID, from_date: datetime = None, to_date: datetime = None):

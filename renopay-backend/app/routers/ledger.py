@@ -45,6 +45,7 @@ async def generate_report(
     type: Literal[
         "balance_sheet",
         "profit_loss",
+        "cash_flow",
         "transaction_receipt",
         "full_accounting_pack",
         "journal",
@@ -90,202 +91,256 @@ async def generate_report(
         except (ValueError, TypeError):
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "Invalid date format. Use YYYY-MM-DD")
 
-        filters = [Transaction.account_id == account.id]
-        if dt_from:
-            filters.append(Transaction.created_at >= dt_from)
-        if dt_to:
-            filters.append(Transaction.created_at <= dt_to)
+        from app.services import accounting_engine
+        from collections import defaultdict
 
-        result = await db.execute(
-            select(Transaction).where(and_(*filters)).order_by(Transaction.created_at.desc()).limit(500)
+        # Ensure COA is generated
+        coas = await accounting_engine.ensure_chart_of_accounts(db, account.id)
+
+        # 1. Batch fetch all journal entries and lines in ONE single query
+        je_query = (
+            select(
+                accounting_engine.JournalEntry,
+                accounting_engine.JournalLine,
+                accounting_engine.ChartOfAccount,
+            )
+            .join(accounting_engine.JournalLine, accounting_engine.JournalLine.journal_entry_id == accounting_engine.JournalEntry.id)
+            .join(accounting_engine.ChartOfAccount, accounting_engine.JournalLine.chart_account_id == accounting_engine.ChartOfAccount.id)
+            .where(accounting_engine.JournalEntry.account_id == account.id)
+            .order_by(accounting_engine.JournalEntry.created_at.asc(), accounting_engine.JournalLine.id.asc())
         )
-        transactions = result.scalars().all()
+        if dt_from:
+            je_query = je_query.where(accounting_engine.JournalEntry.created_at >= dt_from)
+        if dt_to:
+            je_query = je_query.where(accounting_engine.JournalEntry.created_at <= dt_to)
 
-        period_str = f"{from_str or 'All'} to {to_str or 'now'}"
+        all_lines_res = await db.execute(je_query)
+        all_rows = all_lines_res.all()
 
-        if type == "balance_sheet":
-            data = build_balance_sheet_data(transactions, period_str)
-            template = "balance_sheet"
-            filename = f"balance_sheet_{from_str or 'all'}_{to_str or 'now'}.{filename_ext}"
-        elif type == "profit_loss":
-            data = build_profit_loss_data(transactions, period_str)
-            template = "profit_loss"
-            filename = f"profit_loss_{from_str or 'all'}_{to_str or 'now'}.{filename_ext}"
-        elif type in ("full_accounting_pack", "journal", "general_ledger", "payee_ledger", "trial_balance"):
-            from app.services import accounting_engine
-            from collections import defaultdict
+        # Group for Journal Entries
+        entries_dict = {}
+        for entry, line, coa in all_rows:
+            if entry.id not in entries_dict:
+                entry_date = to_ist(entry.created_at).strftime("%d %b %Y, %I:%M %p IST") if entry.created_at else ""
+                entries_dict[entry.id] = {
+                    "entry_no": entry.entry_no or "",
+                    "date": entry_date,
+                    "narration": entry.narration or "",
+                    "created_at": entry.created_at,
+                    "debit_accounts": [],
+                    "credit_accounts": [],
+                    "debit_paise": 0,
+                    "credit_paise": 0,
+                }
+            d = line.debit_paise or 0
+            c = line.credit_paise or 0
+            coa_name = getattr(coa, "name", "Account") or "Account"
+            if d > 0:
+                entries_dict[entry.id]["debit_accounts"].append(coa_name)
+                entries_dict[entry.id]["debit_paise"] += d
+            if c > 0:
+                entries_dict[entry.id]["credit_accounts"].append(coa_name)
+                entries_dict[entry.id]["credit_paise"] += c
 
-            # Ensure COA is generated
-            coas = await accounting_engine.ensure_chart_of_accounts(db, account.id)
+        journal_entries_data = []
+        total_je_paise = 0
+        sorted_entries = sorted(
+            entries_dict.values(),
+            key=lambda x: x.get("created_at") or datetime.min
+        )
+        for item in sorted_entries:
+            amt_paise = max(item["debit_paise"], item["credit_paise"])
+            total_je_paise += amt_paise
+            journal_entries_data.append({
+                "entry_no": item["entry_no"],
+                "date": item["date"],
+                "narration": item["narration"],
+                "debit_account": ", ".join(item["debit_accounts"]) if item["debit_accounts"] else "—",
+                "credit_account": ", ".join(item["credit_accounts"]) if item["credit_accounts"] else "—",
+                "amount": f"Rs {amt_paise / 100:,.2f}",
+            })
+        total_journal_amount = f"Rs {total_je_paise / 100:,.2f}"
 
-            # 1. Batch fetch all journal entries and lines in ONE single query
-            je_query = (
-                select(
-                    accounting_engine.JournalEntry,
-                    accounting_engine.JournalLine,
-                    accounting_engine.ChartOfAccount,
-                )
-                .join(accounting_engine.JournalLine, accounting_engine.JournalLine.journal_entry_id == accounting_engine.JournalEntry.id)
-                .join(accounting_engine.ChartOfAccount, accounting_engine.JournalLine.chart_account_id == accounting_engine.ChartOfAccount.id)
-                .where(accounting_engine.JournalEntry.account_id == account.id)
-                .order_by(accounting_engine.JournalEntry.created_at.asc(), accounting_engine.JournalLine.id.asc())
-            )
-            if dt_from:
-                je_query = je_query.where(accounting_engine.JournalEntry.created_at >= dt_from)
-            if dt_to:
-                je_query = je_query.where(accounting_engine.JournalEntry.created_at <= dt_to)
+        # Group for General Ledgers (calculated in-memory)
+        gl_map = defaultdict(lambda: {"lines": [], "running_balance": 0})
+        for entry, line, coa in all_rows:
+            gl = gl_map[coa.id]
+            d = line.debit_paise or 0
+            c = line.credit_paise or 0
+            coa_type = getattr(coa, "account_type", None)
+            if coa_type in (accounting_engine.AccountType.ASSET, accounting_engine.AccountType.EXPENSE):
+                gl["running_balance"] += (d - c)
+            else:
+                gl["running_balance"] += (c - d)
 
-            all_lines_res = await db.execute(je_query)
-            all_rows = all_lines_res.all()
+            entry_date = to_ist(entry.created_at).strftime("%d %b, %I:%M %p") if entry.created_at else ""
+            gl["lines"].append({
+                "date": entry_date,
+                "entry_no": entry.entry_no or "",
+                "narration": entry.narration or "",
+                "payee": line.payee_vpa or line.payee_name or "—",
+                "debit": f"Rs {d / 100:,.2f}" if d else "",
+                "credit": f"Rs {c / 100:,.2f}" if c else "",
+                "balance": f"Rs {gl['running_balance'] / 100:,.2f}",
+            })
 
-            # Group for Journal Entries
-            entries_dict = {}
-            for entry, line, coa in all_rows:
-                if entry.id not in entries_dict:
-                    entry_date = to_ist(entry.created_at).strftime("%d %b %Y, %I:%M %p IST") if entry.created_at else ""
-                    entries_dict[entry.id] = {
-                        "entry_no": entry.entry_no or "",
-                        "date": entry_date,
-                        "narration": entry.narration or "",
-                        "created_at": entry.created_at,
-                        "debit_accounts": [],
-                        "credit_accounts": [],
-                        "debit_paise": 0,
-                        "credit_paise": 0,
-                    }
-                d = line.debit_paise or 0
-                c = line.credit_paise or 0
-                coa_name = getattr(coa, "name", "Account") or "Account"
-                if d > 0:
-                    entries_dict[entry.id]["debit_accounts"].append(coa_name)
-                    entries_dict[entry.id]["debit_paise"] += d
-                if c > 0:
-                    entries_dict[entry.id]["credit_accounts"].append(coa_name)
-                    entries_dict[entry.id]["credit_paise"] += c
-
-            journal_entries_data = []
-            total_je_paise = 0
-            sorted_entries = sorted(
-                entries_dict.values(),
-                key=lambda x: x.get("created_at") or datetime.min
-            )
-            for item in sorted_entries:
-                amt_paise = max(item["debit_paise"], item["credit_paise"])
-                total_je_paise += amt_paise
-                journal_entries_data.append({
-                    "entry_no": item["entry_no"],
-                    "date": item["date"],
-                    "narration": item["narration"],
-                    "debit_account": ", ".join(item["debit_accounts"]) if item["debit_accounts"] else "—",
-                    "credit_account": ", ".join(item["credit_accounts"]) if item["credit_accounts"] else "—",
-                    "amount": f"Rs {amt_paise / 100:,.2f}",
+        general_ledgers = []
+        for coa in sorted(coas.values(), key=lambda c: getattr(c, "code", "") or ""):
+            gl = gl_map.get(coa.id)
+            if gl and gl["lines"]:
+                code_val = getattr(coa, "code", "") or ""
+                clean_code = code_val.split('-')[1] if '-' in code_val else code_val
+                general_ledgers.append({
+                    "code": clean_code,
+                    "name": getattr(coa, "name", "Account") or "Account",
+                    "lines": gl["lines"],
+                    "closing_balance": f"Rs {gl['running_balance'] / 100:,.2f}",
                 })
-            total_journal_amount = f"Rs {total_je_paise / 100:,.2f}"
 
-            # Group for General Ledgers (calculated in-memory)
-            gl_map = defaultdict(lambda: {"lines": [], "running_balance": 0})
-            for entry, line, coa in all_rows:
-                gl = gl_map[coa.id]
+        # Group for Payee Ledgers (calculated in-memory)
+        payee_map = defaultdict(lambda: {"lines": [], "total_debit": 0, "total_credit": 0})
+        for entry, line, coa in all_rows:
+            if line.payee_vpa:
+                p = payee_map[line.payee_vpa]
                 d = line.debit_paise or 0
                 c = line.credit_paise or 0
-                coa_type = getattr(coa, "account_type", None)
-                if coa_type in (accounting_engine.AccountType.ASSET, accounting_engine.AccountType.EXPENSE):
-                    gl["running_balance"] += (d - c)
-                else:
-                    gl["running_balance"] += (c - d)
-
+                p["total_debit"] += d
+                p["total_credit"] += c
                 entry_date = to_ist(entry.created_at).strftime("%d %b, %I:%M %p") if entry.created_at else ""
-                gl["lines"].append({
+                p["lines"].append({
                     "date": entry_date,
                     "entry_no": entry.entry_no or "",
                     "narration": entry.narration or "",
-                    "payee": line.payee_vpa or line.payee_name or "—",
+                    "account_name": getattr(coa, "name", "Account") or "Account",
                     "debit": f"Rs {d / 100:,.2f}" if d else "",
                     "credit": f"Rs {c / 100:,.2f}" if c else "",
-                    "balance": f"Rs {gl['running_balance'] / 100:,.2f}",
                 })
 
-            general_ledgers = []
-            for coa in sorted(coas.values(), key=lambda c: getattr(c, "code", "") or ""):
-                gl = gl_map.get(coa.id)
-                if gl and gl["lines"]:
-                    code_val = getattr(coa, "code", "") or ""
-                    clean_code = code_val.split('-')[1] if '-' in code_val else code_val
-                    general_ledgers.append({
-                        "code": clean_code,
-                        "name": getattr(coa, "name", "Account") or "Account",
-                        "lines": gl["lines"],
-                        "closing_balance": f"Rs {gl['running_balance'] / 100:,.2f}",
-                    })
-
-            # Group for Payee Ledgers (calculated in-memory)
-            payee_map = defaultdict(lambda: {"lines": [], "total_debit": 0, "total_credit": 0})
-            for entry, line, coa in all_rows:
-                if line.payee_vpa:
-                    p = payee_map[line.payee_vpa]
-                    d = line.debit_paise or 0
-                    c = line.credit_paise or 0
-                    p["total_debit"] += d
-                    p["total_credit"] += c
-                    entry_date = to_ist(entry.created_at).strftime("%d %b, %I:%M %p") if entry.created_at else ""
-                    p["lines"].append({
-                        "date": entry_date,
-                        "entry_no": entry.entry_no or "",
-                        "narration": entry.narration or "",
-                        "account_name": getattr(coa, "name", "Account") or "Account",
-                        "debit": f"Rs {d / 100:,.2f}" if d else "",
-                        "credit": f"Rs {c / 100:,.2f}" if c else "",
-                    })
-
-            payee_ledgers = [
-                {
-                    "payee_vpa": vpa,
-                    "lines": data["lines"],
-                    "total_debit": f"Rs {data['total_debit'] / 100:,.2f}",
-                    "total_credit": f"Rs {data['total_credit'] / 100:,.2f}",
-                }
-                for vpa, data in payee_map.items()
-            ]
-
-            # Trial Balance
-            tb_data = await accounting_engine.get_trial_balance(db, account.id, dt_to)
-            trial_balance = {
-                "balanced": tb_data.get("balanced", True),
-                "total_debit": f"Rs {(tb_data.get('total_debit') or 0) / 100:,.2f}",
-                "total_credit": f"Rs {(tb_data.get('total_credit') or 0) / 100:,.2f}",
-                "rows": [{
-                    "code": r.get("code") or "",
-                    "name": r.get("name") or "",
-                    "debit": f"Rs {float(r['debit']) / 100:,.2f}" if r.get("debit") else "",
-                    "credit": f"Rs {float(r['credit']) / 100:,.2f}" if r.get("credit") else ""
-                } for r in tb_data.get("rows", [])]
+        payee_ledgers = [
+            {
+                "payee_vpa": vpa,
+                "lines": pdata["lines"],
+                "total_debit": f"Rs {pdata['total_debit'] / 100:,.2f}",
+                "total_credit": f"Rs {pdata['total_credit'] / 100:,.2f}",
             }
+            for vpa, pdata in payee_map.items()
+        ]
 
-            data = {
-                "account_name": getattr(user, "full_name", None) or "Account Holder",
-                "generated_at": datetime.now(IST).strftime("%d %b %Y, %I:%M %p IST"),
-                "period_str": f"{from_str or 'Start'} to {to_str or 'Now'}" if (from_str or to_str) else None,
-                "journal_entries": journal_entries_data,
-                "total_journal_amount": total_journal_amount,
-                "general_ledgers": general_ledgers,
-                "payee_ledgers": payee_ledgers,
-                "trial_balance": trial_balance,
-            }
-            if type == "journal":
-                template = "journal"
-                filename = f"journal_{from_str or 'all'}_{to_str or 'now'}.{filename_ext}"
-            elif type == "general_ledger":
-                template = "general_ledger"
-                filename = f"general_ledger_{from_str or 'all'}_{to_str or 'now'}.{filename_ext}"
-            elif type == "payee_ledger":
-                template = "payee_ledger"
-                filename = f"payee_ledger_{from_str or 'all'}_{to_str or 'now'}.{filename_ext}"
-            elif type == "trial_balance":
-                template = "trial_balance"
-                filename = f"trial_balance_{to_str or 'now'}.{filename_ext}"
-            else:
-                template = "full_accounting_pack"
-                filename = f"accounting_pack_{from_str or 'all'}_{to_str or 'now'}.{filename_ext}"
+        # Trial Balance
+        tb_data = await accounting_engine.get_trial_balance(db, account.id, dt_to)
+        trial_balance = {
+            "balanced": tb_data.get("balanced", True),
+            "total_debit": f"Rs {(tb_data.get('total_debit') or 0) / 100:,.2f}",
+            "total_credit": f"Rs {(tb_data.get('total_credit') or 0) / 100:,.2f}",
+            "rows": [{
+                "code": r.get("code") or "",
+                "name": r.get("name") or "",
+                "debit": f"Rs {float(r['debit']) / 100:,.2f}" if r.get("debit") else "",
+                "credit": f"Rs {float(r['credit']) / 100:,.2f}" if r.get("credit") else ""
+            } for r in tb_data.get("rows", [])]
+        }
+
+        # P&L Data
+        pnl_raw = await accounting_engine.get_profit_and_loss(db, account.id, dt_from, dt_to)
+        pnl = {
+            "total_income": f"Rs {pnl_raw['income']['total']:,.2f}",
+            "total_expenses": f"Rs {pnl_raw['expenses']['total']:,.2f}",
+            "net_profit": f"Rs {abs(pnl_raw['net_profit']):,.2f}",
+            "is_profit": pnl_raw["is_profit"],
+            "income_rows": [{
+                "code": r["code"],
+                "name": r["name"],
+                "amount": f"Rs {r['amount']:,.2f}"
+            } for r in pnl_raw["income"]["rows"]],
+            "expense_rows": [{
+                "code": r["code"],
+                "name": r["name"],
+                "amount": f"Rs {r['amount']:,.2f}"
+            } for r in pnl_raw["expenses"]["rows"]]
+        }
+
+        # Balance Sheet Data
+        bs_raw = await accounting_engine.get_balance_sheet(db, account.id, dt_to)
+        balance_sheet = {
+            "total_assets": f"Rs {bs_raw['total_assets']:,.2f}",
+            "total_liabilities": f"Rs {bs_raw['liabilities']['total']:,.2f}",
+            "total_equity": f"Rs {bs_raw['equity']['total']:,.2f}",
+            "total_liabilities_equity": f"Rs {bs_raw['total_liabilities_equity']:,.2f}",
+            "balanced": bs_raw["balanced"],
+            "assets": [{
+                "code": r["code"],
+                "name": r["name"],
+                "balance": f"Rs {r['balance']:,.2f}"
+            } for r in bs_raw["assets"]["rows"]],
+            "liabilities": [{
+                "code": r["code"],
+                "name": r["name"],
+                "balance": f"Rs {r['balance']:,.2f}"
+            } for r in bs_raw["liabilities"]["rows"]],
+            "equity": [{
+                "code": r["code"],
+                "name": r["name"],
+                "balance": f"Rs {r['balance']:,.2f}"
+            } for r in bs_raw["equity"]["rows"]]
+        }
+
+        # Cash Flow Data
+        cf_raw = await accounting_engine.get_cash_flow_statement(db, account.id, dt_from, dt_to)
+        cash_flow = {
+            "opening_balance": f"Rs {cf_raw['opening_balance']:,.2f}",
+            "closing_balance": f"Rs {cf_raw['closing_balance']:,.2f}",
+            "net_change": f"{'+' if cf_raw['net_change'] >= 0 else '-'}Rs {abs(cf_raw['net_change']):,.2f}",
+            "is_positive": cf_raw["net_change"] >= 0,
+            "operating_net": f"{'+' if cf_raw['operating']['net'] >= 0 else '-'}Rs {abs(cf_raw['operating']['net']):,.2f}",
+            "investing_net": f"{'+' if cf_raw['investing']['net'] >= 0 else '-'}Rs {abs(cf_raw['investing']['net']):,.2f}",
+            "financing_net": f"{'+' if cf_raw['financing']['net'] >= 0 else '-'}Rs {abs(cf_raw['financing']['net']):,.2f}",
+            "operating_inflows": [{"name": r["name"], "amount": f"Rs {r['amount']:,.2f}"} for r in cf_raw["operating"]["inflows"]],
+            "operating_outflows": [{"name": r["name"], "amount": f"Rs {r['amount']:,.2f}"} for r in cf_raw["operating"]["outflows"]],
+            "investing_inflows": [{"name": r["name"], "amount": f"Rs {r['amount']:,.2f}"} for r in cf_raw["investing"]["inflows"]],
+            "investing_outflows": [{"name": r["name"], "amount": f"Rs {r['amount']:,.2f}"} for r in cf_raw["investing"]["outflows"]],
+            "financing_inflows": [{"name": r["name"], "amount": f"Rs {r['amount']:,.2f}"} for r in cf_raw["financing"]["inflows"]],
+            "financing_outflows": [{"name": r["name"], "amount": f"Rs {r['amount']:,.2f}"} for r in cf_raw["financing"]["outflows"]],
+        }
+
+        data = {
+            "account_name": getattr(user, "full_name", None) or "Account Holder",
+            "generated_at": datetime.now(IST).strftime("%d %b %Y, %I:%M %p IST"),
+            "period_str": f"{from_str or 'Start'} to {to_str or 'Now'}" if (from_str or to_str) else None,
+            "as_of_str": to_str or "Latest Position",
+            "journal_entries": journal_entries_data,
+            "total_journal_amount": total_journal_amount,
+            "general_ledgers": general_ledgers,
+            "payee_ledgers": payee_ledgers,
+            "trial_balance": trial_balance,
+            "pnl": pnl,
+            "balance_sheet": balance_sheet,
+            "cash_flow": cash_flow,
+        }
+
+        if type == "journal":
+            template = "journal"
+            filename = f"journal_{from_str or 'all'}_{to_str or 'now'}.{filename_ext}"
+        elif type == "general_ledger":
+            template = "general_ledger"
+            filename = f"general_ledger_{from_str or 'all'}_{to_str or 'now'}.{filename_ext}"
+        elif type == "payee_ledger":
+            template = "payee_ledger"
+            filename = f"payee_ledger_{from_str or 'all'}_{to_str or 'now'}.{filename_ext}"
+        elif type == "trial_balance":
+            template = "trial_balance"
+            filename = f"trial_balance_{to_str or 'now'}.{filename_ext}"
+        elif type == "profit_loss":
+            template = "profit_loss"
+            filename = f"profit_loss_{from_str or 'all'}_{to_str or 'now'}.{filename_ext}"
+        elif type == "balance_sheet":
+            template = "balance_sheet"
+            filename = f"balance_sheet_{to_str or 'now'}.{filename_ext}"
+        elif type == "cash_flow":
+            template = "cash_flow"
+            filename = f"cash_flow_{from_str or 'all'}_{to_str or 'now'}.{filename_ext}"
+        else:
+            template = "full_accounting_pack"
+            filename = f"accounting_pack_{from_str or 'all'}_{to_str or 'now'}.{filename_ext}"
 
         buf = await generate_pdf(template, data)
 
