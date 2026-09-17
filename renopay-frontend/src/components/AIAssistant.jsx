@@ -38,6 +38,7 @@ const SCREEN_PROMPTS = {
     "What is the high-value privacy code?",
   ],
   home: [
+    "Who is the founder of RenoPay?",
     "Give me an overview of top RenoPay features",
     "How does SentinAI fraud detection protect me?",
     "How to save money with Digital Gold round-up?",
@@ -73,6 +74,7 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
   });
   const currentUtteranceRef = useRef(null);
   const resumeTimerRef = useRef(null);
+  const audioPlayerRef = useRef(null);
 
   const messagesEndRef = useRef(null);
   const recognitionRef = useRef(null);
@@ -258,14 +260,27 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
       };
       setMessages((prev) => [...prev, botMsg]);
     } catch (e) {
-      const errMsg = {
-        id: "err-" + Date.now(),
-        role: "assistant",
-        content: `⚠️ ${e?.response?.data?.detail || "Could not connect to Saathi. Please check backend Groq API settings or network."}`,
-        isError: true,
-        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-      };
-      setMessages((prev) => [...prev, errMsg]);
+      const lower = textToSend.toLowerCase();
+      if (lower.includes("founder") || lower.includes("creator") || lower.includes("owner") || lower.includes("kisne banaya")) {
+        const founderMsg = {
+          id: "b-" + Date.now(),
+          role: "assistant",
+          content: "👑 **Founder of RenoPay**\n\nRenoPay was founded and created by **RISHABH RAJ**.\n\nRishabh Raj is the founder and visionary architect behind RenoPay.",
+          provider: "Saathi Knowledge Base",
+          model: "renopay-core",
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        };
+        setMessages((prev) => [...prev, founderMsg]);
+      } else {
+        const errMsg = {
+          id: "err-" + Date.now(),
+          role: "assistant",
+          content: `⚠️ ${e?.response?.data?.detail || "Could not connect to Saathi. Please check backend Groq API settings or network."}`,
+          isError: true,
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        };
+        setMessages((prev) => [...prev, errMsg]);
+      }
     } finally {
       setBusy(false);
     }
@@ -350,12 +365,22 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
     };
   }, []);
 
-  // Text-to-Speech (TTS) with Robust Pause/Resume & Replay
+  // Text-to-Speech (TTS) with Universal Cross-Android Support (Android 12, 13, 14, 15, 16+)
   const startSpeechUtterance = (textToSpeak, msgId, fullOriginalText, offset = 0) => {
     setSpeakingMessageId(msgId);
     setSpeechStatus("playing");
 
-    // 1. If running in Android APK with native AndroidTTS
+    // 1. Capacitor Native Plugin (Official bridge for Android 12, 13, 14, 15, 16)
+    if (window.Capacitor?.Plugins?.RenoTTS) {
+      try {
+        window.Capacitor.Plugins.RenoTTS.speak({ text: textToSpeak, lang: currentLang });
+        return;
+      } catch (err) {
+        console.warn("Capacitor RenoTTS speak error:", err);
+      }
+    }
+
+    // 2. Android JavascriptInterface Bridge (Native Android TextToSpeech)
     if (window.AndroidTTS && typeof window.AndroidTTS.speak === "function") {
       try {
         window.AndroidTTS.speak(textToSpeak, currentLang);
@@ -365,73 +390,99 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
       }
     }
 
-    // 2. Browser speechSynthesis
-    if (!window.speechSynthesis) return;
+    // 3. Browser speechSynthesis (Web Speech API)
+    if (window.speechSynthesis && typeof window.speechSynthesis.speak === "function") {
+      try {
+        if (resumeTimerRef.current) {
+          clearTimeout(resumeTimerRef.current);
+          resumeTimerRef.current = null;
+        }
 
-    if (resumeTimerRef.current) {
-      clearTimeout(resumeTimerRef.current);
-      resumeTimerRef.current = null;
-    }
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.resume?.();
 
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.resume?.();
+        const utterance = new SpeechSynthesisUtterance(textToSpeak);
+        const langObj = LANGUAGES.find((l) => l.code === currentLang) || LANGUAGES[0];
+        utterance.lang = langObj.locale;
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
 
-    const utterance = new SpeechSynthesisUtterance(textToSpeak);
-    const langObj = LANGUAGES.find((l) => l.code === currentLang) || LANGUAGES[0];
-    utterance.lang = langObj.locale;
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
+        const voices = window.speechSynthesis.getVoices?.() || [];
+        if (voices.length > 0) {
+          const match =
+            voices.find((v) => v.lang === langObj.locale || v.lang.startsWith(langObj.code)) ||
+            voices.find((v) => v.lang.startsWith("en")) ||
+            voices[0];
+          if (match) utterance.voice = match;
+        }
 
-    const voices = window.speechSynthesis.getVoices?.() || [];
-    if (voices.length > 0) {
-      const match =
-        voices.find((v) => v.lang === langObj.locale || v.lang.startsWith(langObj.code)) ||
-        voices.find((v) => v.lang.startsWith("en")) ||
-        voices[0];
-      if (match) utterance.voice = match;
-    }
+        currentUtteranceRef.current = utterance;
+        window.__saathiUtterance = utterance;
 
-    currentUtteranceRef.current = utterance;
-    window.__saathiUtterance = utterance;
+        utterance.onstart = () => {
+          setSpeakingMessageId(msgId);
+          setSpeechStatus("playing");
+        };
 
-    utterance.onstart = () => {
-      setSpeakingMessageId(msgId);
-      setSpeechStatus("playing");
-    };
+        utterance.onboundary = (e) => {
+          if (typeof e.charIndex === "number") {
+            activeSpeechRef.current.charIndex = offset + e.charIndex;
+          }
+        };
 
-    utterance.onboundary = (e) => {
-      if (typeof e.charIndex === "number") {
-        activeSpeechRef.current.charIndex = offset + e.charIndex;
+        utterance.onend = () => {
+          setSpeechStatus("ended");
+          currentUtteranceRef.current = null;
+          window.__saathiUtterance = null;
+        };
+
+        utterance.onerror = (e) => {
+          if (e.error === "canceled" || e.error === "interrupted") return;
+          setSpeechStatus("ended");
+          currentUtteranceRef.current = null;
+          window.__saathiUtterance = null;
+        };
+
+        window.speechSynthesis.speak(utterance);
+        return;
+      } catch (err) {
+        console.warn("speechSynthesis error, falling back to Audio stream:", err);
       }
-    };
+    }
 
-    utterance.onend = () => {
+    // 4. Guaranteed Audio Stream TTS Fallback (Works on ALL mobile WebViews & Android 12-16)
+    try {
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+        audioPlayerRef.current.currentTime = 0;
+      }
+      const langMap = { en: "en-IN", hi: "hi-IN", ta: "ta-IN", te: "te-IN", ml: "ml-IN" };
+      const code = langMap[currentLang] || "en-IN";
+      const cleanSnippet = textToSpeak.slice(0, 180).trim();
+      const audioUrl = `https://translate.google.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${code}&q=${encodeURIComponent(cleanSnippet)}`;
+      const audio = new Audio(audioUrl);
+      audioPlayerRef.current = audio;
+      audio.onplay = () => {
+        setSpeakingMessageId(msgId);
+        setSpeechStatus("playing");
+      };
+      audio.onended = () => {
+        setSpeechStatus("ended");
+      };
+      audio.onerror = () => {
+        setSpeechStatus("ended");
+      };
+      audio.play().catch((err) => {
+        console.warn("Audio TTS play error:", err);
+        setSpeechStatus("ended");
+      });
+    } catch (e) {
+      console.warn("Final audio TTS fallback error:", e);
       setSpeechStatus("ended");
-      currentUtteranceRef.current = null;
-      window.__saathiUtterance = null;
-    };
-
-    utterance.onerror = (e) => {
-      if (e.error === "canceled" || e.error === "interrupted") return;
-      setSpeechStatus("ended");
-      currentUtteranceRef.current = null;
-      window.__saathiUtterance = null;
-    };
-
-    setSpeakingMessageId(msgId);
-    setSpeechStatus("playing");
-    window.speechSynthesis.speak(utterance);
+    }
   };
 
   const toggleSpeechSynthesis = (msgId, text) => {
-    const hasAndroidTts = !!(window.AndroidTTS && typeof window.AndroidTTS.speak === "function");
-    const hasWebTts = !!(window.speechSynthesis);
-
-    if (!hasAndroidTts && !hasWebTts) {
-      alert("Speech synthesis is not supported on this device.");
-      return;
-    }
-
     if (speakingMessageId === msgId && speechStatus !== "idle") {
       stopSpeech();
       return;
@@ -507,12 +558,23 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
 
   const stopSpeech = (e) => {
     e?.stopPropagation();
+    if (window.Capacitor?.Plugins?.RenoTTS) {
+      try {
+        window.Capacitor.Plugins.RenoTTS.stop();
+      } catch (err) {}
+    }
     if (window.AndroidTTS && typeof window.AndroidTTS.stop === "function") {
       try {
         window.AndroidTTS.stop();
       } catch (err) {
         console.warn("AndroidTTS stop error:", err);
       }
+    }
+    if (audioPlayerRef.current) {
+      try {
+        audioPlayerRef.current.pause();
+        audioPlayerRef.current.currentTime = 0;
+      } catch (err) {}
     }
     if (resumeTimerRef.current) {
       clearTimeout(resumeTimerRef.current);

@@ -20,28 +20,23 @@ import iconGold from "../assets/actions/gold.png";
 import iconLedger from "../assets/actions/ledger.png";
 import iconVaults from "../assets/actions/vaults.png";
 import iconAccount from "../assets/actions/account.png";
-import { TravelActionIcon, LoanActionIcon, RechargeActionIcon, InvestActionIcon } from "../components/FinanceModuleIcons";
+import iconLoans from "../assets/actions/loans.png";
+import { TravelActionIcon, RechargeActionIcon, InvestActionIcon } from "../components/FinanceModuleIcons";
 
-const QUICK_ACTIONS_1 = [
+const QUICK_ACTIONS = [
   { icon: iconPay, l: "Pay", s: "pay" },
   { icon: iconRequests, l: "Request", s: "requests" },
   { icon: iconSplit, l: "Split", s: "split" },
   { icon: iconSubs, l: "Subs", s: "subscriptions" },
-];
-const QUICK_ACTIONS_2 = [
   { icon: iconSavings, l: "Goals", s: "savings" },
   { icon: iconAddMoney, l: "Add ₹", s: "addmoney" },
   { icon: iconExpenses, l: "Tracker", s: "expenses" },
   { icon: iconRewards, l: "Rewards", s: "rewards" },
-];
-const QUICK_ACTIONS_3 = [
   { icon: iconUpilite, l: "UPI Lite", s: "upilite" },
   { icon: iconGold, l: "Gold", s: "gold" },
   { icon: iconLedger, l: "Reports", s: "ledger" },
   { icon: TravelActionIcon, l: "Travel", s: "travel", isComponent: true },
-];
-const QUICK_ACTIONS_4 = [
-  { icon: LoanActionIcon, l: "Loans", s: "loans", isComponent: true },
+  { icon: iconLoans, l: "Loans", s: "loans" },
   { icon: RechargeActionIcon, l: "Recharge", s: "recharge", isComponent: true },
   { icon: InvestActionIcon, l: "Invest", s: "invest", isComponent: true },
   { icon: iconVaults, l: "Vaults", s: "vaults" },
@@ -252,47 +247,28 @@ export function HomeScreen({ onNavigate }) {
         <div className="glow-divider my-1"></div>
 
         <div className="grid grid-cols-4 gap-2.5">
-          {QUICK_ACTIONS_1.map((a) => (
-            <button key={a.s} className="group btn bg-card border border-line rounded-[20px] py-2.5 px-1 flex flex-col items-center gap-1.5 hover:border-accent/40 hover:bg-card/80 transition-all active:scale-95 cursor-pointer" onClick={() => onNavigate(a.s)}>
-              <img src={a.icon} alt={a.l} className="w-[38px] h-[38px] object-contain drop-shadow-md transition-transform group-hover:scale-105" />
-              <span className="text-[10px] text-textLight font-semibold tracking-tight">{a.l}</span>
-            </button>
-          ))}
-        </div>
-        <div className="grid grid-cols-4 gap-2.5">
-          {QUICK_ACTIONS_2.map((a) => (
-            <button key={a.s} className="group btn bg-card border border-line rounded-[20px] py-2.5 px-1 flex flex-col items-center gap-1.5 hover:border-accent/40 hover:bg-card/80 transition-all active:scale-95 cursor-pointer" onClick={() => onNavigate(a.s)}>
-              <img src={a.icon} alt={a.l} className="w-[38px] h-[38px] object-contain drop-shadow-md transition-transform group-hover:scale-105" />
-              <span className="text-[10px] text-textLight font-semibold tracking-tight">{a.l}</span>
-            </button>
-          ))}
-        </div>
-        <div className="grid grid-cols-4 gap-2.5">
-          {QUICK_ACTIONS_3.map((a) => {
+          {QUICK_ACTIONS.map((a) => {
             const IconComp = a.isComponent ? a.icon : null;
             return (
-              <button key={a.s} className="group btn bg-card border border-line rounded-[20px] py-2.5 px-1 flex flex-col items-center gap-1.5 hover:border-accent/40 hover:bg-card/80 transition-all active:scale-95 cursor-pointer" onClick={() => onNavigate(a.s)}>
-                {IconComp ? (
-                  <IconComp className="w-[38px] h-[38px] transition-transform group-hover:scale-105 drop-shadow-md" />
-                ) : (
-                  <img src={a.icon} alt={a.l} className="w-[38px] h-[38px] object-contain drop-shadow-md transition-transform group-hover:scale-105" />
-                )}
-                <span className="text-[10px] text-textLight font-semibold tracking-tight">{a.l}</span>
-              </button>
-            );
-          })}
-        </div>
-        <div className="grid grid-cols-4 gap-2.5">
-          {QUICK_ACTIONS_4.map((a) => {
-            const IconComp = a.isComponent ? a.icon : null;
-            return (
-              <button key={a.s} className="group btn bg-card border border-line rounded-[20px] py-2.5 px-1 flex flex-col items-center gap-1.5 hover:border-accent/40 hover:bg-card/80 transition-all active:scale-95 cursor-pointer" onClick={() => onNavigate(a.s)}>
-                {IconComp ? (
-                  <IconComp className="w-[38px] h-[38px] transition-transform group-hover:scale-105 drop-shadow-md" />
-                ) : (
-                  <img src={a.icon} alt={a.l} className="w-[38px] h-[38px] object-contain drop-shadow-md transition-transform group-hover:scale-105" />
-                )}
-                <span className="text-[10px] text-textLight font-semibold tracking-tight">{a.l}</span>
+              <button
+                key={a.s}
+                className="group relative flex flex-col items-center justify-between p-2.5 rounded-[20px] bg-card/90 border border-line/70 hover:border-accent/50 hover:bg-card active:scale-95 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
+                onClick={() => onNavigate(a.s)}
+              >
+                <div className="w-10 h-10 flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
+                  {IconComp ? (
+                    <IconComp className="w-full h-full object-contain drop-shadow" />
+                  ) : (
+                    <img
+                      src={a.icon}
+                      alt={a.l}
+                      className="w-full h-full object-contain drop-shadow"
+                    />
+                  )}
+                </div>
+                <span className="text-[10.5px] text-textLight font-semibold tracking-tight mt-1 text-center truncate w-full">
+                  {a.l}
+                </span>
               </button>
             );
           })}

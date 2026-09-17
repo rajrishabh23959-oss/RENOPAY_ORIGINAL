@@ -203,6 +203,15 @@ class FallbackLocalProvider(BaseLLMProvider):
         last_msg = messages[-1]["content"] if messages else ""
         lower_msg = last_msg.lower()
 
+        # Founder inquiry check
+        founder_triggers = ["founder", "creator", "founded", "owner", "created renopay", "who made renopay", "who built renopay", "kisne banaya", "founder of renopay"]
+        if any(t in lower_msg for t in founder_triggers):
+            return (
+                "👑 **Founder of RenoPay**\n\n"
+                "RenoPay was founded and created by **RISHABH RAJ**.\n\n"
+                "Rishabh Raj is the founder and visionary architect behind RenoPay, designing its modern UPI payments, double-entry accounting engine, AI assistant, and smart wealth platform."
+            )
+
         # Non-financial off-topic detection
         non_financial_triggers = [
             "photosynthesis", "chlorophyll", "biology", "botany", "anatomy",
@@ -224,6 +233,25 @@ class FallbackLocalProvider(BaseLLMProvider):
                 "I cannot answer questions on non-financial topics (like science, entertainment, or general trivia). Please ask me a question related to finance, payments, or RenoPay!"
             )
 
+        # Accounting specialized queries
+        if any(w in lower_msg for w in ["balance sheet", "p&l", "profit and loss", "income statement", "cash flow", "accounting"]):
+            return (
+                "📊 **RenoPay Advanced Accounting Suite**\n\n"
+                "RenoPay includes a complete, real-time double-entry accounting engine:\n\n"
+                "1. **Balance Sheet (`Assets = Liabilities + Equity`)**:\n"
+                "   - **Assets**: Cash & UPI balances, linked bank accounts, digital gold, and receivables.\n"
+                "   - **Liabilities**: Vendor payables, loans, and GST payable.\n"
+                "   - **Equity**: Owner's Capital + Retained Earnings (fed automatically from Net Profit).\n"
+                "   - *Download official audit-ready PDF directly from the Accounting screen!*\n\n"
+                "2. **P&L Statement (`Revenue − Expenses = Net Profit/Loss`)**:\n"
+                "   - Aggregates all business sales vs operating costs (rent, payroll, utilities).\n"
+                "   - Dynamically feeds Net Profit into Balance Sheet Equity.\n\n"
+                "3. **Cash Flow Statement (`Opening + Cash In − Cash Out = Closing`)**:\n"
+                "   - Tracks 100% digital cash movements categorized into **Operating**, **Investing**, and **Financing** flows.\n\n"
+                "4. **GST Reports & Payroll**:\n"
+                "   - One-click GSTR-1 & GSTR-3B tax summaries, salary slip generation, and PDF exports."
+            )
+
         return (
             f"⚡ **Saathi Financial Guide**\n\n"
             f"I have received your question: *\"{last_msg}\"*\n\n"
@@ -232,7 +260,7 @@ class FallbackLocalProvider(BaseLLMProvider):
             f"- **Shared Vaults**: Save jointly with friends or family with multi-signature withdrawal approvals.\n"
             f"- **UPI Lite**: 1-click pinless payments under ₹500 from your on-device wallet.\n"
             f"- **Digital Gold**: Auto round-up your daily payments to accumulate 24K pure gold!\n"
-            f"- **Double-Entry Accounting**: Real-time journals, trial balance, and automated GST reports.\n"
+            f"- **Double-Entry Accounting**: Balance Sheet, P&L, Cash Flow statements, and audit PDFs.\n"
             f"- **Stock & Money Markets**: Equities, mutual funds, SIPs, T-bills, and commercial paper guidance.\n\n"
             f"*(Note: Set `GROQ_API_KEY=gsk_...` in backend `.env` to enable full live Groq model conversational inference)*"
         )

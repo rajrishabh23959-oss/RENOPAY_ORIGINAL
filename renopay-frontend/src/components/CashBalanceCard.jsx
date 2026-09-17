@@ -2,6 +2,8 @@ import { useState, useMemo } from "react";
 import "./cashBalanceCard.css";
 import { fmt } from "../lib/format";
 import { UpiPinModal } from "./UpiPinModal";
+import iconNormalView from "../assets/actions/normal_view.png";
+import iconAdvView from "../assets/actions/adv_view.png";
 
 // Real currency photograph assets
 import note500Img from "../assets/currency/note_500.png";
@@ -93,14 +95,14 @@ export function CashBalanceCard({
           onClick={() => setViewMode("normal")}
           type="button"
         >
-          <span>💳</span> Normal View
+          <img src={iconNormalView} alt="Normal View" className="w-[18px] h-[13px] object-cover rounded-[3px] shadow-sm" /> Normal View
         </button>
         <button
           className={`cbc-toggle-tab ${viewMode === "advanced" ? "active" : ""}`}
           onClick={() => setViewMode("advanced")}
           type="button"
         >
-          <span>💵</span> Advanced View
+          <img src={iconAdvView} alt="Advanced View" className="w-[18px] h-[13px] object-cover rounded-[3px] shadow-sm" /> Advanced View
         </button>
       </div>
 

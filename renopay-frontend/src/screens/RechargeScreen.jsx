@@ -16,14 +16,54 @@ const POPULAR_PLANS = [
   { id: "P7", price: 29, validity: "Active Base", data: "2.0 GB", calls: "Data Only", desc: "Data top-up for live streaming", tag: "Add-on" },
 ];
 
+const TELECOM_CIRCLES = [
+  "Delhi NCR",
+  "Mumbai",
+  "Maharashtra & Goa",
+  "Karnataka",
+  "Andhra Pradesh & Telangana",
+  "Tamil Nadu & Chennai",
+  "Gujarat",
+  "Uttar Pradesh (East)",
+  "Uttar Pradesh (West) & Uttarakhand",
+  "Bihar & Jharkhand",
+  "West Bengal & Sikkim",
+  "Kolkata",
+  "Rajasthan",
+  "Punjab",
+  "Haryana",
+  "Kerala & Lakshadweep",
+  "Madhya Pradesh & Chhattisgarh",
+  "Odisha",
+  "Assam",
+  "North East (NE-I & NE-II)",
+  "Jammu & Kashmir",
+  "Himachal Pradesh",
+];
+
 const ELECTRICITY_BOARDS = {
   "Bihar": ["North Bihar Power (NBPDCL)", "South Bihar Power (SBPDCL)"],
-  "Delhi": ["BSES Rajdhani Power", "BSES Yamuna Power", "Tata Power DDL"],
-  "Maharashtra": ["MSEDCL (Mahavitaran)", "Tata Power Mumbai", "Adani Electricity Mumbai"],
-  "Uttar Pradesh": ["UPPCL (Rural)", "UPPCL (Urban)", "Torrent Power"],
-  "Karnataka": ["BESCOM (Bengaluru)", "HESCOM", "MESCOM"],
+  "Delhi": ["BSES Rajdhani Power", "BSES Yamuna Power", "Tata Power DDL (TPDDL)", "New Delhi Municipal Council (NDMC)"],
+  "Maharashtra": ["MSEDCL (Mahavitaran)", "Tata Power Mumbai", "Adani Electricity Mumbai", "BEST Undertaking"],
+  "Uttar Pradesh": ["UPPCL (Urban / Paschimanchal)", "UPPCL (Rural / Madhyanchal)", "Purvanchal Vidyut (PuVVNL)", "Dakshinanchal Vidyut (DVVNL)", "Torrent Power (Agra)"],
+  "Karnataka": ["BESCOM (Bengaluru)", "HESCOM (Hubli)", "MESCOM (Mangalore)", "GESCOM (Gulbarga)", "CESC (Mysuru)"],
   "West Bengal": ["WBSEDCL", "CESC Kolkata"],
-  "Gujarat": ["UGVCL", "DGVCL", "PGVCL", "MGVCL"],
+  "Gujarat": ["UGVCL (Uttar Gujarat)", "DGVCL (Dakshin Gujarat)", "PGVCL (Paschim Gujarat)", "MGVCL (Madhya Gujarat)", "Torrent Power (Ahmedabad/Surat)"],
+  "Tamil Nadu": ["TANGEDCO (Tamil Nadu Electricity Board)"],
+  "Rajasthan": ["Jaipur Vidyut (JVVNL)", "Jodhpur Vidyut (JdVVNL)", "Ajmer Vidyut (AVVNL)", "TP Ajmer Distribution"],
+  "Punjab": ["PSPCL (Punjab State Power Corp Ltd)"],
+  "Haryana": ["DHBVN (Dakshin Haryana)", "UHBVN (Uttar Haryana)"],
+  "Telangana": ["TSSPDCL (Southern Telangana)", "TSNPDCL (Northern Telangana)"],
+  "Andhra Pradesh": ["APEPDCL (Eastern Andhra)", "APCPDCL (Central Andhra)", "APSPDCL (Southern Andhra)"],
+  "Kerala": ["KSEB (Kerala State Electricity Board)"],
+  "Madhya Pradesh": ["MPPKVVCL (Indore / Paschim)", "MPPKVVCL (Jabalpur / Poorv)", "MPMKVVCL (Bhopal / Madhya)"],
+  "Odisha": ["TPCODL (Central Odisha)", "TPNODL (Northern Odisha)", "TPSODL (Southern Odisha)", "TPWODL (Western Odisha)"],
+  "Assam": ["APDCL (Assam Power Distribution)"],
+  "Chhattisgarh": ["CSPDCL (Chhattisgarh State Power)"],
+  "Jharkhand": ["JBVNL (Jharkhand Bijli Vitran)"],
+  "Uttarakhand": ["UPCL (Uttarakhand Power Corp)"],
+  "Himachal Pradesh": ["HPSEBL (Himachal Power Board)"],
+  "Goa": ["Goa Electricity Department (GED)"],
 };
 
 export function RechargeScreen({ onBack, onNavigate, initialTab = "mobile" }) {
@@ -443,18 +483,15 @@ export function RechargeScreen({ onBack, onNavigate, initialTab = "mobile" }) {
                     </select>
                   </div>
                   <div>
-                    <label className="text-[10px] uppercase font-bold text-muted block mb-1">Circle</label>
+                    <label className="text-[10px] uppercase font-bold text-muted block mb-1">Circle / Region</label>
                     <select
                       value={circle}
                       onChange={(e) => setCircle(e.target.value)}
                       className="w-full bg-surf border border-line rounded-xl px-2.5 py-2 text-xs font-semibold text-textLight outline-none focus:border-accent"
                     >
-                      <option value="Delhi NCR">Delhi NCR</option>
-                      <option value="Bihar & Jharkhand">Bihar & Jharkhand</option>
-                      <option value="Mumbai">Mumbai</option>
-                      <option value="Maharashtra & Goa">Maharashtra & Goa</option>
-                      <option value="Karnataka">Karnataka</option>
-                      <option value="Uttar Pradesh (East)">UP East</option>
+                      {TELECOM_CIRCLES.map((c) => (
+                        <option key={c} value={c}>{c}</option>
+                      ))}
                     </select>
                   </div>
                 </div>

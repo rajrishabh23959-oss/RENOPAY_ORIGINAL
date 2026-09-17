@@ -21,7 +21,14 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.core.content.FileProvider;
 import com.getcapacitor.BridgeActivity;
+import com.getcapacitor.Plugin;
+import com.getcapacitor.PluginCall;
+import com.getcapacitor.PluginMethod;
+import com.getcapacitor.JSObject;
+import com.getcapacitor.annotation.CapacitorPlugin;
 
+import android.os.Handler;
+import android.os.Looper;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
@@ -39,9 +46,16 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        registerPlugin(RenoTTSPlugin.class);
         super.onCreate(savedInstanceState);
         checkAndRequestAppPermissions();
         initTextToSpeech();
+        setupJavascriptInterfaces();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
         setupJavascriptInterfaces();
     }
 
@@ -324,13 +338,66 @@ public class MainActivity extends BridgeActivity {
     }
 
     private void setupJavascriptInterfaces() {
-        runOnUiThread(() -> {
-            if (getBridge() != null && getBridge().getWebView() != null) {
-                getBridge().getWebView().addJavascriptInterface(new AndroidDownloaderInterface(this), "AndroidDownloader");
-                getBridge().getWebView().addJavascriptInterface(new AndroidTTSInterface(this), "AndroidTTS");
-                getBridge().getWebView().addJavascriptInterface(new AndroidSTTInterface(this), "AndroidSTT");
+        int[] delays = {0, 300, 800, 1500};
+        for (int delay : delays) {
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                try {
+                    if (getBridge() != null && getBridge().getWebView() != null) {
+                        android.webkit.WebView wv = getBridge().getWebView();
+                        wv.addJavascriptInterface(new AndroidDownloaderInterface(MainActivity.this), "AndroidDownloader");
+                        wv.addJavascriptInterface(new AndroidTTSInterface(MainActivity.this), "AndroidTTS");
+                        wv.addJavascriptInterface(new AndroidSTTInterface(MainActivity.this), "AndroidSTT");
+
+                        // Inject Capacitor Plugin shim if window.AndroidTTS is not yet set
+                        wv.evaluateJavascript(
+                            "if (!window.AndroidTTS && window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.RenoTTS) {" +
+                            "  window.AndroidTTS = {" +
+                            "    speak: function(t, l) { window.Capacitor.Plugins.RenoTTS.speak({text: t, lang: l}); }," +
+                            "    stop: function() { window.Capacitor.Plugins.RenoTTS.stop(); }," +
+                            "    isAvailable: function() { return true; }" +
+                            "  };" +
+                            "}", null
+                        );
+                    }
+                } catch (Exception ignored) {}
+            }, delay);
+        }
+    }
+
+    // Capacitor Native Plugin for 100% Reliable Cross-Android Speech (Android 12, 13, 14, 15, 16)
+    @CapacitorPlugin(name = "RenoTTS")
+    public static class RenoTTSPlugin extends Plugin {
+        @PluginMethod
+        public void speak(PluginCall call) {
+            String text = call.getString("text");
+            String lang = call.getString("lang", "en");
+            MainActivity activity = (MainActivity) getActivity();
+            if (activity != null && text != null) {
+                activity.runOnUiThread(() -> activity.speakText(text, lang));
+                call.resolve();
+            } else {
+                call.reject("Activity or text missing");
             }
-        });
+        }
+
+        @PluginMethod
+        public void stop(PluginCall call) {
+            MainActivity activity = (MainActivity) getActivity();
+            if (activity != null) {
+                activity.runOnUiThread(activity::stopSpeech);
+                call.resolve();
+            } else {
+                call.reject("Activity missing");
+            }
+        }
+
+        @PluginMethod
+        public void isAvailable(PluginCall call) {
+            MainActivity activity = (MainActivity) getActivity();
+            JSObject ret = new JSObject();
+            ret.put("available", activity != null && activity.isTtsReady());
+            call.resolve(ret);
+        }
     }
 
     // Public Named Interfaces for WebView Reflection Security
