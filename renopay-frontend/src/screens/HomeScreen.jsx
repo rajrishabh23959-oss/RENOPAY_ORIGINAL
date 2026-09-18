@@ -252,10 +252,10 @@ export function HomeScreen({ onNavigate }) {
             return (
               <button
                 key={a.s}
-                className="group relative flex flex-col items-center justify-between p-2.5 rounded-[20px] bg-card/90 border border-line/70 hover:border-accent/50 hover:bg-card active:scale-95 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
+                className="group relative flex flex-col items-center justify-between p-2 rounded-[20px] bg-card/90 border border-line/70 hover:border-accent/50 hover:bg-card active:scale-95 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
                 onClick={() => onNavigate(a.s)}
               >
-                <div className="w-10 h-10 flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
+                <div className="w-12 h-12 flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
                   {IconComp ? (
                     <IconComp className="w-full h-full object-contain drop-shadow" />
                   ) : (
