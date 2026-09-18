@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { PdfPreviewModal } from "../components/PdfPreviewModal";
 import { DatePickerInput } from "../components/DatePickerInput";
 import { downloadOrSharePdf } from "../lib/download";
+import { VendorSuite } from "../components/vendor/VendorSuite";
 
 function formatDateStr(d) {
   return d.toISOString().split("T")[0];
@@ -111,6 +112,16 @@ export function AccountingScreen({ onBack }) {
   const { profile } = useAuth();
 
   const [devMode, setDevMode] = useState(false);
+  const [vendorMode, setVendorMode] = useState(() => {
+    const saved = localStorage.getItem("renopay_vendor_mode");
+    return saved !== null ? saved === "true" : true;
+  });
+
+  const toggleVendorMode = () => {
+    const next = !vendorMode;
+    setVendorMode(next);
+    localStorage.setItem("renopay_vendor_mode", String(next));
+  };
   const [activeTab, setActiveTab] = useState("journal");
   const [fullPackOpen, setFullPackOpen] = useState(false);
   const [downloading, setDownloading] = useState(false);
@@ -535,15 +546,44 @@ export function AccountingScreen({ onBack }) {
           </button>
         </Card>
 
-        {!devMode ? (
-          <Card className="p-5 text-center mt-4 border-dashed border-2">
-            <div className="text-4xl mb-3">🛠</div>
-            <h3 className="text-text font-bold text-[18px] mb-2">Unlock Accounting Engine</h3>
-            <p className="text-muted text-[12px] leading-relaxed">
-              Enable Developer Mode to view raw double-entry journal postings, general ledgers, T-accounts, and download full compliance packs.
+        {/* Vendor Mode Toggle Card (Directly Below Developer Mode) */}
+        <Card className="p-4 flex items-center justify-between bg-gradient-to-r from-[#291b15] to-[#3a261d] border border-[#ff6a1a]/30">
+          <div>
+            <div className="flex items-center gap-1.5 mb-1">
+              <h3 className="text-white font-bold text-[16px]">Enable Vendor Mode</h3>
+              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-accent/20 text-accent font-bold">Recommended</span>
+            </div>
+            <p className="text-white/70 text-[11px]">Instant soundbox, QR payments, Udhaar Khata &amp; daily payouts</p>
+          </div>
+          <button
+            onClick={toggleVendorMode}
+            className={`w-12 h-6 rounded-full flex items-center transition-colors px-1 ${vendorMode ? 'bg-accent' : 'bg-line'}`}
+          >
+            <div className={`w-4 h-4 rounded-full bg-white transition-transform ${vendorMode ? 'translate-x-6' : ''}`} />
+          </button>
+        </Card>
+
+        {/* Vendor Mode Suite */}
+        {vendorMode && (
+          <VendorSuite
+            profile={profile}
+            onOpenAdvancedAccounting={() => {
+              setDevMode(true);
+            }}
+          />
+        )}
+
+        {!devMode && !vendorMode && (
+          <Card className="p-5 text-center mt-2 border-dashed border-2">
+            <div className="text-4xl mb-3">🏪</div>
+            <h3 className="text-text font-bold text-[18px] mb-2">Select Business Mode</h3>
+            <p className="text-muted text-[12px] leading-relaxed max-w-sm mx-auto">
+              Enable <strong>Vendor Mode</strong> for store collection, soundbox announcements, and credit khata, or <strong>Developer Mode</strong> to inspect double-entry journals and audit packs.
             </p>
           </Card>
-        ) : (
+        )}
+
+        {devMode && (
           <>
             {/* Collapsible Full Accounting Pack Option */}
             <Card className="p-3.5 border-line/80 shadow-md">

@@ -23,3 +23,10 @@ from app.models.accounting import (                             # noqa: F401
 from app.models.ai import AIConfig, AIChatSession, AIChatMessage  # noqa: F401
 from app.models.travel import TravelBooking, TravelBookingType, TravelBookingStatus  # noqa: F401
 from app.models.financial import Loan, Investment, BillPayment  # noqa: F401
+from app.models.vendor import (                                  # noqa: F401
+    VendorProfile, VendorQRRecord, VendorSettlement, VendorRefund,
+    VendorKhataCustomer, VendorKhataEntry, VendorStaffMember,
+    VendorInventoryItem, VendorDispute, VendorRole, VendorQRType,
+    VendorSettlementStatus, VendorRefundStatus, VendorKhataEntryType,
+    VendorDisputeStatus
+)

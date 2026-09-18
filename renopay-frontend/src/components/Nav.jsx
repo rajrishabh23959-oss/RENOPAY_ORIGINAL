@@ -8,7 +8,7 @@ import iconAccount from "../assets/actions/account.png";
 const ITEMS = [
   { id: "home", l: "Home" },
   { id: "pay", l: "Pay" },
-  { id: "accounting", l: "Accounting" },
+  { id: "accounting", l: "Vendor" },
   { id: "history", l: "History" },
   { id: "profile", l: "Profile" },
 ];
@@ -66,7 +66,7 @@ export function Nav({ active, onNavigate }) {
             <div className="w-[26px] h-[26px] flex items-center justify-center mt-0.5">
               <img
                 src={iconAccounting}
-                alt="Accounting"
+                alt="Vendor"
                 className={`w-full h-full object-cover rounded-md transition-all ${
                   active === "accounting"
                     ? "scale-110 drop-shadow-[0_0_8px_#FF6A1A] ring-2 ring-accent"

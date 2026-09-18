@@ -274,4 +274,38 @@ export const FinancialAPI = {
   },
 };
 
+// ---------- Vendor Mode & Merchant Suite ----------
+export const VendorAPI = {
+  getProfile: () => http.get("/vendor/profile").then((r) => r.data),
+  updateProfile: (payload) => http.patch("/vendor/profile", payload).then((r) => r.data),
+
+  getDashboard: () => http.get("/vendor/dashboard").then((r) => r.data),
+
+  getStaticQR: () => http.get("/vendor/qr/static").then((r) => r.data),
+  createDynamicQR: (payload) => http.post("/vendor/qr/dynamic", payload).then((r) => r.data),
+  simulatePayment: (payload) => http.post("/vendor/qr/simulate-payment", payload).then((r) => r.data),
+
+  getSettlements: () => http.get("/vendor/settlements").then((r) => r.data),
+  instantSettle: () => http.post("/vendor/settlements/instant").then((r) => r.data),
+
+  getRefunds: () => http.get("/vendor/refunds").then((r) => r.data),
+  processRefund: (payload) => http.post("/vendor/refunds", payload).then((r) => r.data),
+
+  getKhata: () => http.get("/vendor/khata").then((r) => r.data),
+  addKhataCustomer: (payload) => http.post("/vendor/khata/customer", payload).then((r) => r.data),
+  markKhataPaid: (khataId) => http.patch(`/vendor/khata/customer/${khataId}/pay`).then((r) => r.data),
+
+  getStaff: () => http.get("/vendor/staff").then((r) => r.data),
+  addStaff: (payload) => http.post("/vendor/staff", payload).then((r) => r.data),
+
+  getInventory: () => http.get("/vendor/inventory").then((r) => r.data),
+  addInventory: (payload) => http.post("/vendor/inventory", payload).then((r) => r.data),
+  quickBill: (itemId) => http.post(`/vendor/inventory/${itemId}/quick-bill`).then((r) => r.data),
+
+  getDisputes: () => http.get("/vendor/disputes").then((r) => r.data),
+  createDispute: (payload) => http.post("/vendor/disputes", payload).then((r) => r.data),
+
+  groqTTS: (payload) => http.post("/vendor/voice/groq-tts", payload).then((r) => r.data),
+};
+
 
