@@ -2,6 +2,15 @@ name: Build Android APK
 
 on:
   workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'debug'
+        type: choice
+        options:
+          - debug
+          - release
   push:
     branches:
       - main
@@ -12,64 +21,138 @@ on:
 
 jobs:
   build:
-    name: Generate RenoPay APK
+    name: Build RenoPay APK
     runs-on: ubuntu-latest
+    timeout-minutes: 60
 
     steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      # ── 2. Node.js ───────────────────────────────────────────────────────
       - name: Setup Node.js 22
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: renopay-frontend/package-lock.json
 
+      # ── 3. Java JDK 21 ───────────────────────────────────────────────────
       - name: Setup Java JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '21'
 
+      # ── 4. Android SDK ───────────────────────────────────────────────────
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK Components
+        run: |
+          yes | sdkmanager --licenses 2>/dev/null || true
+          sdkmanager \
+            "platforms;android-35" \
+            "build-tools;35.0.0" \
+            "platform-tools"
+
+      # ── 5. Gradle cache ──────────────────────────────────────────────────
+      - name: Cache Gradle Files
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('andriod/android/**/*.gradle*', 'andriod/android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # ── 6. Build frontend ─────────────────────────────────────────────────
       - name: Install Frontend Dependencies
         working-directory: renopay-frontend
-        run: |
-          npm install --legacy-peer-deps
+        run: npm ci --legacy-peer-deps
 
       - name: Build Web Application
         working-directory: renopay-frontend
         env:
           VITE_API_BASE_URL: https://renopay-original.vercel.app/api
-        run: |
-          npm run build
+        run: npm run build
 
-      - name: Prepare Capacitor Web Assets
+      # ── 7. Copy web assets into Capacitor www ────────────────────────────
+      - name: Copy Web Assets into Capacitor www/
         run: |
           mkdir -p andriod/www
           rm -rf andriod/www/*
-          cp -r renopay-frontend/dist/* andriod/www/
+          cp -r renopay-frontend/dist/. andriod/www/
+
+      # ── 8. Install Capacitor packages & sync ────────────────────────────
+      - name: Install Capacitor Dependencies
+        working-directory: andriod
+        run: npm install --legacy-peer-deps
 
       - name: Sync Capacitor Android Project
         working-directory: andriod
-        run: |
-          npm install --legacy-peer-deps
-          npx cap sync android
+        run: npx cap sync android --no-open
 
-      - name: Setup Android SDK Platform & Licenses
+      # ── 9. Tune Gradle for CI (memory + no daemon) ───────────────────────
+      - name: Tune Gradle for CI
+        working-directory: andriod/android
         run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-35" "build-tools;35.0.0" || true
+          echo "" >> gradle.properties
+          echo "# CI overrides" >> gradle.properties
+          echo "org.gradle.jvmargs=-Xmx3g -XX:MaxMetaspaceSize=512m" >> gradle.properties
+          echo "org.gradle.daemon=false" >> gradle.properties
+          echo "org.gradle.parallel=false" >> gradle.properties
+          echo "android.enableJetifier=true" >> gradle.properties
 
-      - name: Make Gradle Executable
+      # ── 10. Make gradlew executable ──────────────────────────────────────
+      - name: Make Gradlew Executable
         working-directory: andriod/android
         run: chmod +x gradlew
 
-      - name: Build Android Debug APK
+      # ── 11. Build Debug APK ──────────────────────────────────────────────
+      - name: Build Debug APK
         working-directory: andriod/android
         run: ./gradlew assembleDebug --no-daemon --stacktrace -x lint -x test
+        env:
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          JAVA_HOME: ${{ env.JAVA_HOME }}
 
+      # ── 12. Rename APK with date + short SHA ─────────────────────────────
+      - name: Rename APK
+        run: |
+          DATE=$(date +'%Y%m%d-%H%M')
+          SHORT_SHA=${GITHUB_SHA::7}
+          mkdir -p apk-output
+          cp andriod/android/app/build/outputs/apk/debug/app-debug.apk \
+             "apk-output/RenoPay-debug-${DATE}-${SHORT_SHA}.apk"
+          echo "APK_NAME=RenoPay-debug-${DATE}-${SHORT_SHA}" >> $GITHUB_ENV
+          ls -lh apk-output/
+
+      # ── 13. Upload APK as artifact ───────────────────────────────────────
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: RenoPay-Android-APK
-          path: andriod/android/app/build/outputs/apk/debug/app-debug.apk
+          name: ${{ env.APK_NAME }}
+          path: apk-output/*.apk
           retention-days: 30
+          if-no-files-found: error
+
+      # ── 14. Build Summary ─────────────────────────────────────────────────
+      - name: Build Summary
+        if: always()
+        run: |
+          echo "## APK Build Completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**APK:** \`${{ env.APK_NAME }}.apk\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| App ID | com.rishabh.renopay |" >> $GITHUB_STEP_SUMMARY
+          echo "| Min SDK | 24 (Android 7.0+) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Target SDK | 35 (Android 15) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | \`${{ github.sha }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Download: Go to **Actions → this run → Artifacts section** at the bottom." >> $GITHUB_STEP_SUMMARY
+
