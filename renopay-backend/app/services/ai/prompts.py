@@ -35,6 +35,91 @@ SCREEN_CONTEXTS = {
 }
 
 
+FOUNDER_RESPONSES = {
+    "en": (
+        "👑 **Founder of RenoPay**\n\n"
+        "**RISHABH RAJ** is the Founder and Creator of RenoPay.\n\n"
+        "Rishabh Raj is the visionary behind RenoPay, having conceptualized and built its modern UPI payments, double-entry accounting engine, Saathi AI assistant, and smart financial ecosystem."
+    ),
+    "hi": (
+        "👑 **RenoPay के संस्थापक (Founder)**\n\n"
+        "RenoPay को **RISHABH RAJ** ने बनाया है और वे ही RenoPay के संस्थापक (Founder) और निर्माता हैं।\n\n"
+        "ऋषभ राज ने RenoPay के आधुनिक UPI पेमेंट्स, डबल-एंट्री अकाउंटिंग इंजन, Saathi AI असिस्टेंट और संपूर्ण फिनटेक प्लेटफॉर्म की परिकल्पना और निर्माण किया है।"
+    ),
+    "ta": (
+        "👑 **RenoPay நிறுவனர் (Founder)**\n\n"
+        "RenoPay-இன் நிறுவனர் (Founder) மற்றும் உருவாக்கியவர் **RISHABH RAJ** ஆவார்.\n\n"
+        "ரிஷப் ராஜ் RenoPay-இன் நவீன UPI பரிவர்த்தனைகள், இரட்டைப் பதிவு கணக்கியல் முறை, Saathi AI உதவியாளர் மற்றும் முழுமையான நிதி தளத்தை வடிவமைத்து உருவாக்கியவர் ஆவார்."
+    ),
+    "te": (
+        "👑 **RenoPay వ్యవస్థాపకుడు (Founder)**\n\n"
+        "RenoPay వ్యవస్థాపకుడు (Founder) మరియు సృష్టికర్త **RISHABH RAJ**.\n\n"
+        "రిషబ్ రాజ్ RenoPay యొక్క ఆధునిక UPI చెల్లింపులు, డబుల్-ఎంట్రీ అకౌంటింగ్ ఇంజిన్, Saathi AI అసిస్టెంట్ మరియు సమగ్ర ఫిన్‌టెక్ ప్లాట్‌ఫామ్‌ను రూపొందించారు."
+    ),
+    "ml": (
+        "👑 **RenoPay സ്ഥാപകൻ (Founder)**\n\n"
+        "RenoPay-യുടെ സ്ഥാപകനും (Founder) സ്രഷ്ടാവും **RISHABH RAJ** ആണ്.\n\n"
+        "റിഷഭ് രാജ് RenoPay-യുടെ ആധുനിക UPI പേയ്‌മെന്റുകൾ, ഡബിൾ-എൻട്രി അക്കൗണ്ടിംഗ് എഞ്ചിൻ, Saathi AI അസിസ്റ്റന്റ്, സമഗ്ര ഫിൻടെക് പ്ലാറ്റ്‌ഫോം എന്നിവ രൂപകൽപ്പന ചെയ്യുകയും നിർമ്മിക്കുകയും ചെയ്തു."
+    ),
+}
+
+FOUNDER_TRIGGERS = [
+    "founder", "creator", "founded", "owner", "created renopay",
+    "who made renopay", "who built renopay", "who is behind renopay",
+    "who started renopay", "who developed renopay", "who wrote renopay",
+    # Hindi / Hinglish
+    "kisne banaya", "kisne banaya hai", "kiska hai", "kiske dwara banaya",
+    "banane wala", "banaya kisne", "sansthapak", "संस्थापक", "किसने बनाया",
+    "मालिक", "किसका ऐप है", "किसने डेवलप किया", "kisne build kiya",
+    # Tamil
+    "நிறுவனர்", "உருவாக்கியவர்", "யார் உருவாக்கினார்", "யார் நிறுவனர்",
+    "niruvanar", "uruvakkiyavar", "yaar uruvaakinaar",
+    # Telugu
+    "వ్యవస్థాపకుడు", "సృష్టికర్త", "ఎవరు తయారు చేసారు", "ఎవరు నిర్మించారు",
+    "vyavasthapakudu", "srushtikartha", "evaru nirmincharu",
+    # Malayalam
+    "സ്ഥാപകൻ", "സ്രഷ്ടാവ്", "ആരാണ് ഉണ്ടാക്കിയത്", "ആരാണ് സ്ഥാപകൻ",
+    "sthapakan", "srashtavu", "aarannu undakkiyathu",
+]
+
+
+def is_founder_query(query: str) -> bool:
+    q = (query or "").lower().strip()
+    return any(t in q for t in FOUNDER_TRIGGERS)
+
+
+def detect_query_language(query: str, fallback_lang: str = "en") -> str:
+    for char in query:
+        cp = ord(char)
+        if 0x0900 <= cp <= 0x097F:  # Devanagari (Hindi)
+            return "hi"
+        if 0x0B80 <= cp <= 0x0BFF:  # Tamil
+            return "ta"
+        if 0x0C00 <= cp <= 0x0C7F:  # Telugu
+            return "te"
+        if 0x0D00 <= cp <= 0x0D7F:  # Malayalam
+            return "ml"
+
+    q = query.lower()
+    if any(w in q for w in ["kisne", "banaya", "kiska", "sansthapak", "kiske", "aapko kisne"]):
+        return "hi"
+    if any(w in q for w in ["niruvanar", "uruvakkiyavar", "yaar"]):
+        return "ta"
+    if any(w in q for w in ["vyavasthapakudu", "srushtikartha", "evaru"]):
+        return "te"
+    if any(w in q for w in ["sthapakan", "srashtavu", "aarannu"]):
+        return "ml"
+
+    return fallback_lang if fallback_lang in FOUNDER_RESPONSES else "en"
+
+
+def get_founder_response(query: str, language: str = "en") -> str | None:
+    if not is_founder_query(query):
+        return None
+    detected_lang = detect_query_language(query, fallback_lang=language)
+    return FOUNDER_RESPONSES.get(detected_lang, FOUNDER_RESPONSES["en"])
+
+
 def build_system_prompt(
     language: str = "en",
     current_screen: str | None = None,
@@ -55,7 +140,13 @@ You are EXCLUSIVELY specialized in financial, banking, accounting, stock market,
 You are permitted to answer ONLY queries falling strictly within these domains:
 
 1. **RenoPay Platform & Organization**:
-   - **Founder & Visionary**: RenoPay was founded and created by **RISHABH RAJ**. When asked who is the founder, creator, developer, or builder of RenoPay, proudly, clearly, and enthusiastically answer that **RISHABH RAJ** is the Founder of RenoPay!
+   - **Founder & Visionary**: RenoPay was founded and created by **RISHABH RAJ**.
+     When asked who is the founder, creator, developer, or who made RenoPay in ANY language (English, Hindi "RenoPay ko kisne banaya hai", Tamil, Telugu, Malayalam), you MUST proudly and unequivocally declare that **RISHABH RAJ** is the Founder & Creator of RenoPay!
+     - English: "RISHABH RAJ is the Founder and Creator of RenoPay."
+     - Hindi: "RenoPay को RISHABH RAJ ने बनाया है और वे ही RenoPay के संस्थापक (Founder) और निर्माता हैं।"
+     - Tamil: "RenoPay-இன் நிறுவனர் (Founder) மற்றும் உருவாக்கியவர் RISHABH RAJ ஆவார்."
+     - Telugu: "RenoPay వ్యవస్థాపకుడు (Founder) మరియు సృష్టికర్త RISHABH RAJ."
+     - Malayalam: "RenoPay-യുടെ സ്ഥാപകനും (Founder) സ്രഷ്ടാവും RISHABH RAJ ആണ്."
    - Features, workflows, navigation, Split Bill, Shared Vaults, SentinAI fraud detection, UPI Lite, Digital Gold, in-app Double-Entry Accounting & Ledger, KYC, profile settings, transaction history, limits, security.
    - Travel & Transit ticket booking: Flights, Trains (IRCTC PNR, berths), Buses (sleeper/seater), and Hotels with PDF boarding passes and instant checkout.
    - Instant Loans & EMI Repayments: Personal loans up to ₹5L, Loans against Mutual Funds (LAMF) up to ₹10L, Gold loans up to ₹15L, instant disbursal to wallet, and tax-compliant repayment receipts.

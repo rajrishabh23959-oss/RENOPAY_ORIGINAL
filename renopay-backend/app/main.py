@@ -39,7 +39,14 @@ async def lifespan(app: FastAPI):
 
         async with AsyncSessionLocal() as session:
             res = await session.execute(select(User).where(User.phone_number == "9876543210"))
-            if not res.scalar_one_or_none():
+            existing_user = res.scalar_one_or_none()
+            if existing_user:
+                acc_res = await session.execute(select(Account).where(Account.user_id == existing_user.id))
+                acc = acc_res.scalar_one_or_none()
+                if acc and acc.vpa != "rishabhraj@renopay":
+                    acc.vpa = "rishabhraj@renopay"
+                    await session.commit()
+            else:
                 user = User(
                     full_name="Rishab Raj",
                     phone_number="9876543210",
@@ -52,7 +59,7 @@ async def lifespan(app: FastAPI):
                 account = Account(
                     user_id=user.id,
                     virtual_acc_no=generate_virtual_acc_no(),
-                    vpa="rishab@renopay",
+                    vpa="rishabhraj@renopay",
                     current_balance_paise=5000000,
                     upi_lite_balance_paise=100000,
                     digital_gold_paise=250000,

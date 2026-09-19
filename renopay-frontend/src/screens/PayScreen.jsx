@@ -201,9 +201,9 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
                   <button
                     type="button"
                     className="text-accent hover:underline cursor-pointer bg-accent/10 px-2 py-0.5 rounded-md border border-accent/20"
-                    onClick={() => { setVpa("praveen@renopay"); resolveVpa("praveen@renopay"); }}
+                    onClick={() => { setVpa("rishabhraj@renopay"); resolveVpa("rishabhraj@renopay"); }}
                   >
-                    praveen@renopay
+                    rishabhraj@renopay
                   </button>
                   <button
                     type="button"

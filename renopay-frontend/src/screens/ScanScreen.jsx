@@ -502,7 +502,7 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
           <Card className="p-5">
             <p className="text-muted text-[11px] tracking-wide mb-2 uppercase">UPI ID / RenoPay Handle</p>
             <input
-              placeholder="e.g. rahul@renopay"
+              placeholder="e.g. rishabhraj@renopay"
               value={vpa}
               onChange={(e) => setVpa(e.target.value)}
               className="mb-3"

@@ -18,10 +18,12 @@ import iconRewards from "../assets/actions/rewards.png";
 import iconUpilite from "../assets/actions/upilite.png";
 import iconGold from "../assets/actions/gold.png";
 import iconLedger from "../assets/actions/ledger.png";
+import iconTravel from "../assets/actions/travel.png";
+import iconLoans from "../assets/actions/loans.png";
+import iconRecharge from "../assets/actions/recharge.png";
+import iconInvest from "../assets/actions/invest.png";
 import iconVaults from "../assets/actions/vaults.png";
 import iconAccount from "../assets/actions/account.png";
-import iconLoans from "../assets/actions/loans.png";
-import { TravelActionIcon, RechargeActionIcon, InvestActionIcon } from "../components/FinanceModuleIcons";
 
 const QUICK_ACTIONS = [
   { icon: iconPay, l: "Pay", s: "pay" },
@@ -35,10 +37,10 @@ const QUICK_ACTIONS = [
   { icon: iconUpilite, l: "UPI Lite", s: "upilite" },
   { icon: iconGold, l: "Gold", s: "gold" },
   { icon: iconLedger, l: "Reports", s: "ledger" },
-  { icon: TravelActionIcon, l: "Travel", s: "travel", isComponent: true },
+  { icon: iconTravel, l: "Travel", s: "travel" },
   { icon: iconLoans, l: "Loans", s: "loans" },
-  { icon: RechargeActionIcon, l: "Recharge", s: "recharge", isComponent: true },
-  { icon: InvestActionIcon, l: "Invest", s: "invest", isComponent: true },
+  { icon: iconRecharge, l: "Recharge", s: "recharge" },
+  { icon: iconInvest, l: "Invest", s: "invest" },
   { icon: iconVaults, l: "Vaults", s: "vaults" },
 ];
 
@@ -246,32 +248,26 @@ export function HomeScreen({ onNavigate }) {
         {/* Glow divider before quick actions */}
         <div className="glow-divider my-1"></div>
 
-        <div className="grid grid-cols-4 gap-2.5">
-          {QUICK_ACTIONS.map((a) => {
-            const IconComp = a.isComponent ? a.icon : null;
-            return (
-              <button
-                key={a.s}
-                className="group relative flex flex-col items-center justify-between p-2 rounded-[20px] bg-card/90 border border-line/70 hover:border-accent/50 hover:bg-card active:scale-95 transition-all duration-200 cursor-pointer shadow-sm hover:shadow-md"
-                onClick={() => onNavigate(a.s)}
-              >
-                <div className="w-12 h-12 flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
-                  {IconComp ? (
-                    <IconComp className="w-full h-full object-contain drop-shadow" />
-                  ) : (
-                    <img
-                      src={a.icon}
-                      alt={a.l}
-                      className="w-full h-full object-contain drop-shadow"
-                    />
-                  )}
-                </div>
-                <span className="text-[10.5px] text-textLight font-semibold tracking-tight mt-1 text-center truncate w-full">
-                  {a.l}
-                </span>
-              </button>
-            );
-          })}
+        <div className="grid grid-cols-4 gap-y-4 gap-x-2 pt-1 pb-2">
+          {QUICK_ACTIONS.map((a) => (
+            <button
+              key={a.s}
+              type="button"
+              className="group flex flex-col items-center justify-center p-0 bg-transparent border-0 outline-none cursor-pointer transition-transform duration-150 active:scale-90"
+              onClick={() => onNavigate(a.s)}
+            >
+              <div className="w-[54px] h-[54px] flex items-center justify-center transition-transform duration-200 group-hover:scale-105">
+                <img
+                  src={a.icon}
+                  alt={a.l}
+                  className="w-full h-full object-contain filter drop-shadow"
+                />
+              </div>
+              <span className="text-[11px] text-[#E0D8D0] font-medium tracking-tight mt-1.5 text-center truncate w-full group-hover:text-accent transition-colors">
+                {a.l}
+              </span>
+            </button>
+          ))}
         </div>
 
         <div>

@@ -45,6 +45,49 @@ const SCREEN_PROMPTS = {
   ],
 };
 
+const FOUNDER_RESPONSES = {
+  en: "👑 **Founder of RenoPay**\n\n**RISHABH RAJ** is the Founder and Creator of RenoPay.\n\nRishabh Raj is the visionary behind RenoPay, having conceptualized and built its modern UPI payments, double-entry accounting engine, Saathi AI assistant, and smart financial ecosystem.",
+  hi: "👑 **RenoPay के संस्थापक (Founder)**\n\nRenoPay को **RISHABH RAJ** ने बनाया है और वे ही RenoPay के संस्थापक (Founder) और निर्माता हैं।\n\nऋषभ राज ने RenoPay के आधुनिक UPI पेमेंट्स, डबल-एंट्री अकाउंटिंग इंजन, Saathi AI असिस्टेंट और संपूर्ण फिनटेक प्लेटफॉर्म की परिकल्पना और निर्माण किया है।",
+  ta: "👑 **RenoPay நிறுவனர் (Founder)**\n\nRenoPay-இன் நிறுவனர் (Founder) மற்றும் உருவாக்கியவர் **RISHABH RAJ** ஆவார்.\n\nரிஷப் ராஜ் RenoPay-இன் நவீன UPI பரிவர்த்தனைகள், இரட்டைப் பதிவு கணக்கியல் முறை, Saathi AI உதவியாளர் மற்றும் முழுமையான நிதி தளத்தை வடிவமைத்து உருவாக்கியவர் ஆவார்.",
+  te: "👑 **RenoPay వ్యవస్థాపకుడు (Founder)**\n\nRenoPay వ్యవస్థాపకుడు (Founder) మరియు సృష్టికర్త **RISHABH RAJ**.\n\nరిషబ్ రాజ్ RenoPay యొక్క ఆధునిక UPI చెల్లింపులు, డబుల్-ఎంట్రీ అకౌంటింగ్ ఇంజిన్, Saathi AI అసిస్టెంట్ మరియు సమగ్ర ఫిన్‌టెక్ ప్లాట్‌ఫామ్‌ను రూపొందించారు.",
+  ml: "👑 **RenoPay സ്ഥാപകൻ (Founder)**\n\nRenoPay-യുടെ സ്ഥാപകനും (Founder) സ്രഷ്ടാവും **RISHABH RAJ** ആണ്.\n\nറിഷഭ് രാജ് RenoPay-യുടെ ആധുനിക UPI പേയ്‌മെന്റുകൾ, ഡബിൾ-എൻട്രി അക്കൗണ്ടിംഗ് എഞ്ചിൻ, Saathi AI അസിസ്റ്റന്റ്, സമഗ്ര ഫിൻടെക് പ്ലാറ്റ്‌ഫോം എന്നിവ രൂപകൽപ്പന ചെയ്യുകയും നിർമ്മിക്കുകയും ചെയ്തു.",
+};
+
+const FOUNDER_TRIGGERS = [
+  "founder", "creator", "founded", "owner", "created renopay",
+  "who made renopay", "who built renopay", "who is behind renopay",
+  "who started renopay", "who developed renopay",
+  "kisne banaya", "kisne banaya hai", "kiska hai", "sansthapak", "संस्थापक", "किसने बनाया", "मालिक", "banane wala", "kisne build",
+  "நிறுவனர்", "உருவாக்கியவர்", "யார் உருவாக்கினார்", "niruvanar", "uruvakkiyavar",
+  "వ్యవస్థాపకుడు", "సృష్టికర్త", "vyavasthapakudu", "srushtikartha", "evaru nirmincharu",
+  "സ്ഥാപകൻ", "സ്രഷ്ടാവ്", "sthapakan", "srashtavu", "aarannu undakkiyathu",
+];
+
+const detectQueryLanguage = (text, fallbackLang = "en") => {
+  for (const ch of (text || "")) {
+    const cp = ch.charCodeAt(0);
+    if (cp >= 0x0900 && cp <= 0x097f) return "hi";
+    if (cp >= 0x0b80 && cp <= 0x0bff) return "ta";
+    if (cp >= 0x0c00 && cp <= 0x0c7f) return "te";
+    if (cp >= 0x0d00 && cp <= 0x0d7f) return "ml";
+  }
+  const lower = (text || "").toLowerCase();
+  if (/kisne|banaya|kiska|sansthapak|kiske|aapko/.test(lower)) return "hi";
+  if (/niruvanar|uruvakkiyavar|yaar/.test(lower)) return "ta";
+  if (/vyavasthapakudu|srushtikartha|evaru/.test(lower)) return "te";
+  if (/sthapakan|srashtavu|aarannu/.test(lower)) return "ml";
+  return fallbackLang in FOUNDER_RESPONSES ? fallbackLang : "en";
+};
+
+const getClientFounderResponse = (text, lang = "en") => {
+  const lower = (text || "").toLowerCase();
+  if (FOUNDER_TRIGGERS.some((t) => lower.includes(t))) {
+    const detectedLang = detectQueryLanguage(text, lang);
+    return FOUNDER_RESPONSES[detectedLang] || FOUNDER_RESPONSES.en;
+  }
+  return null;
+};
+
 export function AIAssistant({ currentScreen = "home", onNavigate }) {
   const { profile, refreshProfile } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
@@ -238,6 +281,28 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
       time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
     setMessages((prev) => [...prev, userMsg]);
+
+    const clientFounderReply = getClientFounderResponse(textToSend, currentLang);
+    if (clientFounderReply) {
+      const botMsg = {
+        id: "b-" + Date.now(),
+        role: "assistant",
+        content: clientFounderReply,
+        provider: "RenoPay Core",
+        model: "founder-verified",
+        time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      };
+      setMessages((prev) => [...prev, botMsg]);
+      setBusy(false);
+      // Asynchronously notify backend session to preserve history
+      AIAPI.query(textToSend, currentScreen, currentLang, sessionId)
+        .then((res) => {
+          if (res?.session_id) setSessionId(res.session_id);
+        })
+        .catch(() => {});
+      return;
+    }
+
     setBusy(true);
 
     try {
@@ -260,12 +325,12 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
       };
       setMessages((prev) => [...prev, botMsg]);
     } catch (e) {
-      const lower = textToSend.toLowerCase();
-      if (lower.includes("founder") || lower.includes("creator") || lower.includes("owner") || lower.includes("kisne banaya")) {
+      const fallbackFounder = getClientFounderResponse(textToSend, currentLang);
+      if (fallbackFounder) {
         const founderMsg = {
           id: "b-" + Date.now(),
           role: "assistant",
-          content: "👑 **Founder of RenoPay**\n\nRenoPay was founded and created by **RISHABH RAJ**.\n\nRishabh Raj is the founder and visionary architect behind RenoPay.",
+          content: fallbackFounder,
           provider: "Saathi Knowledge Base",
           model: "renopay-core",
           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),

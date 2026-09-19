@@ -75,7 +75,7 @@ export function RequestScreen({ onBack }) {
           <div className="animate-fadeUp">
             <Card className="p-5 mb-4 border-accent/[.2]">
               <p className="text-muted text-[11px] tracking-wide mb-2 uppercase">Request from (UPI ID)</p>
-              <input placeholder="praveen@renopay" value={toVpa} onChange={(e) => setToVpa(e.target.value)} />
+              <input placeholder="rishabhraj@renopay" value={toVpa} onChange={(e) => setToVpa(e.target.value)} />
               <p className="text-muted text-[11px] tracking-wide mb-2 mt-3.5 uppercase">Amount</p>
               <div className="flex items-center gap-2">
                 <span className="text-[22px] text-accent">₹</span>

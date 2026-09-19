@@ -203,14 +203,11 @@ class FallbackLocalProvider(BaseLLMProvider):
         last_msg = messages[-1]["content"] if messages else ""
         lower_msg = last_msg.lower()
 
-        # Founder inquiry check
-        founder_triggers = ["founder", "creator", "founded", "owner", "created renopay", "who made renopay", "who built renopay", "kisne banaya", "founder of renopay"]
-        if any(t in lower_msg for t in founder_triggers):
-            return (
-                "👑 **Founder of RenoPay**\n\n"
-                "RenoPay was founded and created by **RISHABH RAJ**.\n\n"
-                "Rishabh Raj is the founder and visionary architect behind RenoPay, designing its modern UPI payments, double-entry accounting engine, AI assistant, and smart wealth platform."
-            )
+        # Founder inquiry check across English, Hindi, Tamil, Telugu, Malayalam
+        from app.services.ai.prompts import get_founder_response
+        founder_res = get_founder_response(last_msg)
+        if founder_res:
+            return founder_res
 
         # Non-financial off-topic detection
         non_financial_triggers = [

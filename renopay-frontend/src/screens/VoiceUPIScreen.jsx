@@ -282,7 +282,7 @@ export function VoiceUPIScreen({ onBack, onNavigatePay }) {
             </button>
 
             <p className="text-xs text-muted text-center">
-              Say: <span className="text-textLight font-semibold">"Pay 500 rupees to Praveen for lunch"</span>
+              Say: <span className="text-textLight font-semibold">"Pay 500 rupees to Rishabh for lunch"</span>
             </p>
           </Card>
 

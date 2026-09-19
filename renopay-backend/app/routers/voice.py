@@ -1,4 +1,4 @@
-﻿"""
+"""
 Voice UPI endpoint.
 
 POST /payments/voice-parse
@@ -50,10 +50,12 @@ class VoiceParseResponse(BaseModel):
 def _resolve_vpa_from_name(recipient: str) -> str:
     """
     Attempt to build a VPA from a spoken name.
-    E.g. "Praveen" -> "praveen@renopay"
+    E.g. "Rishabh" -> "rishabhraj@renopay"
     In production, this would query your contacts/phonebook API.
     """
     clean = re.sub(r"[^a-zA-Z0-9]", "", recipient).lower()
+    if clean in ("rishabh", "rishab", "rishabhraj", "rishabraj"):
+        return "rishabhraj@renopay"
     return f"{clean}@renopay"
 
 
