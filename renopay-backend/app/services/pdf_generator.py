@@ -1814,7 +1814,15 @@ body {
 <style>
 @page {
     size: A4 portrait;
-    margin: 14mm 14mm;
+    margin: 14mm 16mm;
+}
+* {
+    margin: 0;
+    padding: 0;
+}
+table {
+    margin: 0;
+    padding: 0;
 }
 body {
     font-family: Helvetica, Arial, sans-serif;
@@ -1824,7 +1832,7 @@ body {
 }
 .header-table {
     width: 100%;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
 }
 .brand-name {
     font-size: 20px;
@@ -1836,66 +1844,28 @@ body {
     font-size: 10px;
     color: #64748b;
 }
-.card-wrapper {
-    background-color: #072316;
-    border: 3px solid #c9a44c;
-    padding: 16px;
-    margin-bottom: 16px;
+
+.card-outer {
+    background-color: #072417;
+    border: 3.5px solid #c9a44c;
 }
-.card-inner {
-    border: 1px solid #e0be6c;
-    padding: 14px;
+.code-table {
+    border: 1.5px solid #c9a44c;
+    background-color: #02120a;
 }
-.top-table {
-    width: 100%;
-    margin-bottom: 10px;
+.value-table {
+    border: 1.5px solid #c9a44c;
+    background-color: #02120a;
 }
-.sender-title {
-    font-size: 22px;
-    font-weight: bold;
-    color: #f5d78a;
-}
-.code-box {
-    text-align: center;
-    background-color: #03140c;
-    border: 1px solid #c9a44c;
-    padding: 10px;
-    margin: 10px 0;
-}
-.code-text {
-    font-family: Courier, monospace;
-    font-size: 20px;
-    font-weight: bold;
-    color: #ffe08a;
-    letter-spacing: 2px;
-}
-.value-text {
-    font-size: 22px;
-    font-weight: bold;
-    color: #ffd875;
-}
-.bottom-table {
-    width: 100%;
-    margin-top: 10px;
-}
-.seal-circle {
-    width: 50px;
-    height: 50px;
-    background-color: #c9a44c;
-    color: #3b2203;
-    font-size: 20px;
-    font-weight: bold;
-    text-align: center;
-    line-height: 50px;
-}
+
 .guide-box {
     background-color: #f8fafc;
     border: 1px solid #e2e8f0;
-    padding: 12px 14px;
-    margin-bottom: 14px;
+    padding: 10px 14px;
 }
 .meta-table {
-    width: 100%;
+    width: 510px;
+    margin: 0 auto;
     font-size: 9.5px;
     color: #64748b;
     border-top: 1px solid #e2e8f0;
@@ -1904,119 +1874,134 @@ body {
 </style>
 </head>
 <body>
+
 <table class="header-table" cellpadding="0" cellspacing="0">
     <tr>
         <td>
             <div class="brand-name">Reno<span class="brand-accent">Pay</span></div>
             <div class="brand-sub">Digital Cash & Gift Voucher Platform</div>
         </td>
-        <td align="right">
-            <span style="background-color: #072316; border: 1px solid #c9a44c; color: #ffd875; font-size: 10px; font-weight: bold; padding: 4px 10px;">
+        <td align="right" valign="middle">
+            <span style="background-color: #072316; border: 1.5px solid #c9a44c; color: #ffd875; font-size: 9.5px; font-weight: bold; padding: 4px 10px;">
                 {{ payment_mode_label }}
             </span>
         </td>
     </tr>
 </table>
 
-<!-- THE RICH EMERALD & GOLD LUXURY GIFT CARD -->
-<table width="100%" cellpadding="0" cellspacing="0" bgcolor="#072417" style="border: 3.5px solid #c9a44c; background-color: #072417;">
+<!-- THE ELEGANT, COMPACT LUXURY GIFT CARD -->
+<table align="center" width="510" cellpadding="0" cellspacing="0" bgcolor="#072417" class="card-outer" style="margin: 0 auto;">
 <tr>
-<td bgcolor="#072417" style="padding: 14px;">
-    <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#072417" style="border: 1.5px solid #dfbe6c; background-color: #072417;">
+<td bgcolor="#072417" style="padding: 14px 18px 12px 18px;">
+
+    <!-- Top Row -->
+    <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#072417">
     <tr>
-    <td bgcolor="#072417" style="padding: 16px 14px;">
-        <!-- Top Row: Brand, FROM, Official Badge -->
-        <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#072417">
-        <tr>
-            <td width="26%" valign="top" bgcolor="#072417">
-                <div style="color: #a1d1b5; font-size: 10px; font-weight: bold; letter-spacing: 1.5px;">&#10022; RENOPAY</div>
-                <div style="color: #ffd875; font-size: 9px; font-weight: bold; letter-spacing: 1px; margin-top: 2px;">GIFT CARD</div>
-            </td>
-            <td width="48%" align="center" valign="top" bgcolor="#072417">
-                <div style="color: #c9a44c; font-size: 9px; font-weight: bold; letter-spacing: 4px;">F R O M</div>
-                <div style="color: #f5d78a; font-size: 22px; font-weight: bold; margin-top: 2px;">{{ creator_name }}</div>
-                <div style="height: 1px; width: 110px; background-color: #c9a44c; margin: 4px auto;"></div>
-            </td>
-            <td width="26%" align="right" valign="top" bgcolor="#072417">
-                <span style="background-color: #03140c; border: 1px solid #c9a44c; color: #ffd875; font-size: 8.5px; font-weight: bold; padding: 3px 8px; letter-spacing: 1px;">
-                    &#10022; OFFICIAL
-                </span>
-            </td>
-        </tr>
-        </table>
-
-        <!-- Center: Card ID & Value -->
-        <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#072417" style="margin-top: 12px; margin-bottom: 12px;">
-        <tr>
-            <td align="center" bgcolor="#072417">
-                <div style="color: #c9a44c; font-size: 9px; font-weight: bold; letter-spacing: 3px; margin-bottom: 5px;">G I F T &nbsp; C A R D &nbsp; I D -</div>
-                <table width="75%" cellpadding="6" cellspacing="0" bgcolor="#03140c" style="border: 1.5px solid #c9a44c; margin: 0 auto;">
-                <tr>
-                    <td align="center" bgcolor="#03140c" style="padding: 6px 14px;">
-                        <span style="color: #ffe08a; font-size: 19px; font-weight: bold; font-family: Courier, monospace; letter-spacing: 2.5px;">{{ card_code }}</span>
-                    </td>
-                </tr>
-                </table>
-                <div style="margin-top: 8px;">
-                    <span style="background-color: #03140c; border: 1.5px solid #c9a44c; color: #ffd875; font-size: 14px; font-weight: bold; padding: 4px 16px; letter-spacing: 1px;">
-                        <span style="color: #a1d1b5; font-size: 9.5px;">VALUE: </span>Rs. {{ amount_fmt }}
-                    </span>
-                </div>
-                {% if message %}
-                <div style="color: #d1e7dd; font-size: 10.5px; font-style: italic; margin-top: 8px;">&ldquo;{{ message }}&rdquo;</div>
-                {% endif %}
-                <div style="height: 1px; width: 85%; background-color: #16462d; margin: 12px auto 0 auto;"></div>
-            </td>
-        </tr>
-        </table>
-
-        <!-- Bottom Row: QR Scanner on Left, Recipient in Center, RP Wax Seal on Right -->
-        <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#072417">
-        <tr>
-            <td width="26%" align="center" valign="bottom" bgcolor="#072417">
-                {% if qr_base64 %}
-                <img src="data:image/png;base64,{{ qr_base64 }}" width="64" height="64" alt="QR"/><br/>
-                <div style="color: #ffd875; font-size: 7.5px; font-weight: bold; letter-spacing: 1px; margin-top: 3px;">
-                    SCAN TO CLAIM
-                </div>
-                {% endif %}
-            </td>
-            <td width="48%" align="center" valign="bottom" bgcolor="#072417">
-                <div style="color: #f5d78a; font-size: 13px; font-weight: bold;">
-                    TO: <span style="border-bottom: 1.5px solid #c9a44c; color: #ffffff; padding-bottom: 1px;">{{ recipient_name or 'Valued Bearer' }}</span>
-                </div>
-                <div style="color: #a1d1b5; font-size: 8.5px; margin-top: 4px;">
-                    100% Guaranteed Redeemable
-                </div>
-            </td>
-            <td width="26%" align="center" valign="bottom" bgcolor="#072417">
-                {% if seal_base64 %}
-                <img src="data:image/png;base64,{{ seal_base64 }}" width="48" height="48" alt="Seal"/><br/>
-                <div style="color: #c9a44c; font-size: 8px; font-weight: bold; letter-spacing: 1px; margin-top: 2px;">SEAL</div>
-                {% endif %}
-            </td>
-        </tr>
-        </table>
-    </td>
+        <td width="28%" valign="top" bgcolor="#072417">
+            <div style="color: #a1d1b5; font-size: 9.5px; font-weight: bold; letter-spacing: 1.5px;">&#10022; RENOPAY</div>
+            <div style="color: #ffd875; font-size: 8.5px; font-weight: bold; letter-spacing: 1px; margin-top: 2px;">GIFT CARD</div>
+        </td>
+        <td width="44%" align="center" valign="top" bgcolor="#072417">
+            <div style="color: #c9a44c; font-size: 8.5px; font-weight: bold; letter-spacing: 3px;">F R O M</div>
+            <div style="color: #f5d78a; font-size: 18px; font-weight: bold; margin-top: 1px;">{{ creator_name }}</div>
+            <div style="width: 80px; border-bottom: 1px solid #c9a44c; margin: 3px auto 0 auto;"></div>
+        </td>
+        <td width="28%" align="right" valign="top" bgcolor="#072417">
+            <span style="background-color: #03140c; border: 1px solid #c9a44c; color: #ffd875; font-size: 8px; font-weight: bold; padding: 2.5px 7px; letter-spacing: 0.8px;">
+                &#10022; OFFICIAL
+            </span>
+        </td>
     </tr>
     </table>
+
+    <!-- Center Section: Label, Code Box, Value Pill, Message -->
+    <div style="text-align: center; margin-top: 10px; margin-bottom: 4px; color: #c9a44c; font-size: 8.5px; font-weight: bold; letter-spacing: 2.5px;">
+        G I F T &nbsp; C A R D &nbsp; I D -
+    </div>
+
+    <table align="center" width="320" cellpadding="0" cellspacing="0" class="code-table" bgcolor="#02120a" style="margin: 0 auto;">
+    <tr>
+        <td align="center" bgcolor="#02120a" style="padding: 5px 12px;">
+            <span style="color: #ffe08a; font-family: Courier, monospace; font-size: 17px; font-weight: bold; letter-spacing: 2px;">{{ card_code }}</span>
+        </td>
+    </tr>
+    </table>
+
+    <table align="center" width="165" cellpadding="0" cellspacing="0" class="value-table" bgcolor="#02120a" style="margin: 6px auto 0 auto;">
+    <tr>
+        <td align="center" bgcolor="#02120a" style="padding: 2.5px 8px;">
+            <span style="color: #a1d1b5; font-size: 8.5px; font-weight: bold; letter-spacing: 1px;">VALUE: </span>
+            <span style="color: #ffd875; font-size: 13px; font-weight: bold;">Rs. {{ amount_fmt }}</span>
+        </td>
+    </tr>
+    </table>
+
+    {% if message %}
+    <div style="text-align: center; color: #d1e7dd; font-size: 9.5px; font-style: italic; margin-top: 5px;">
+        &ldquo;{{ message }}&rdquo;
+    </div>
+    {% endif %}
+
+    <!-- Hairline Separator -->
+    <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#072417" style="margin-top: 8px; margin-bottom: 8px;">
+    <tr>
+        <td bgcolor="#072417" style="border-top: 1px solid #16462d; font-size: 1px; line-height: 1px; height: 1px;"></td>
+    </tr>
+    </table>
+
+    <!-- Bottom Row: QR, Recipient, Wax Seal -->
+    <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#072417">
+    <tr>
+        <td width="26%" align="center" valign="middle" bgcolor="#072417">
+            {% if qr_base64 %}
+            <img src="data:image/png;base64,{{ qr_base64 }}" width="52" height="52" alt="QR"/><br/>
+            <div style="color: #ffd875; font-size: 7px; font-weight: bold; letter-spacing: 0.8px; margin-top: 2px;">
+                SCAN TO CLAIM
+            </div>
+            {% endif %}
+        </td>
+        <td width="48%" align="center" valign="middle" bgcolor="#072417">
+            <div style="color: #f5d78a; font-size: 12.5px; font-weight: bold;">
+                TO: <span style="border-bottom: 1.5px solid #c9a44c; color: #ffffff; padding-bottom: 1px;">{{ recipient_name or 'Valued Bearer' }}</span>
+            </div>
+            <div style="color: #a1d1b5; font-size: 8px; margin-top: 3px;">
+                100% Guaranteed Redeemable
+            </div>
+        </td>
+        <td width="26%" align="center" valign="middle" bgcolor="#072417">
+            {% if seal_base64 %}
+            <img src="data:image/png;base64,{{ seal_base64 }}" width="44" height="44" alt="Seal"/><br/>
+            <div style="color: #c9a44c; font-size: 7px; font-weight: bold; letter-spacing: 0.8px; margin-top: 2px;">SEAL</div>
+            {% endif %}
+        </td>
+    </tr>
+    </table>
+
 </td>
 </tr>
 </table>
 
-<div class="guide-box">
-    <div style="font-size: 11px; font-weight: bold; color: #162a45; margin-bottom: 5px;">
-        📌 How to Claim & Redeem this Gift Card:
+<!-- Guide Box -->
+<table align="center" width="510" cellpadding="0" cellspacing="0" style="margin: 14px auto 0 auto;">
+<tr>
+<td>
+    <div class="guide-box" style="width: 100%; margin: 0;">
+        <div style="font-size: 10px; font-weight: bold; color: #162a45; margin-bottom: 4px;">
+            &#128204; How to Claim & Redeem this Gift Card:
+        </div>
+        <div style="font-size: 9px; color: #334155; line-height: 1.45;">
+            1. Open <strong>RenoPay</strong> or scan the voucher QR code above with any mobile camera.<br/>
+            2. Go to <strong>Gift Card &rarr; Claim</strong> tab.<br/>
+            3. Enter or verify voucher code: <strong>{{ card_code }}</strong><br/>
+            4. Tap <strong>Claim Gift Card</strong> &mdash; <strong>Rs. {{ amount_fmt }}</strong> is instantly credited to your wallet!
+        </div>
     </div>
-    <div style="font-size: 10px; color: #334155; line-height: 1.5;">
-        1. Open <strong>RenoPay</strong> or scan the voucher QR code above with any mobile camera.<br/>
-        2. Go to <strong>Gift Card &rarr; Claim</strong> tab.<br/>
-        3. Enter or verify voucher code: <strong>{{ card_code }}</strong><br/>
-        4. Tap <strong>Claim Gift Card</strong> &mdash; <strong>Rs. {{ amount_fmt }}</strong> is instantly credited to your wallet!
-    </div>
-</div>
+</td>
+</tr>
+</table>
 
-<table class="meta-table" cellpadding="0" cellspacing="0">
+<!-- Meta Footer -->
+<table align="center" width="510" cellpadding="0" cellspacing="0" class="meta-table" style="margin: 10px auto 0 auto;">
     <tr>
         <td width="50%"><strong>Issued At:</strong> {{ issued_at }}</td>
         <td width="50%" align="right"><strong>Valid Until:</strong> {{ expiry_at }}</td>
@@ -2391,7 +2376,15 @@ def build_gift_card_data(gift_card, creator_user=None) -> dict:
         draw.ellipse([10, 10, size - 11, size - 11], outline="#96671a", width=2)
         draw.ellipse([13, 13, size - 14, size - 14], fill="#b8832a", outline="#fae39d", width=2)
         font = None
-        for f in ["georgiab.ttf", "georgia.ttf", "timesbd.ttf", "arialbd.ttf"]:
+        for f in [
+            "C:/Windows/Fonts/georgiab.ttf",
+            "C:/Windows/Fonts/georgia.ttf",
+            "C:/Windows/Fonts/arialbd.ttf",
+            "georgiab.ttf",
+            "georgia.ttf",
+            "timesbd.ttf",
+            "arialbd.ttf",
+        ]:
             try:
                 font = ImageFont.truetype(f, 54)
                 break
