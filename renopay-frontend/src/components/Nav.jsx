@@ -187,7 +187,7 @@ export function Nav({ active, onNavigate }) {
             </svg>
 
             {/* ── CENTER RAISED ACTION BUTTON (POPS OUT ABOVE NOTCH) ────────── */}
-            <div className="absolute left-1/2 -translate-x-1/2 -top-5 z-20">
+            <div className="absolute left-1/2 -translate-x-1/2 -top-6 z-20">
               <button
                 type="button"
                 onClick={() => setIsActionMenuOpen((prev) => !prev)}
@@ -218,6 +218,19 @@ export function Nav({ active, onNavigate }) {
                   </div>
                 )}
               </button>
+            </div>
+
+            {/* ── CENTER 'PAY' LABEL (POSITIONED PROMINENTLY BELOW CAMERA BUTTON) ── */}
+            <div className="absolute left-1/2 -translate-x-1/2 bottom-[3px] z-10 pointer-events-none flex flex-col items-center">
+              <span
+                className="text-[9.5px] font-extrabold tracking-wider uppercase transition-colors"
+                style={{
+                  color: isPayActive ? "#FF6A1A" : (isNightMode ? "#8C827A" : "#64748B"),
+                  letterSpacing: "1px",
+                }}
+              >
+                Pay
+              </span>
             </div>
 
             {/* ── LEFT & RIGHT FLAT OUTLINE ICONS ON BAR ────────────────────── */}
@@ -263,15 +276,8 @@ export function Nav({ active, onNavigate }) {
                 </button>
               </div>
 
-              {/* Center Spacer for Raised Notch Cutout & Center Button */}
-              <div className="w-[20%] flex flex-col items-center justify-end pb-1.5 pointer-events-none">
-                <span
-                  className="text-[9px] font-bold tracking-widest uppercase transition-colors"
-                  style={{ color: isPayActive ? "#FF6A1A" : (isNightMode ? "#8C827A" : "#64748B") }}
-                >
-                  Pay
-                </span>
-              </div>
+              {/* Center Spacer for Notch Cutout */}
+              <div className="w-[20%] pointer-events-none" />
 
               {/* Right Wing: History & Profile/Account */}
               <div className="flex items-center justify-around w-[38%]">

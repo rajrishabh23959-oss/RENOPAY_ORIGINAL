@@ -30,7 +30,7 @@ from app.services.ai.providers import (
 )
 from app.services.ai.rate_limiter import get_user_rate_limit_status
 from app.services.ai.rag_engine import retrieve_relevant_docs, format_rag_context
-from app.services.ai.prompts import build_system_prompt, get_founder_response
+from app.services.ai.prompts import build_system_prompt, get_founder_response, get_feature_response
 
 router = APIRouter()
 
@@ -103,9 +103,9 @@ async def query_ai_assistant(
             for m in (session.messages or [])[-6:]
         ]
 
-    # Check for direct founder inquiry across any language (English, Hindi, Tamil, Telugu, Malayalam)
-    founder_text = get_founder_response(payload.query_text, lang)
-    if founder_text:
+    # Check for direct feature inquiry across any language (Founder, Day/Night Theme, Gift Cards)
+    feature_text = get_feature_response(payload.query_text, lang)
+    if feature_text:
         user_msg = AIChatMessage(
             session_id=session.id,
             role="user",
@@ -116,9 +116,9 @@ async def query_ai_assistant(
         bot_msg = AIChatMessage(
             session_id=session.id,
             role="assistant",
-            content=founder_text,
+            content=feature_text,
             provider_used="RenoPay Core",
-            model_used="founder-verified",
+            model_used="feature-verified",
             screen_context=payload.screen_context,
             language=lang,
         )
@@ -127,10 +127,10 @@ async def query_ai_assistant(
         await db.commit()
 
         return AIQueryResponse(
-            response_text=founder_text,
+            response_text=feature_text,
             session_id=session.id,
             provider="RenoPay Core",
-            model="founder-verified",
+            model="feature-verified",
             is_byo=False,
             language=lang,
             screen_context=payload.screen_context,

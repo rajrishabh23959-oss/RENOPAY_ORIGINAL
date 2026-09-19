@@ -37,8 +37,22 @@ const SCREEN_PROMPTS = {
     "How to send money to a UPI ID?",
     "What is the high-value privacy code?",
   ],
+  giftcard: [
+    "How do I create and send a RenoPay Gift Card?",
+    "What is the difference between Normal Pay and Advance Pay for gift cards?",
+    "How can someone scan the QR code to claim a gift card?",
+    "How to download the Gift Card PDF voucher?",
+  ],
+  profile: [
+    "How do I switch between Day Mode and Night Mode?",
+    "Where is the Day Mode / Night Mode toggle located?",
+    "How do I reset my UPI PIN?",
+    "Where can I check my KYC and linked bank?",
+  ],
   home: [
     "Who is the founder of RenoPay?",
+    "How do I switch between Day Mode and Night Mode?",
+    "How do I create a RenoPay Gift Card?",
     "Give me an overview of top RenoPay features",
     "How does SentinAI fraud detection protect me?",
     "How to save money with Digital Gold round-up?",
@@ -63,6 +77,42 @@ const FOUNDER_TRIGGERS = [
   "സ്ഥാപകൻ", "സ്രഷ്ടാവ്", "sthapakan", "srashtavu", "aarannu undakkiyathu",
 ];
 
+const THEME_RESPONSES = {
+  en: "☀️ **RenoPay Day Mode & 🌙 Night Mode**\n\nRenoPay features a seamless dual-theme system designed for all lighting conditions:\n\n• **Where to find it**: Go to the **Profile / Account** screen (tap the Account tab at the bottom right). The theme selector is placed **directly above the UPI PIN card**.\n• **Night Mode (🌙)**: Deep OLED black theme designed for low-light comfort and battery savings (Switch ON).\n• **Day Mode (☀️)**: Clean, high-contrast daylight theme with bright cards and crisp slate text for outdoor readability (Switch OFF).\n• **Quick Controls**: Tap the toggle switch or the 1-tap pill buttons (`☀️ Day Mode` / `🌙 Night Mode`). Your theme preference is automatically remembered!",
+  hi: "☀️ **RenoPay डे मोड (Day Mode) और 🌙 नाइट मोड (Night Mode)**\n\nRenoPay में आप आसानी से Day और Night मोड स्विच कर सकते हैं:\n\n• **कहाँ मिलेगा**: **Profile / Account** स्क्रीन खोलें (नीचे दाएँ कोने में Account टैब)। यह कार्ड **UPI PIN कार्ड के ठीक ऊपर** स्थित है।\n• **नाइट मोड (🌙)**: डिफ़ॉल्ट डीप OLED डार्क थीम, जो रात में आँखों के आराम और बैटरी बचाने के लिए उपयुक्त है (स्विच ऑन रहने पर)।\n• **डे मोड (☀️)**: ब्राइट, साफ़ और हाई-कॉन्ट्रास्ट डेलाइट थीम, जो धूप में साफ़ पढ़ने के लिए बेहतरीन है (स्विच ऑफ करने पर)।\n• **क्विक कंट्रोल**: आप स्लाइडिंग स्विच या 1-टैप बटन (`☀️ Day Mode` / `🌙 Night Mode`) से तुरंत बदल सकते हैं। आपकी पसंद अपने-आप सुरक्षित रहती है!",
+  ta: "☀️ **RenoPay பகல் முறை (Day Mode) & 🌙 இரவு முறை (Night Mode)**\n\nRenoPay-ல் நீங்கள் மிக எளிதாக Day மற்றும் Night பயன்முறைகளை மாற்றிக்கொள்ளலாம்:\n\n• **எங்குள்ளது**: **Profile / Account** திரைக்குச் செல்லுங்கள். இந்த வசதி **UPI PIN கார்டுக்கு நேர் மேலே** உள்ளது.\n• **Night Mode (🌙)**: இயல்புநிலை OLED இருண்ட பயன்முறை, இரவு நேரப் பயன்பாட்டிற்கும் பேட்டரி சேமிப்பிற்கும் சிறந்தது.\n• **Day Mode (☀️)**: பிரகாசமான, தெளிவான மற்றும் அதிக மாறுபட்ட (high-contrast) பகல் பயன்முறை.\n• **கட்டுப்பாடு**: சுவிட்சை ஆன்/ஆஃப் செய்து அல்லது `☀️ Day Mode` / `🌙 Night Mode` பொத்தான்களைத் தட்டி உடனடியாக மாற்றலாம்!",
+  te: "☀️ **RenoPay డే మోడ్ (Day Mode) & 🌙 నైట్ మోడ్ (Night Mode)**\n\nRenoPay లో మీరు సులభంగా Day మరియు Night మోడ్లను మార్చవచ్చు:\n\n• **ఎక్కడ ఉంటుంది**: **Profile / Account** స్క్రీన్‌కి వెళ్లండి. ఇది **UPI PIN కార్డుకు సరిగ్గా పైన** ఉంటుంది.\n• **Night Mode (🌙)**: డిఫాల్ట్ డీప్ OLED డార్క్ థీమ్, రాత్రి వేళల్లో సౌకర్యంగా ఉండటానికి మరియు బ్యాటరీ ఆదా చేయడానికి అనువైనది.\n• **Day Mode (☀️)**: ప్రకాశవంతమైన, స్పష్టమైన మరియు హై-కాంట్రాస్ట్ డేలైట్ థీమ్.\n• **కంట్రోల్స్**: స్లైడింగ్ స్విచ్ లేదా 1-ట్యాప్ బటన్లను (`☀️ Day Mode` / `🌙 Night Mode`) ఉపయోగించి సులభంగా మోడ్ మార్చవచ్చు!",
+  ml: "☀️ **RenoPay ഡേ മോഡ് (Day Mode) & 🌙 നൈറ്റ് മോഡ് (Night Mode)**\n\nRenoPay-ൽ നിങ്ങൾക്ക് Day, Night മോഡുകൾ എളുപ്പത്തിൽ മാറ്റാം:\n\n• **എവിടെ കണ്ടെത്താം**: **Profile / Account** സ്ക്രീൻ തുറക്കുക. ഇത് **UPI PIN കാർഡിന് തൊട്ടുമുകളിലായി** നൽകിയിരിക്കുന്നു.\n• **Night Mode (🌙)**: ഡിഫോൾട്ട് ഡീപ് OLED ഡാർക്ക് തീം, രാത്രി സമയത്ത് കണ്ണിന് ആശ്വാസവും ബാറ്ററി ലാഭവും നൽകുന്നു.\n• **Day Mode (☀️)**: തെളിഞ്ഞതും ഉയർന്ന കോൺട്രാസ്റ്റുള്ളതുമായ ബ്രൈറ്റ് ഡേ തീം.\n• **നിയന്ത്രണം**: സ്ലൈഡിംഗ് സ്വിച്ച് അല്ലെങ്കിൽ `☀️ Day Mode` / `🌙 Night Mode` ബട്ടണുകൾ അമർത്തി മാറ്റാവുന്നതാണ്!",
+};
+
+const THEME_TRIGGERS = [
+  "day mode", "night mode", "dark mode", "light mode", "theme", "switch theme",
+  "change theme", "white mode", "black mode", "daylight",
+  "day mode kaise", "night mode kaise", "theme kaise change", "theme badle", "day mode on", "night mode on",
+  "light mode kaise", "screen white", "screen black", "theme change", "डे मोड", "नाइट मोड", "डार्क मोड",
+  "பகல் முறை", "இரவு முறை", "day mode eppadi",
+  "డే మోడ్", "నైట్ మోడ్", "day mode ela",
+  "ഡേ മോഡ്", "നൈറ്റ് മോഡ്", "day mode engane",
+];
+
+const GIFTCARD_RESPONSES = {
+  en: "🎁 **RenoPay Luxury Gift Cards & Vouchers**\n\nRenoPay lets you create, send, and claim digital luxury gift vouchers seamlessly:\n\n• **How to Create**: Tap **Gift Card** on the Home screen. Enter the recipient's name, voucher amount, and a personalized message.\n• **Two Payment Methods**: Choose between ⚡ **Normal Pay** (fast 6-digit UPI PIN payment) or 🚀 **Advance Pay** (interactive currency note slider with tactile animations).\n• **Voucher Features**: Generates an emerald & gold luxury card with a unique Gift Card ID, issuer name (`From`), recipient name (`To`), and a real scannable dynamic QR code.\n• **Official PDF Download**: Instantly download a print-ready, high-definition PDF voucher card.\n• **How to Redeem / Claim**: The recipient can scan the gift card's QR code using the RenoPay scanner or enter the Gift Card ID to credit the full amount directly into their wallet balance!",
+  hi: "🎁 **RenoPay लक्ज़री गिफ्ट कार्ड्स (Gift Cards & Vouchers)**\n\nRenoPay में आप दोस्तों और परिवार के लिए डिजिटल गिफ्ट कार्ड बना सकते हैं और भेज सकते हैं:\n\n• **गिफ्ट कार्ड कैसे बनाएँ**: होम स्क्रीन पर **Gift Card** विकल्प पर टैप करें। पाने वाले का नाम, राशि (Amount) और शुभकामना संदेश दर्ज करें।\n• **पेमेंट के दो तरीके**: आप ⚡ **Normal Pay** (डायरेक्ट UPI PIN) या 🚀 **Advance Pay** (इंटरैक्टिव करेंसी नोट स्लाइडर) चुन सकते हैं।\n• **वाउचर के फीचर्स**: इसमें यूनिक Gift Card ID, भेजने वाले का नाम (`From`), पाने वाले का नाम (`To`) और एक असली स्कैन करने योग्य डायनामिक QR कोड मिलता है।\n• **PDF डाउनलोड**: आप तुरंत खूबसूरत एमराल्ड और गोल्ड डिज़ाइन वाला हाई-क्वालिटी PDF वाउचर डाउनलोड या शेयर कर सकते हैं।\n• **रिडीम कैसे करें**: कोई भी RenoPay स्कैनर से QR कोड स्कैन करके या Gift Card ID डालकर राशि सीधे अपने वॉलेट में पा सकता है!",
+  ta: "🎁 **RenoPay டிஜிட்டல் பரிசு அட்டைகள் (Gift Cards)**\n\nRenoPay-ல் நீங்கள் பிரத்யேக டிஜிட்டல் பரிசு அட்டைகளை (Gift Cards) உருவாக்கலாம், அனுப்பலாம் மற்றும் பெறலாம்:\n\n• **எப்படி உருவாக்குவது**: முகப்புத் திரையில் (Home) உள்ள **Gift Card** ஐகானைத் தட்டவும். பெறுநரின் பெயர், தொகை மற்றும் வாழ்த்துச் செய்தியை உள்ளிடவும்.\n• **கட்டண முறைகள்**: ⚡ **Normal Pay** (நேரடி UPI PIN) அல்லது 🚀 **Advance Pay** (நாணய நோட்டு ஸ்லைடர்) மூலம் பணம் செலுத்தலாம்.\n• **அம்சங்கள்**: தனித்துவமான Gift Card ID, அனுப்பியவர் பெயர், பெறுநர் பெயர் மற்றும் உடனடி ஸ்கேன் செய்யக்கூடிய QR குறியீடு இதில் அடங்கும்.\n• **PDF பதிவிறக்கம்**: அழகான பிரீமியம் PDF வவுச்சரை பதிவிறக்கம் செய்து பகிரலாம்.\n• **பயன்படுத்துவது (Redeem)**: QR குறியீட்டை ஸ்கேன் செய்து தொகையை உடனடியாக வாலட்டில் வரவு வைக்கலாம்!",
+  te: "🎁 **RenoPay డిజిటల్ గిఫ్ట్ కార్డులు (Gift Cards & Vouchers)**\n\nRenoPay లో మీరు స్నేహితులు మరియు కుటుంబ సభ్యుల కోసం డిజిటల్ గిఫ్ట్ కార్డులను సృష్టించవచ్చు మరియు పంపవచ్చు:\n\n• **ఎలా సృష్టించాలి**: హోమ్ స్క్రీన్‌పై **Gift Card** బటన్‌ను నొక్కండి. గ్రహీత పేరు, మొత్తం మరియు సందేశాన్ని నమోదు చేయండి.\n• **చెల్లింపు ఎంపికలు**: ⚡ **Normal Pay** (UPI PIN తో) లేదా 🚀 **Advance Pay** (నోట్ స్లైడర్ తో) ద్వారా చెల్లించవచ్చు.\n• **ఫీచర్లు**: ప్రత్యేకమైన Gift Card ID, పంపినవారి పేరు, అందుకున్నవారి పేరు మరియు స్కాన్ చేయగల నిజమైన QR కోడ్ ఉంటాయి.\n• **PDF డౌన్‌లోడ్**: అందమైన గోల్డ్ డిజైన్ PDF వోచర్‌ను డౌన్‌లోడ్ చేసి పంపుకోవచ్చు.\n• **క్లెయిమ్ చేయడం**: QR కోడ్‌ను స్కాన్ చేసి నేరుగా వాలెట్‌లోకి డబ్బును జమ చేసుకోవచ్చు!",
+  ml: "🎁 **RenoPay ഡിജിറ്റൽ ഗിഫ്റ്റ് കാർഡുകൾ (Gift Cards)**\n\nRenoPay-ൽ നിങ്ങൾക്ക് പ്രിയപ്പെട്ടവർക്കായി ഡിജിറ്റൽ ഗിഫ്റ്റ് കാർഡുകൾ അയക്കാം:\n\n• **എങ്ങനെ ഉണ്ടാക്കാം**: ഹോം സ്ക്രീനിലെ **Gift Card** ഐക്കൺ ടാപ്പ് ചെയ്യുക. ലഭിക്കേണ്ട ആളുടെ പേര്, തുക, സന്ദേശം എന്നിവ നൽകുക.\n• **പേയ്‌മെന്റ് ഓപ്ഷനുകൾ**: ⚡ **Normal Pay** (UPI PIN വഴി) അല്ലെങ്കിൽ 🚀 **Advance Pay** (കറൻസി നോട്ട് സ്ലൈഡർ വഴി) തിരഞ്ഞെടുക്കാം.\n• **സവിശേഷതകൾ**: തനതായ Gift Card ID, അയച്ചയാളുടെ പേര്, ലഭിക്കുന്ന ആളുടെ പേര്, സ്കാൻ ചെയ്യാവുന്ന QR കോഡ് എന്നിവ ഉണ്ടാകും.\n• **PDF ഡൗൺലോഡ്**: മനോഹരമായ ഹൈ-ക്വാളിറ്റി PDF വൗച്ചർ ഡൗൺലോഡ് ചെയ്ത് നൽകാം.\n• **റെഡീം ചെയ്യാൻ**: QR കോഡ് സ്കാൻ ചെയ്ത് വാലറ്റിലേക്ക് തുക ക്രെഡിറ്റ് ചെയ്യാം!",
+};
+
+const GIFTCARD_TRIGGERS = [
+  "gift card", "giftcard", "voucher", "create gift card", "send gift card", "claim gift card",
+  "redeem gift card", "gift card pdf", "gift voucher",
+  "गिफ्ट कार्ड", "gift card kaise", "gift card banana", "gift card bhejna", "voucher kaise", "gift card claim",
+  "वाउचर", "गिफ्ट कार्ड कैसे बनाएं", "gift card kya hai",
+  "பரிசு அட்டை", "gift card eppadi",
+  "గిఫ్ట్ కార్డు", "gift card ela",
+  "ഗിഫ്റ്റ് കാർഡ്", "gift card engane",
+];
+
 const detectQueryLanguage = (text, fallbackLang = "en") => {
   for (const ch of (text || "")) {
     const cp = ch.charCodeAt(0);
@@ -72,18 +122,24 @@ const detectQueryLanguage = (text, fallbackLang = "en") => {
     if (cp >= 0x0d00 && cp <= 0x0d7f) return "ml";
   }
   const lower = (text || "").toLowerCase();
-  if (/kisne|banaya|kiska|sansthapak|kiske|aapko/.test(lower)) return "hi";
-  if (/niruvanar|uruvakkiyavar|yaar/.test(lower)) return "ta";
-  if (/vyavasthapakudu|srushtikartha|evaru/.test(lower)) return "te";
-  if (/sthapakan|srashtavu|aarannu/.test(lower)) return "ml";
+  if (/kisne|banaya|kiska|sansthapak|kiske|aapko|kaise|banae|badle/.test(lower)) return "hi";
+  if (/niruvanar|uruvakkiyavar|yaar|eppadi/.test(lower)) return "ta";
+  if (/vyavasthapakudu|srushtikartha|evaru|ela/.test(lower)) return "te";
+  if (/sthapakan|srashtavu|aarannu|engane/.test(lower)) return "ml";
   return fallbackLang in FOUNDER_RESPONSES ? fallbackLang : "en";
 };
 
-const getClientFounderResponse = (text, lang = "en") => {
+const getClientDirectFeatureResponse = (text, lang = "en") => {
   const lower = (text || "").toLowerCase();
+  const detectedLang = detectQueryLanguage(text, lang);
   if (FOUNDER_TRIGGERS.some((t) => lower.includes(t))) {
-    const detectedLang = detectQueryLanguage(text, lang);
     return FOUNDER_RESPONSES[detectedLang] || FOUNDER_RESPONSES.en;
+  }
+  if (THEME_TRIGGERS.some((t) => lower.includes(t))) {
+    return THEME_RESPONSES[detectedLang] || THEME_RESPONSES.en;
+  }
+  if (GIFTCARD_TRIGGERS.some((t) => lower.includes(t))) {
+    return GIFTCARD_RESPONSES[detectedLang] || GIFTCARD_RESPONSES.en;
   }
   return null;
 };
@@ -282,14 +338,14 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
     };
     setMessages((prev) => [...prev, userMsg]);
 
-    const clientFounderReply = getClientFounderResponse(textToSend, currentLang);
-    if (clientFounderReply) {
+    const clientFeatureReply = getClientDirectFeatureResponse(textToSend, currentLang);
+    if (clientFeatureReply) {
       const botMsg = {
         id: "b-" + Date.now(),
         role: "assistant",
-        content: clientFounderReply,
+        content: clientFeatureReply,
         provider: "RenoPay Core",
-        model: "founder-verified",
+        model: "feature-verified",
         time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       };
       setMessages((prev) => [...prev, botMsg]);
@@ -325,17 +381,17 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
       };
       setMessages((prev) => [...prev, botMsg]);
     } catch (e) {
-      const fallbackFounder = getClientFounderResponse(textToSend, currentLang);
-      if (fallbackFounder) {
-        const founderMsg = {
+      const fallbackFeature = getClientDirectFeatureResponse(textToSend, currentLang);
+      if (fallbackFeature) {
+        const featureMsg = {
           id: "b-" + Date.now(),
           role: "assistant",
-          content: fallbackFounder,
+          content: fallbackFeature,
           provider: "Saathi Knowledge Base",
           model: "renopay-core",
           time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         };
-        setMessages((prev) => [...prev, founderMsg]);
+        setMessages((prev) => [...prev, featureMsg]);
       } else {
         const errMsg = {
           id: "err-" + Date.now(),
