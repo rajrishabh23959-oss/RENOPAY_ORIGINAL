@@ -136,6 +136,16 @@ body {
     font-size: 10.5px;
     color: #162a45;
 }
+/* Explicit alignment overrides — xhtml2pdf ignores HTML align attr on <th> unless forced */
+.report-table th[align="right"], .report-table td[align="right"] {
+    text-align: right !important;
+}
+.report-table th[align="center"], .report-table td[align="center"] {
+    text-align: center !important;
+}
+.report-table th[align="left"], .report-table td[align="left"] {
+    text-align: left !important;
+}
 .footer-text {
     margin-top: 24px;
     padding-top: 10px;

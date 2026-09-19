@@ -522,10 +522,10 @@ export function AccountingScreen({ onBack }) {
       <div className="px-[22px] flex flex-col gap-4">
 
         {/* Dev Mode Toggle Card */}
-        <Card className="p-4 flex items-center justify-between bg-gradient-to-r from-[#192926] to-[#2d4a42]">
+        <Card className="p-4 flex items-center justify-between dark:bg-gradient-to-r dark:from-[#192926] dark:to-[#2d4a42] bg-surf border border-line">
           <div>
-            <h3 className="text-white font-bold text-[16px] mb-1">Developer Mode</h3>
-            <p className="text-white/70 text-[11px]">Enable raw double-entry ledger access</p>
+            <h3 className="text-textLight font-bold text-[16px] mb-1">Developer Mode</h3>
+            <p className="text-muted text-[11px]">Enable raw double-entry ledger access</p>
           </div>
           <button
             onClick={toggleDevMode}
@@ -538,7 +538,7 @@ export function AccountingScreen({ onBack }) {
         {!devMode ? (
           <Card className="p-5 text-center mt-4 border-dashed border-2">
             <div className="text-4xl mb-3">🛠</div>
-            <h3 className="text-text font-bold text-[18px] mb-2">Unlock Accounting Engine</h3>
+            <h3 className="text-textLight font-bold text-[18px] mb-2">Unlock Accounting Engine</h3>
             <p className="text-muted text-[12px] leading-relaxed">
               Enable Developer Mode to view raw double-entry journal postings, general ledgers, T-accounts, and download full compliance packs.
             </p>

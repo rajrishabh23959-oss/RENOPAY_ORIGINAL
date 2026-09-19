@@ -37,6 +37,7 @@ export function LedgerReportScreen({ onBack }) {
   const [txnRef, setTxnRef] = useState("");
   const [downloading, setDownloading] = useState(false);
   const [viewing, setViewing] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const [previewBlob, setPreviewBlob] = useState(null);
   const [previewTitle, setPreviewTitle] = useState("Report Preview");
@@ -126,6 +127,7 @@ export function LedgerReportScreen({ onBack }) {
       setPreviewModalOpen(false);
     } finally {
       setViewing(false);
+      setPreviewLoading(false);
     }
   };
 
@@ -165,11 +167,11 @@ export function LedgerReportScreen({ onBack }) {
             {REPORT_TYPES.map((r) => (
               <button
                 key={r.key}
-                className="btn flex items-center gap-3 p-3 rounded-xl text-left"
-                style={{
-                  background: reportType === r.key ? "#FF6A1A15" : "#151210",
-                  border: `1.5px solid ${reportType === r.key ? "#FF6A1A" : "#2A2320"}`,
-                }}
+                className={`btn flex items-center gap-3 p-3 rounded-xl text-left border transition-all ${
+                  reportType === r.key
+                    ? "bg-accent/10 border-accent"
+                    : "bg-surf border-line hover:border-accent/40"
+                }`}
                 onClick={() => setReportType(r.key)}
               >
                 <span className="text-2xl">{r.icon}</span>
@@ -224,8 +226,11 @@ export function LedgerReportScreen({ onBack }) {
                   {recentTxns.slice(0, 6).map((t) => (
                     <button
                       key={t.txn_ref}
-                      className="btn flex items-center justify-between p-2 rounded-lg text-left"
-                      style={{ background: txnRef === t.txn_ref ? "#FF6A1A18" : "#151210", border: `1px solid ${txnRef === t.txn_ref ? "#FF6A1A" : "#2A2320"}` }}
+                      className={`btn flex items-center justify-between p-2 rounded-lg text-left border transition-all ${
+                        txnRef === t.txn_ref
+                          ? "bg-accent/10 border-accent"
+                          : "bg-surf border-line hover:border-accent/40"
+                      }`}
                       onClick={() => setTxnRef(t.txn_ref)}
                     >
                       <span className="text-textLight text-[11px] font-mono">{t.txn_ref}</span>
@@ -324,7 +329,7 @@ export function LedgerReportScreen({ onBack }) {
         pdfBlob={previewBlob}
         title={previewTitle}
         filename={previewFilename}
-        loading={viewing}
+        loading={previewLoading || viewing}
       />
     </div>
   );
