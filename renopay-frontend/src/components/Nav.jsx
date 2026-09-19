@@ -49,16 +49,6 @@ export function Nav({ active, onNavigate }) {
           {/* ── EXPANDING RADIAL ARC ACTION MENU ────────────────────────────── */}
           {isActionMenuOpen && (
             <div className="absolute -top-[145px] left-1/2 -translate-x-1/2 w-[280px] h-[150px] z-[105] pointer-events-none">
-              {/* Bold Sans-serif Label: 'ACTION MENU' */}
-              <div className="absolute -top-6 left-1/2 -translate-x-1/2 flex flex-col items-center pointer-events-auto animate-fadeUp">
-                <div className="px-3.5 py-1 rounded-full bg-[#181412]/95 border border-accent/40 shadow-[0_4px_16px_rgba(255,106,26,0.35)] flex items-center gap-1.5 backdrop-blur-xl">
-                  <span className="w-1.5 h-1.5 rounded-full bg-accent animate-ping" />
-                  <span className="text-[11px] font-extrabold tracking-[0.22em] text-[#F5F3F0] uppercase font-sans">
-                    ACTION MENU
-                  </span>
-                </div>
-              </div>
-
               {/* Fanned Radial Connecting Arc Guide (SVG) */}
               <svg className="absolute inset-0 w-full h-full pointer-events-none overflow-visible">
                 <path

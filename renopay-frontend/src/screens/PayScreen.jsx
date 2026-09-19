@@ -49,158 +49,6 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
   const [downloadError, setDownloadError] = useState("");
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
 
-  // Camera QR scanner states & refs
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const streamRef = useRef(null);
-  const rafRef = useRef(null);
-  const fileInputRef = useRef(null);
-  const isScanningRef = useRef(false);
-  const [cameraStatus, setCameraStatus] = useState("starting"); // starting | active | denied | unsupported
-  const [cameraRetry, setCameraRetry] = useState(0);
-  const [uploadingQr, setUploadingQr] = useState(false);
-
-  const stopCamera = () => {
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    streamRef.current?.getTracks().forEach((t) => t.stop());
-    streamRef.current = null;
-  };
-
-  const handleDetectedQr = async (parsed) => {
-    stopCamera();
-    setErr("");
-    let finalName = parsed.name || parsed.vpa;
-    let finalApp = parsed.app || "UPI";
-
-    try {
-      const res = await PaymentAPI.resolveVPA(parsed.vpa, parsed.name);
-      if (res?.name) finalName = res.name;
-      if (res?.app) finalApp = res.app;
-    } catch {
-      // Graceful fallback: Proceed with parsed QR data even if backend resolve is offline/unavailable
-    }
-
-    setResolvedName(finalName);
-    setPayeeApp(finalApp);
-    setVpa(parsed.vpa);
-    if (parsed.amount) setAmount(String(parsed.amount));
-    if (parsed.note) setDesc(parsed.note);
-    if (parsed.category) setCategory(parsed.category);
-    setStep("amount");
-  };
-
-  const handleQrImageUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    setUploadingQr(true);
-    setErr("");
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = async () => {
-        try {
-          const rawCode = await decodeQrFromImage(img);
-          setUploadingQr(false);
-          if (rawCode) {
-            const parsed = parseUniversalUpiQr(rawCode);
-            if (parsed?.vpa) {
-              handleDetectedQr(parsed);
-            } else {
-              setErr(`Scanned text: "${rawCode.slice(0, 45)}..." is not a recognizable UPI QR code.`);
-            }
-          } else {
-            setErr("No QR code detected in this image. Please upload a clear QR code.");
-          }
-        } catch {
-          setUploadingQr(false);
-          setErr("Failed to process QR code from image.");
-        }
-      };
-      img.onerror = () => {
-        setUploadingQr(false);
-        setErr("Could not read this image file. Please try another image.");
-      };
-      img.src = event.target.result;
-    };
-    reader.readAsDataURL(file);
-    e.target.value = "";
-  };
-
-  const scanFrame = async () => {
-    const video = videoRef.current;
-    const canvas = canvasRef.current;
-    if (!video || !canvas || video.readyState < 2) {
-      rafRef.current = requestAnimationFrame(scanFrame);
-      return;
-    }
-
-    if (!isScanningRef.current) {
-      isScanningRef.current = true;
-      try {
-        const rawCode = await scanVideoFrame(video, canvas);
-        if (rawCode) {
-          const parsed = parseUniversalUpiQr(rawCode);
-          if (parsed?.vpa) {
-            handleDetectedQr(parsed);
-            isScanningRef.current = false;
-            return;
-          }
-        }
-      } catch {
-        // Continue scanning
-      } finally {
-        isScanningRef.current = false;
-      }
-    }
-
-    rafRef.current = requestAnimationFrame(scanFrame);
-  };
-
-  useEffect(() => {
-    if (step !== "vpa") {
-      stopCamera();
-      return;
-    }
-
-    let cancelled = false;
-    setCameraStatus("starting");
-    (async () => {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        setCameraStatus("unsupported");
-        return;
-      }
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: "environment",
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-          },
-        });
-        if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop());
-          return;
-        }
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
-        }
-        setCameraStatus("active");
-        rafRef.current = requestAnimationFrame(scanFrame);
-      } catch (e) {
-        console.warn("Camera start error:", e);
-        setCameraStatus("denied");
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-      stopCamera();
-    };
-  }, [step, cameraRetry]);
-
 
   useEffect(() => {
     if (prefillVpa) resolveVpa(prefillVpa, prefillName);
@@ -215,9 +63,10 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
   const resolveVpa = async (v, hintName = null) => {
     setErr("");
     try {
-      const r = await PaymentAPI.resolveVPA(v, hintName || prefillName);
-      setResolvedName(r.name || hintName || prefillName || v);
-      if (r.app) setPayeeApp(r.app);
+      const hint = hintName || prefillName;
+      const r = hint ? await PaymentAPI.resolveVPA(v, hint) : await PaymentAPI.resolveVPA(v);
+      setResolvedName(r?.name || hint || v);
+      if (r?.app) setPayeeApp(r.app);
       setVpa(v);
       setStep("amount");
     } catch {
@@ -326,125 +175,71 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
       <div className="px-[22px]">
         {step === "vpa" && (
           <div className="animate-fadeUp">
-            {/* Live Camera QR Scanner */}
-            <div className="mb-4 relative rounded-[22px] overflow-hidden border border-line bg-[#0E0C0A] flex flex-col items-center justify-center min-h-[250px] h-[44vh] max-h-[320px] shadow-2xl">
-              <video
-                ref={videoRef}
-                playsInline
-                muted
-                className="w-full h-full object-cover absolute inset-0"
-              />
-              <canvas ref={canvasRef} className="hidden" />
-
-              {/* Viewfinder Overlay with Reticle & Laser */}
-              <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
-                {/* Scanner Target Box */}
-                <div className="w-48 h-48 sm:w-52 sm:h-52 relative border-2 border-dashed border-accent/70 rounded-2xl flex items-center justify-center shadow-[0_0_25px_rgba(255,106,26,0.35)]">
-                  {/* Corner accents */}
-                  <div className="absolute -top-1 -left-1 w-6 h-6 border-t-[3.5px] border-l-[3.5px] border-accent rounded-tl-lg" />
-                  <div className="absolute -top-1 -right-1 w-6 h-6 border-t-[3.5px] border-r-[3.5px] border-accent rounded-tr-lg" />
-                  <div className="absolute -bottom-1 -left-1 w-6 h-6 border-b-[3.5px] border-l-[3.5px] border-accent rounded-bl-lg" />
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 border-b-[3.5px] border-r-[3.5px] border-accent rounded-br-lg" />
-
-                  {/* Animated laser scan line */}
-                  <div
-                    className="w-full h-[2.5px] bg-gradient-to-r from-transparent via-[#FF6A1A] to-transparent absolute top-0"
-                    style={{ animation: "scanLaserLine 2.2s ease-in-out infinite" }}
-                  />
-                </div>
-
-                <div className="mt-3.5 px-3.5 py-1.5 rounded-full bg-black/75 backdrop-blur-md border border-white/10 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-accent animate-ping" />
-                  <p className="text-[11px] font-bold text-white tracking-wide">
-                    {cameraStatus === "active"
-                      ? "Scan any UPI QR Code"
-                      : cameraStatus === "denied"
-                      ? "Camera permission denied"
-                      : "Opening Camera Scanner…"}
-                  </p>
-                </div>
-              </div>
-
-              {cameraStatus === "denied" && (
-                <div className="relative z-10 text-center p-6 bg-black/90 rounded-2xl max-w-xs border border-line flex flex-col items-center">
-                  <span className="text-3xl">📷</span>
-                  <p className="text-xs font-bold text-white mt-2">Camera permission denied</p>
-                  <p className="text-[11px] text-muted mt-1">Please allow camera in device settings or tap retry below.</p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCameraStatus("starting");
-                      setCameraRetry((c) => c + 1);
-                    }}
-                    className="mt-3.5 px-4 py-2 bg-accent hover:bg-accent/90 active:scale-95 text-white text-[12px] font-bold rounded-xl transition shadow-lg shadow-accent/30 pointer-events-auto"
-                  >
-                    🔄 Grant & Retry Camera
-                  </button>
-                </div>
-              )}
-              {cameraStatus === "unsupported" && (
-                <div className="relative z-10 text-center p-6 bg-black/85 rounded-2xl max-w-xs border border-line">
-                  <span className="text-3xl">📷</span>
-                  <p className="text-xs font-bold text-white mt-2">Camera scanner unavailable</p>
-                  <p className="text-[11px] text-muted mt-1">Please enter UPI ID below to pay.</p>
-                </div>
-              )}
-            </div>
-
-            <style>{`
-              @keyframes scanLaserLine {
-                0% { top: 4%; opacity: 0.7; }
-                50% { top: 94%; opacity: 1; }
-                100% { top: 4%; opacity: 0.7; }
-              }
-            `}</style>
-
-            {/* Upload QR Code from Gallery */}
-            <div className="mb-4">
-              <input
-                type="file"
-                ref={fileInputRef}
-                accept="image/*"
-                className="hidden"
-                onChange={handleQrImageUpload}
-              />
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingQr}
-                className="w-full py-3 px-4 rounded-2xl bg-[#1D1917] border border-accent/40 hover:border-accent flex items-center justify-center gap-2.5 text-textLight font-semibold text-xs tracking-wide transition-all active:scale-[0.98] shadow-sm hover:shadow-orange-500/10 cursor-pointer"
-              >
-                <span className="text-base">{uploadingQr ? "⏳" : "🖼️"}</span>
-                <span>{uploadingQr ? "Scanning QR Code…" : "Upload QR Code from Gallery"}</span>
-              </button>
-            </div>
-
-            {/* Manual UPI ID Card */}
+            {/* Dedicated Manual UPI ID Form */}
             <form onSubmit={handleResolveSubmit}>
-              <Card className="p-4 sm:p-5 mb-4 border-accent/[.2]">
-                <p className="text-muted text-[11px] tracking-wide mb-2 uppercase font-bold">Pay to (UPI ID)</p>
+              <Card className="p-5 mb-4 border-accent/[.2] shadow-lg">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center text-lg">
+                    👤
+                  </div>
+                  <div>
+                    <p className="text-textLight text-sm font-bold">Pay to (UPI ID)</p>
+                    <p className="text-muted text-[11px]">Enter UPI ID, RenoPay handle, or mobile number</p>
+                  </div>
+                </div>
+
                 <input
-                  placeholder="e.g. merchant@paytm or user@renopay"
+                  placeholder="anyone@renopay"
                   value={vpa}
                   onChange={(e) => setVpa(e.target.value)}
+                  autoFocus
                 />
                 {err && <p className="text-danger text-xs mt-2">{err}</p>}
-                <div className="flex items-center gap-2 mt-2 text-xs text-muted flex-wrap">
-                  <span>Try:</span>
-                  <button type="button" className="text-accent hover:underline cursor-pointer" onClick={() => { setVpa("praveen@renopay"); resolveVpa("praveen@renopay"); }}>praveen@renopay</button>
-                  <span>or</span>
-                  <button type="button" className="text-accent hover:underline cursor-pointer" onClick={() => { setVpa("groceries@paytm"); resolveVpa("groceries@paytm", "City Supermarket"); }}>groceries@paytm</button>
+
+                <div className="flex items-center gap-2 mt-3 text-xs text-muted flex-wrap">
+                  <span className="font-semibold">Quick suggestion:</span>
+                  <button
+                    type="button"
+                    className="text-accent hover:underline cursor-pointer bg-accent/10 px-2 py-0.5 rounded-md border border-accent/20"
+                    onClick={() => { setVpa("praveen@renopay"); resolveVpa("praveen@renopay"); }}
+                  >
+                    praveen@renopay
+                  </button>
+                  <button
+                    type="button"
+                    className="text-accent hover:underline cursor-pointer bg-accent/10 px-2 py-0.5 rounded-md border border-accent/20"
+                    onClick={() => { setVpa("groceries@paytm"); resolveVpa("groceries@paytm", "City Supermarket"); }}
+                  >
+                    groceries@paytm
+                  </button>
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full mt-4 py-3.5 px-5 rounded-2xl bg-gradient-to-r from-accent to-[#e0560a] hover:from-accent/90 hover:to-[#e0560a]/90 active:scale-[0.98] text-white font-extrabold text-sm shadow-lg shadow-accent/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  className="w-full mt-5 py-3.5 px-5 rounded-2xl bg-gradient-to-r from-accent to-[#e0560a] hover:from-accent/90 hover:to-[#e0560a]/90 active:scale-[0.98] text-white font-extrabold text-sm shadow-lg shadow-accent/25 flex items-center justify-center gap-2 transition-all cursor-pointer"
                 >
-                  <span>Proceed to Pay</span>
-                  <span className="text-base">→</span>
+                  <span>Find & Pay →</span>
                 </button>
               </Card>
             </form>
+
+            {/* Shortcut to Scanner if user wants camera instead */}
+            <div className="p-4 rounded-2xl border border-line bg-card/40 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">📷</span>
+                <div>
+                  <p className="text-xs font-bold text-textLight">Have a QR Code?</p>
+                  <p className="text-[11px] text-muted">Scan camera or upload QR image</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => onNavigate ? onNavigate("scan", { mode: "camera" }) : onBack()}
+                className="px-3.5 py-1.5 rounded-xl bg-accent/15 border border-accent/30 text-accent font-bold text-xs hover:bg-accent/25 transition-all cursor-pointer"
+              >
+                Open Scanner →
+              </button>
+            </div>
           </div>
         )}
 
@@ -620,7 +415,7 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
                       disabled={downloadingReceipt || viewingReceipt}
                       className="btn bg-accent text-white shadow-accentGlow hover:brightness-110 px-3.5 py-2 rounded-xl text-xs font-bold inline-flex items-center gap-1.5 transition-all cursor-pointer"
                     >
-                      ⬇ {downloadingReceipt ? "Generating..." : "Download Receipt"}
+                      ⬇ {downloadingReceipt ? "Generating..." : "Download Receipt (PDF)"}
                     </button>
                   </div>
                   {downloadError && <p className="text-danger text-xs mt-1">{downloadError}</p>}
