@@ -48,14 +48,13 @@ jobs:
       # ── 4. Android SDK ───────────────────────────────────────────────────
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
-
-      - name: Install Android SDK Components
-        run: |
-          yes | sdkmanager --licenses 2>/dev/null || true
-          sdkmanager \
-            "platforms;android-35" \
-            "build-tools;35.0.0" \
-            "platform-tools"
+        with:
+          cmdline-tools-version: 12266719
+          accept-android-sdk-licenses: true
+          packages: |
+            platform-tools
+            platforms;android-35
+            build-tools;35.0.0
 
       # ── 5. Gradle cache ──────────────────────────────────────────────────
       - name: Cache Gradle Files
