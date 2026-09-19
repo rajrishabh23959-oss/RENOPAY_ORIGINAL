@@ -164,6 +164,17 @@ export const LiteAPI = {
   // Spending Lite balance goes through PaymentAPI.sendMoney with use_upi_lite: true
 };
 
+// ---------- Gift Cards ----------
+export const GiftCardAPI = {
+  create: (payload) => http.post("/gift-cards/create", payload).then((r) => r.data),
+  claim: (code) => http.post("/gift-cards/claim", { code }).then((r) => r.data),
+  myCards: () => http.get("/gift-cards/my-cards").then((r) => r.data),
+  downloadPdf: async (cardId) => {
+    const r = await http.get(`/gift-cards/${cardId}/pdf`, { responseType: "blob" });
+    return r.data;
+  },
+};
+
 // ---------- Analytics ----------
 export const AnalyticsAPI = {
   budgetPrediction: () => http.get("/analytics/budget-prediction").then((r) => r.data),

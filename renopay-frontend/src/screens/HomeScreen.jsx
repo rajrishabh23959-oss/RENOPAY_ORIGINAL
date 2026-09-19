@@ -31,7 +31,7 @@ const QUICK_ACTIONS = [
   { icon: iconSplit, l: "Split", s: "split" },
   { icon: iconSubs, l: "Subs", s: "subscriptions" },
   { icon: iconSavings, l: "Goals", s: "savings" },
-  { icon: iconAddMoney, l: "Add ₹", s: "addmoney" },
+  { icon: iconAddMoney, l: "Gift Card", s: "giftcard" },
   { icon: iconExpenses, l: "Tracker", s: "expenses" },
   { icon: iconRewards, l: "Rewards", s: "rewards" },
   { icon: iconUpilite, l: "UPI Lite", s: "upilite" },

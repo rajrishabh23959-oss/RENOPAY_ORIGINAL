@@ -26,6 +26,7 @@ import { TravelScreen } from "./screens/TravelScreen";
 import { LoansScreen } from "./screens/LoansScreen";
 import { RechargeScreen } from "./screens/RechargeScreen";
 import { MutualFundsScreen } from "./screens/MutualFundsScreen";
+import { GiftCardScreen } from "./screens/GiftCardScreen";
 
 function AppShell() {
   const { profile, loading } = useAuth();
@@ -80,6 +81,7 @@ function AppShell() {
       )}
       {screen === "expenses"      && <ExpensesScreen onBack={() => go("home")} />}
       {screen === "history"       && <HistoryScreen onBack={() => go("home")} />}
+      {screen === "giftcard"      && <GiftCardScreen onBack={() => go("home")} />}
       {screen === "addmoney"      && <AddMoneyScreen onBack={() => go("home")} />}
       {screen === "qr"            && <QRScreen onBack={() => go("home")} />}
       {screen === "scan"          && (
