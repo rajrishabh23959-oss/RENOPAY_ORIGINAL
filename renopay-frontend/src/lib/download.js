@@ -68,7 +68,31 @@ export async function downloadOrShareFile(fileOrData, filename = "file.pdf", mim
     }
   }
 
-  // 2. Web Share API (native on mobile browsers that support sharing files)
+  // 2. Standard Direct Browser Blob Download (Saves to device Downloads)
+  try {
+    const blobToDownload = fileBlob || (typeof fileOrData === "string" && !fileOrData.startsWith("data:") ? new Blob([fileOrData], { type: mimeType }) : null);
+    if (blobToDownload) {
+      const url = URL.createObjectURL(blobToDownload);
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+      a.download = filename;
+      a.target = "_blank";
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        try {
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+        } catch (_) {}
+      }, 3000);
+      return true;
+    }
+  } catch (err) {
+    console.warn("Standard anchor download failed, trying web share:", err);
+  }
+
+  // 3. Web Share API Fallback
   if (fileBlob) {
     try {
       const file = new File([fileBlob], filename, { type: mimeType });
@@ -83,28 +107,11 @@ export async function downloadOrShareFile(fileOrData, filename = "file.pdf", mim
       if (err.name === "AbortError") {
         return true; // User intentionally dismissed share sheet
       }
-      console.warn("Web Share failed, falling back:", err);
+      console.warn("Web Share failed:", err);
     }
   }
 
-  // 3. Standard Browser Blob Download
-  try {
-    const blobToDownload = fileBlob || (typeof fileOrData === "string" && !fileOrData.startsWith("data:") ? new Blob([fileOrData], { type: mimeType }) : null);
-    const url = blobToDownload ? URL.createObjectURL(blobToDownload) : fileOrData;
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      document.body.removeChild(a);
-      if (blobToDownload) URL.revokeObjectURL(url);
-    }, 1000);
-    return true;
-  } catch (err) {
-    console.error("Browser download failed:", err);
-    return false;
-  }
+  return false;
 }
 
 // Backward compatibility alias for PDF downloads

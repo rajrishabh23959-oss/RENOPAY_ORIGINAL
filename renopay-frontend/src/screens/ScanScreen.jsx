@@ -228,6 +228,7 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
         if (rawCode) {
           // Check for RenoPay Gift Card QR voucher
           const giftMatch = rawCode.match(/RENO-GIFT-[A-Z0-9]{4}-[A-Z0-9]{4}/i) ||
+                            rawCode.match(/[?&]claimCode=([^&\s]+)/i) ||
                             rawCode.match(/renopay:\/\/giftcard\/claim\?code=([^&\s]+)/i);
           if (giftMatch) {
             stopCamera();
@@ -309,6 +310,7 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
           setProcessingImage(false);
           if (rawCode) {
             const giftMatch = rawCode.match(/RENO-GIFT-[A-Z0-9]{4}-[A-Z0-9]{4}/i) ||
+                              rawCode.match(/[?&]claimCode=([^&\s]+)/i) ||
                               rawCode.match(/renopay:\/\/giftcard\/claim\?code=([^&\s]+)/i);
             if (giftMatch) {
               const code = (giftMatch[1] || giftMatch[0]).toUpperCase();

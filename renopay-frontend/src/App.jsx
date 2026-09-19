@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { Nav } from "./components/Nav";
 import { AIAssistant } from "./components/AIAssistant";
@@ -39,6 +39,26 @@ function AppShell() {
   const [scanInitialMode, setScanInitialMode] = useState("camera");
   const [giftCardPrefillCode, setGiftCardPrefillCode] = useState("");
 
+  // Universal Deep Link & QR Code Scanner detection (?claimCode=RENO-GIFT-...)
+  useEffect(() => {
+    try {
+      if (typeof window !== "undefined" && window.location.search) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const code =
+          urlParams.get("claimCode") ||
+          urlParams.get("giftCode") ||
+          urlParams.get("giftcard") ||
+          urlParams.get("code");
+        if (code && code.trim()) {
+          const cleanCode = code.trim().toUpperCase();
+          setGiftCardPrefillCode(cleanCode);
+          setScreen("giftcard");
+          setTab("home");
+        }
+      }
+    } catch (_) {}
+  }, []);
+
   const go = (s, data) => {
     if (["home", "pay", "expenses", "history", "profile", "accounting"].includes(s)) setTab(s);
     setPayPrefill(s === "pay" ? data ?? null : null);
@@ -60,13 +80,23 @@ function AppShell() {
     setScreen(s);
   };
 
-
   if (loading) {
     return <div className="min-h-screen bg-bg flex items-center justify-center text-muted text-sm">Loading...</div>;
   }
 
   if (!profile) {
-    return <LoginScreen onDone={() => { setScreen("home"); setTab("home"); }} />;
+    return (
+      <LoginScreen
+        onDone={() => {
+          if (giftCardPrefillCode) {
+            setScreen("giftcard");
+          } else {
+            setScreen("home");
+            setTab("home");
+          }
+        }}
+      />
+    );
   }
 
   return (

@@ -3,9 +3,11 @@ import { createPortal } from "react-dom";
 import * as pdfjsLib from "pdfjs-dist";
 import { downloadOrSharePdf } from "../lib/download";
 
-// Configure pdfjs worker
+import pdfWorker from "pdfjs-dist/build/pdf.worker.min.js?url";
+
+// Configure pdfjs worker locally
 try {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
+  pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 } catch (e) {
   console.warn("Could not set PDF worker URL", e);
 }
@@ -129,7 +131,15 @@ export function PdfPreviewModal({ isOpen, onClose, pdfBlob, title = "PDF Preview
 
   const handleOpenNewTab = () => {
     if (blobUrl) {
-      window.open(blobUrl, "_blank");
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        try { document.body.removeChild(a); } catch (_) {}
+      }, 500);
     }
   };
 

@@ -77,10 +77,27 @@ describe('GiftCardScreen', () => {
     });
   });
 
-  it('opens PaymentMethodModal with NoteSlider on proceed to pay', async () => {
+  it('opens PaymentMethodModal with NoteSlider on proceed to pay and renders generated card without luxury voucher text', async () => {
+    GiftCardAPI.create.mockResolvedValueOnce({
+      id: 1,
+      card_code: 'RENO-GIFT-NQQP-S2WF',
+      amount: 500,
+      recipient_name: 'Priya',
+      status: 'active',
+      created_at: new Date().toISOString(),
+    });
+
     render(<GiftCardScreen onBack={() => {}} />);
     fireEvent.click(screen.getByText(/Proceed to Pay/i));
 
     expect(screen.getByTestId('payment-method-modal')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Confirm Advance Pay'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Gift Card Generated!')).toBeInTheDocument();
+      expect(screen.getByText('RENO-GIFT-NQQP-S2WF')).toBeInTheDocument();
+      expect(screen.getByText('SCAN TO CLAIM')).toBeInTheDocument();
+      expect(screen.queryByText(/LUXURY VOUCHER/i)).not.toBeInTheDocument();
+    });
   });
 });

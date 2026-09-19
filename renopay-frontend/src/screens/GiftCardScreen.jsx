@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import QRCode from "qrcode";
 import { useAuth } from "../context/AuthContext";
 import { GiftCardAPI } from "../lib/api";
 import { fmt } from "../lib/format";
@@ -51,6 +52,28 @@ export function GiftCardScreen({ onBack, initialClaimCode = "", onScanQr }) {
 
   // Copy Feedback
   const [copiedCode, setCopiedCode] = useState(false);
+
+  // Dynamic QR Code Data URL
+  const [qrDataUrl, setQrDataUrl] = useState("");
+
+  useEffect(() => {
+    if (createdCard?.card_code) {
+      const origin =
+        typeof window !== "undefined" && window.location.origin
+          ? window.location.origin
+          : "https://renopay-original.vercel.app";
+      const claimUrl = `${origin}/?claimCode=${createdCard.card_code}`;
+      QRCode.toDataURL(claimUrl, {
+        width: 180,
+        margin: 1,
+        color: { dark: "#000000", light: "#ffffff" },
+      })
+        .then(setQrDataUrl)
+        .catch(() => {});
+    } else {
+      setQrDataUrl("");
+    }
+  }, [createdCard]);
 
   useEffect(() => {
     if (initialClaimCode) {
@@ -384,97 +407,97 @@ export function GiftCardScreen({ onBack, initialClaimCode = "", onScanQr }) {
                 </p>
 
                 {/* Voucher Card Result in Emerald & Gold (with Scanner on Bottom Left, Recipient in Center, Wax Seal on Right) */}
-                <div className="my-5 rounded-[22px] border-2 border-[#c9a44c] p-[3px] shadow-2xl text-left bg-gradient-to-b from-[#123824] via-[#092b1b] to-[#051a10]">
-                  <div className="border border-[#e0be6c]/70 rounded-[18px] p-5 relative">
-                    {/* Top Row: Ribbon Bow, Crest & FROM */}
+                <div className="my-5 rounded-[22px] border-2 border-[#c9a44c] p-[3px] shadow-2xl text-left bg-gradient-to-b from-[#092617] via-[#051a10] to-[#020d08]">
+                  <div className="border border-[#e0be6c]/60 rounded-[18px] p-4 sm:p-5 relative">
+                    {/* Top Row: Brand, Sender & Official Status */}
                     <div className="flex justify-between items-start">
-                      <div>
-                        <span className="text-[9px] font-bold text-[#a1d1b5] tracking-widest uppercase">⚡ RENOPAY</span>
-                        <div className="text-[10px] font-extrabold text-[#ffd875]">LUXURY VOUCHER</div>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-bold text-[#a1d1b5] tracking-widest uppercase">⚡ RENOPAY</span>
+                        <span className="text-[9px] font-extrabold text-[#ffd875] tracking-wider uppercase">GIFT CARD</span>
                       </div>
 
-                      <div className="text-center -mt-1">
-                        <div className="text-[#ffd875] text-lg leading-none">📌</div>
-                        <div className="text-[10px] font-bold text-[#c9a44c] tracking-[4px] uppercase mt-0.5">
+                      <div className="text-center px-1">
+                        <div className="text-[9px] font-bold text-[#c9a44c] tracking-[4px] uppercase">
                           F R O M
                         </div>
-                        <div className="font-serif text-[20px] font-bold text-[#f5d78a] tracking-wide leading-tight mt-0.5 drop-shadow">
+                        <div className="font-serif text-[18px] sm:text-[20px] font-bold text-[#f5d78a] tracking-wide leading-tight mt-0.5 drop-shadow">
                           {senderDisplayName}
                         </div>
-                        <div className="h-[1px] w-28 bg-[#c9a44c]/70 mx-auto my-1.5"></div>
+                        <div className="h-[1px] w-24 bg-gradient-to-r from-transparent via-[#c9a44c] to-transparent mx-auto mt-1"></div>
                       </div>
 
                       <div className="text-right">
-                        <div className="inline-block text-2xl filter drop-shadow-[0_2px_6px_rgba(255,215,0,0.5)]">
-                          🎀
-                        </div>
+                        <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-[#ffd875] bg-[#031c10] border border-[#c9a44c]/60 px-2 py-0.5 rounded-full shadow-sm">
+                          ✦ OFFICIAL
+                        </span>
                       </div>
                     </div>
 
                     {/* Middle Row: Gift Card ID & Value */}
                     <div className="my-3 text-center">
-                      <div className="text-[10px] font-bold text-[#c9a44c] tracking-[3px] uppercase">
+                      <div className="text-[9px] font-bold text-[#c9a44c] tracking-[3px] uppercase mb-1">
                         G I F T &nbsp; C A R D &nbsp; I D -
                       </div>
-                      <div className="flex items-center justify-between bg-black/60 p-2.5 rounded-xl border border-[#c9a44c]/40 my-2">
-                        <span className="font-mono text-lg font-extrabold text-[#ffe08a] tracking-wider select-all">
+                      <div className="flex items-center justify-between bg-black/70 px-3 py-2 rounded-xl border border-[#c9a44c]/50 my-1.5 shadow-inner">
+                        <span className="font-mono text-sm sm:text-base font-black text-[#ffe08a] tracking-wider select-all whitespace-nowrap overflow-x-auto">
                           {createdCard.card_code}
                         </span>
                         <button
                           type="button"
-                          className="px-2.5 py-1 text-xs font-bold rounded-lg bg-[#c9a44c] text-black hover:bg-[#e0be6c] active:scale-95 transition-all cursor-pointer"
+                          className="ml-2 px-2.5 py-1 text-xs font-bold rounded-lg bg-[#c9a44c] text-black hover:bg-[#e0be6c] active:scale-95 transition-all cursor-pointer shrink-0"
                           onClick={() => handleCopy(createdCard.card_code)}
                         >
                           {copiedCode ? "✓ Copied" : "Copy"}
                         </button>
                       </div>
 
-                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-[#c9a44c]/40">
+                      <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-black/40 border border-[#c9a44c]/40 mt-1">
                         <span className="text-[10px] text-[#a1d1b5] uppercase font-bold tracking-wider">VALUE:</span>
-                        <span className="font-mono text-xl font-extrabold text-[#ffd875]">
+                        <span className="font-mono text-lg font-extrabold text-[#ffd875]">
                           ₹{createdCard.amount}
                         </span>
                       </div>
+                      {createdCard.message && (
+                        <p className="text-xs text-[#d1e7dd] italic mt-1.5 font-serif">
+                          &ldquo;{createdCard.message}&rdquo;
+                        </p>
+                      )}
                     </div>
 
-                    {/* Bottom Row: Scanner on Left, Recipient in Center, RP Wax Seal on Right */}
+                    {/* Bottom Row: Real Scanner on Left, Recipient in Center, RP Wax Seal on Right */}
                     <div className="flex justify-between items-end pt-3 border-t border-[#c9a44c]/30">
-                      {/* Left: Scanner Box */}
+                      {/* Left: Real Scan-able QR Code */}
                       <div className="flex flex-col items-center">
-                        <div className="w-[54px] h-[54px] p-1 bg-white rounded-lg border-2 border-[#c9a44c] shadow flex items-center justify-center">
-                          <div className="w-full h-full bg-black flex flex-col justify-between p-1 rounded">
-                            <div className="flex justify-between">
-                              <div className="w-2 h-2 bg-white"></div>
-                              <div className="w-2 h-2 bg-white"></div>
+                        <div className="w-[60px] h-[60px] p-0.5 bg-white rounded-lg border-2 border-[#c9a44c] shadow flex items-center justify-center overflow-hidden">
+                          {qrDataUrl ? (
+                            <img src={qrDataUrl} alt="Claim QR" className="w-full h-full object-contain" />
+                          ) : (
+                            <div className="w-full h-full bg-white flex items-center justify-center">
+                              <div className="w-4 h-4 border-2 border-[#c9a44c] border-t-transparent rounded-full animate-spin"></div>
                             </div>
-                            <div className="text-[5.5px] text-white font-mono text-center">QR</div>
-                            <div className="flex justify-between">
-                              <div className="w-2 h-2 bg-white"></div>
-                              <div className="w-1.5 h-1.5 bg-white"></div>
-                            </div>
-                          </div>
+                          )}
                         </div>
-                        <span className="text-[7px] font-extrabold text-[#ffd875] tracking-wider mt-1 uppercase">
+                        <span className="text-[7.5px] font-extrabold text-[#ffd875] tracking-wider mt-1 uppercase whitespace-nowrap">
                           SCAN TO CLAIM
                         </span>
                       </div>
 
                       {/* Center: Recipient Name */}
-                      <div className="text-center px-2 flex-1 max-w-[150px]">
-                        <div className="font-serif text-xs font-bold text-[#f5d78a]">
+                      <div className="text-center px-2 flex-1 min-w-0">
+                        <div className="font-serif text-xs font-bold text-[#f5d78a] truncate">
                           TO: <span className="border-b border-[#c9a44c] pb-0.5 text-white">{createdCard.recipient_name || "Valued Bearer"}</span>
                         </div>
-                        <div className="text-[8.5px] text-[#a1d1b5] mt-1">
+                        <div className="text-[8.5px] text-[#a1d1b5] mt-1 whitespace-nowrap">
                           100% Guaranteed Redeemable
                         </div>
                       </div>
 
                       {/* Right: RP Wax Seal */}
-                      <div className="flex flex-col items-center">
+                      <div className="flex flex-col items-center shrink-0">
                         <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#f0c36b] via-[#c49233] to-[#7a4f0c] border-2 border-[#fff0c2] shadow flex items-center justify-center font-serif text-base font-black text-[#3d2402]">
                           RP
                         </div>
-                        <span className="text-[7px] font-bold text-[#c9a44c] mt-1 uppercase">
+                        <span className="text-[7.5px] font-bold text-[#c9a44c] mt-1 uppercase tracking-wider">
                           SEAL
                         </span>
                       </div>
