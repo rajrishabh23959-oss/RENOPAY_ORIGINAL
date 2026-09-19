@@ -395,42 +395,111 @@
 /* ── Light / Day Mode Overrides ─────────────────── */
 [data-theme="light"] .cbc-card {
   background: #FFFFFF;
-  border-color: #E5E7EB;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border-color: #E2E8F0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
 }
 [data-theme="light"] .cbc-card:hover {
   border-color: rgba(255, 106, 26, 0.4);
 }
 [data-theme="light"] .cbc-toggle-bar {
-  background: #F3F4F6;
-  border-bottom-color: #E5E7EB;
+  background: #F1F5F9;
+  border-bottom-color: #E2E8F0;
 }
 [data-theme="light"] .cbc-toggle-tab {
-  color: #6B7280;
+  color: #64748B;
 }
 [data-theme="light"] .cbc-toggle-tab:hover:not(.active) {
-  color: #111827;
+  color: #0F172A;
   background: rgba(0, 0, 0, 0.04);
+}
+[data-theme="light"] .cbc-toggle-tab.active {
+  background: linear-gradient(135deg, #FF6A1A 0%, #D9480F 100%);
+  color: #FFFFFF;
+  box-shadow: 0 2px 10px rgba(255, 106, 26, 0.3);
+}
+[data-theme="light"] .cbc-bank-badge {
+  color: #475569;
+}
+[data-theme="light"] .cbc-vpa-pill {
+  background: #F1F5F9;
+  color: #334155;
+  border-color: #E2E8F0;
+}
+[data-theme="light"] .cbc-balance-caption {
+  color: #64748B;
+  font-weight: 700;
+}
+[data-theme="light"] .cbc-eye-toggle {
+  color: #64748B;
+}
+[data-theme="light"] .cbc-eye-toggle:hover {
+  color: #0F172A;
+}
+[data-theme="light"] .cbc-amount-display {
+  color: #0F172A !important;
+}
+[data-theme="light"] .cbc-normal-footer {
+  border-top-color: #E2E8F0;
+}
+[data-theme="light"] .cbc-link-btn {
+  color: #FF6A1A;
+}
+[data-theme="light"] .cbc-adv-title {
+  color: #0F172A;
+}
+[data-theme="light"] .cbc-adv-total-chip {
+  background: rgba(255, 106, 26, 0.1);
+  border-color: rgba(255, 106, 26, 0.3);
+  color: #EA580C;
+}
+[data-theme="light"] .cbc-table-section-title {
+  color: #64748B;
+}
+[data-theme="light"] .cbc-table-head {
+  border-bottom-color: #E2E8F0;
+  color: #64748B;
+}
+[data-theme="light"] .cbc-row:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+[data-theme="light"] .cbc-denom-name {
+  color: #0F172A;
+}
+[data-theme="light"] .cbc-cell-count {
+  color: #334155;
+}
+[data-theme="light"] .cbc-cell-total {
+  color: #0F172A;
+}
+[data-theme="light"] .cbc-total-row {
+  background: rgba(255, 106, 26, 0.08);
+  border-color: rgba(255, 106, 26, 0.25);
+}
+[data-theme="light"] .cbc-total-label {
+  color: #EA580C;
+}
+[data-theme="light"] .cbc-total-amount {
+  color: #EA580C;
 }
 [data-theme="light"] .cbc-balance-sub,
 [data-theme="light"] .cbc-vpa-label,
 [data-theme="light"] .cbc-denom-note-count {
-  color: #6B7280;
+  color: #64748B;
 }
 [data-theme="light"] .cbc-denom-note-label,
 [data-theme="light"] .cbc-denom-total-val,
 [data-theme="light"] .cbc-denom-cat-title {
-  color: #111827;
+  color: #0F172A;
 }
 [data-theme="light"] .cbc-denom-row {
-  border-bottom-color: #F3F4F6;
+  border-bottom-color: #F1F5F9;
 }
 [data-theme="light"] .cbc-chip {
-  background: #F3F4F6;
-  border-color: #E5E7EB;
-  color: #111827;
+  background: #F1F5F9;
+  border-color: #E2E8F0;
+  color: #0F172A;
 }
 [data-theme="light"] .cbc-chip:hover {
-  background: #E5E7EB;
+  background: #E2E8F0;
 }
 

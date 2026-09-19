@@ -19,17 +19,17 @@
 }
 
 [data-theme="light"] {
-  --color-bg: 246, 247, 249;
+  --color-bg: 248, 250, 252;
   --color-surf: 255, 255, 255;
   --color-card: 255, 255, 255;
-  --color-line: 229, 231, 235;
-  --color-text: 75, 85, 99;
-  --color-textLight: 17, 24, 39;
-  --color-muted: 107, 114, 128;
+  --color-line: 226, 232, 240;
+  --color-text: 51, 65, 85;
+  --color-textLight: 15, 23, 42;
+  --color-muted: 100, 116, 139;
   --nav-pill-top: #FFFFFF;
-  --nav-pill-bottom: #F3F4F6;
-  --nav-pill-stroke: #E5E7EB;
-  --nav-inactive: #6B7280;
+  --nav-pill-bottom: #F8FAFC;
+  --nav-pill-stroke: #E2E8F0;
+  --nav-inactive: #64748B;
 }
 
 * {
@@ -89,13 +89,23 @@ input[type="date"]::-webkit-calendar-picker-indicator:hover {
 
 /* Light mode card elevation & contrast enhancements */
 [data-theme="light"] .bg-card {
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 12px -1px rgba(15, 23, 42, 0.06), 0 1px 4px -1px rgba(15, 23, 42, 0.04);
 }
 [data-theme="light"] .glow-divider {
-  background: #E5E7EB;
+  background: #E2E8F0;
 }
 [data-theme="light"] .glow-hero::before {
-  background: radial-gradient(circle, rgba(255, 163, 82, 0.20) 0%, rgba(255, 106, 26, 0.10) 35%, transparent 75%);
+  background: radial-gradient(circle, rgba(255, 163, 82, 0.18) 0%, rgba(255, 106, 26, 0.08) 35%, transparent 75%);
+}
+
+/* Day mode safeguard: Ensure non-button text-white inside light cards renders as dark slate */
+[data-theme="light"] .bg-card h1.text-white,
+[data-theme="light"] .bg-card h2.text-white,
+[data-theme="light"] .bg-card h3.text-white,
+[data-theme="light"] .bg-card h4.text-white,
+[data-theme="light"] .bg-card p.text-white,
+[data-theme="light"] .bg-card span.text-white:not([class*="bg-"]):not([class*="shadow-"]) {
+  color: #0F172A;
 }
 
 .btn { cursor: pointer; border: none; outline: none; transition: all 0.18s; }

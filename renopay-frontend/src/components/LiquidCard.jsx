@@ -98,16 +98,16 @@ export function LiquidCard({ balance, maxBalance = 25000, vpa, bank, onToggle, s
         <div className="relative z-10 h-full flex flex-col justify-between px-[22px] py-[18px]">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-[#5C564F] text-[10px] tracking-[2.5px] font-semibold">AVAILABLE BALANCE</p>
+              <p className="text-muted text-[10px] tracking-[2.5px] font-semibold">AVAILABLE BALANCE</p>
               <div className="flex items-center gap-2.5 mt-1.5">
                 <p
-                  className="font-mono text-[30px] font-bold leading-none"
-                  style={{ color: "#F5F3F0", textShadow: "0 2px 12px rgba(0,0,0,.5)" }}
+                  className="font-mono text-[30px] font-bold leading-none text-textLight"
+                  style={{ textShadow: "0 2px 12px rgba(0,0,0,.15)" }}
                 >
                   {show ? fmt(balance) : "₹ ••••••"}
                 </p>
                 <button
-                  className="btn bg-white/10 border border-white/15 rounded-full w-7 h-7 text-[13px] flex items-center justify-center backdrop-blur-sm"
+                  className="btn bg-card border border-line rounded-full w-7 h-7 text-[13px] flex items-center justify-center backdrop-blur-sm"
                   onClick={onToggle}
                 >
                   {show ? "🙈" : "👁"}
@@ -121,16 +121,16 @@ export function LiquidCard({ balance, maxBalance = 25000, vpa, bank, onToggle, s
               >
                 {label}
               </div>
-              <p className="text-[#5C564F] text-[9px]">{animPct.toFixed(0)}% of max</p>
+              <p className="text-muted text-[9px]">{animPct.toFixed(0)}% of max</p>
             </div>
           </div>
 
           <div>
             <div className="flex items-center gap-1.5 mb-0.5">
               <div className="w-1.5 h-1.5 rounded-full" style={{ background: waveFill }} />
-              <p className="text-[#9A938C] text-[11px] font-medium tracking-wide">{vpa}</p>
+              <p className="text-text text-[11px] font-medium tracking-wide">{vpa}</p>
             </div>
-            <p className="text-[#5C564F] text-[10px]">{bank}</p>
+            <p className="text-muted text-[10px]">{bank}</p>
           </div>
         </div>
       </div>

@@ -232,12 +232,12 @@ export function HomeScreen({ onNavigate }) {
           </div>
         )}
 
-        <Card className="p-[18px]" style={{ border: `1px solid ${budgetPct > 80 ? "#ff3d6033" : "#2A2320"}` }}>
+        <Card className={`p-[18px] ${budgetPct > 80 ? "border-danger/40" : "border-line"}`}>
           <div className="flex justify-between mb-2.5">
             <p className="text-[13px] font-bold text-textLight">Monthly Budget</p>
             <p className="font-mono text-[11px]" style={{ color: budgetPct > 80 ? "#ff3d60" : budgetPct > 60 ? "#FFA000" : "#22C55E" }}>{fmt(spent)} / {fmt(BUDGET)}</p>
           </div>
-          <div className="bg-bg rounded-lg h-2 overflow-hidden">
+          <div className="bg-line/60 dark:bg-bg rounded-lg h-2 overflow-hidden">
             <div className="h-full rounded-lg transition-[width] duration-700" style={{ width: `${budgetPct}%`, background: budgetPct > 80 ? "#ff3d60" : budgetPct > 60 ? "#FFA000" : "#22C55E" }} />
           </div>
           <p className="text-muted text-[11px] mt-[7px]">
@@ -263,7 +263,7 @@ export function HomeScreen({ onNavigate }) {
                   className="w-full h-full object-contain filter drop-shadow"
                 />
               </div>
-              <span className="text-[11px] text-[#E0D8D0] font-medium tracking-tight mt-1.5 text-center truncate w-full group-hover:text-accent transition-colors">
+              <span className="text-[11px] text-textLight font-semibold tracking-tight mt-1.5 text-center truncate w-full group-hover:text-accent transition-colors">
                 {a.l}
               </span>
             </button>

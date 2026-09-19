@@ -118,19 +118,19 @@ export function UpiPinModal({
       {/* Container */}
       <div
         ref={modalRef}
-        className={`w-full max-w-[380px] bg-[#121110] border border-[#2A2320] rounded-[24px] overflow-hidden shadow-2xl transition-all ${
+        className={`w-full max-w-[380px] bg-card border border-line text-textLight rounded-[24px] overflow-hidden shadow-2xl transition-all ${
           shake ? "animate-shake" : ""
         }`}
         style={{
-          boxShadow: "0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 106, 26, 0.15)",
+          boxShadow: "0 20px 50px rgba(0, 0, 0, 0.4), 0 0 30px rgba(255, 106, 26, 0.12)",
         }}
       >
         {/* Header */}
-        <div className="relative px-6 pt-6 pb-4 border-b border-[#2A2320]/80 bg-gradient-to-b from-[#1C1815] to-[#121110]">
+        <div className="relative px-6 pt-6 pb-4 border-b border-line bg-surf">
           <button
             onClick={onClose}
             type="button"
-            className="absolute top-5 right-5 w-8 h-8 rounded-full bg-[#201B17] border border-[#302823] text-muted hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+            className="absolute top-5 right-5 w-8 h-8 rounded-full bg-card border border-line text-muted hover:text-textLight flex items-center justify-center transition-colors cursor-pointer"
           >
             ✕
           </button>
@@ -140,7 +140,7 @@ export function UpiPinModal({
             <span className="text-[13px] font-bold text-accent tracking-wide">{bank}</span>
           </div>
 
-          <h3 className="text-[18px] font-extrabold text-white">Enter UPI PIN</h3>
+          <h3 className="text-[18px] font-extrabold text-textLight">Enter UPI PIN</h3>
           <p className="text-[11px] text-muted mt-0.5">
             Authenticate to view available balance & cash breakdown
           </p>
@@ -160,7 +160,7 @@ export function UpiPinModal({
                   className={`w-4 h-4 rounded-full transition-all duration-200 ${
                     isFilled
                       ? "bg-accent scale-110 shadow-[0_0_12px_rgba(255,106,26,0.7)]"
-                      : "bg-[#2A2320] border border-[#3A322D]"
+                      : "bg-line/70 border border-line"
                   }`}
                 />
               );
@@ -183,7 +183,7 @@ export function UpiPinModal({
         </div>
 
         {/* On-screen Keypad */}
-        <div className="px-6 pb-6 pt-1 bg-[#151210]/60 border-t border-[#2A2320]/60">
+        <div className="px-6 pb-6 pt-1 bg-surf/60 border-t border-line">
           <div className="grid grid-cols-3 gap-2.5">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
               <button
@@ -191,7 +191,7 @@ export function UpiPinModal({
                 type="button"
                 disabled={loading}
                 onClick={() => handleDigit(String(num))}
-                className="h-12 rounded-xl bg-[#1D1916] hover:bg-[#28221D] active:scale-95 border border-[#2D2622] text-white text-[18px] font-bold transition-all flex items-center justify-center shadow-sm cursor-pointer disabled:opacity-40"
+                className="h-12 rounded-xl bg-card hover:bg-surf active:scale-95 border border-line text-textLight text-[18px] font-bold transition-all flex items-center justify-center shadow-sm cursor-pointer disabled:opacity-40"
               >
                 {num}
               </button>
@@ -202,7 +202,7 @@ export function UpiPinModal({
               type="button"
               disabled={loading || pin.length === 0}
               onClick={handleBackspace}
-              className="h-12 rounded-xl bg-[#1A1614] hover:bg-[#241F1B] active:scale-95 border border-[#2D2622] text-warn hover:text-white text-[18px] font-bold transition-all flex items-center justify-center cursor-pointer disabled:opacity-40"
+              className="h-12 rounded-xl bg-card hover:bg-surf active:scale-95 border border-line text-warn hover:text-textLight text-[18px] font-bold transition-all flex items-center justify-center cursor-pointer disabled:opacity-40"
               aria-label="Delete digit"
             >
               ✕
@@ -213,7 +213,7 @@ export function UpiPinModal({
               type="button"
               disabled={loading}
               onClick={() => handleDigit("0")}
-              className="h-12 rounded-xl bg-[#1D1916] hover:bg-[#28221D] active:scale-95 border border-[#2D2622] text-white text-[18px] font-bold transition-all flex items-center justify-center shadow-sm cursor-pointer disabled:opacity-40"
+              className="h-12 rounded-xl bg-card hover:bg-surf active:scale-95 border border-line text-textLight text-[18px] font-bold transition-all flex items-center justify-center shadow-sm cursor-pointer disabled:opacity-40"
             >
               0
             </button>
@@ -226,7 +226,7 @@ export function UpiPinModal({
               className={`h-12 rounded-xl border text-[13px] font-extrabold uppercase tracking-wider transition-all flex items-center justify-center cursor-pointer ${
                 pin.length === 6 && !loading
                   ? "bg-accent border-accent text-white shadow-accentGlow hover:brightness-110 active:scale-95 animate-pulse"
-                  : "bg-[#1A1614] border-[#2D2622] text-muted/40 cursor-not-allowed"
+                  : "bg-card border border-line text-muted/40 cursor-not-allowed"
               }`}
               aria-label="Check PIN"
             >

@@ -73,9 +73,16 @@ export function HistoryScreen({ onBack }) {
       <div className="px-[22px]">
         <div className="flex gap-2 mb-4">
           {[["all", "All"], ["debit", "Sent"], ["credit", "Received"]].map(([v, l]) => (
-            <button key={v} className="btn flex-1 py-2 rounded-[10px] text-xs font-semibold"
-                    style={{ background: filter === v ? "#FF6A1A" : "#151210", color: filter === v ? "#fff" : "#5C564F", border: `1px solid ${filter === v ? "#FF6A1A" : "#2A2320"}` }}
-                    onClick={() => setFilter(v)}>
+            <button
+              key={v}
+              type="button"
+              className={`btn flex-1 py-2.5 rounded-xl text-xs font-bold transition-all border ${
+                filter === v
+                  ? "bg-accent text-white border-accent shadow-sm scale-[1.01]"
+                  : "bg-card border-line text-muted hover:text-textLight hover:bg-surf"
+              }`}
+              onClick={() => setFilter(v)}
+            >
               {l}
             </button>
           ))}

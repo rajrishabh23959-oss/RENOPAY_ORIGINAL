@@ -22,7 +22,7 @@ export function HeartbeatGauge({ spendScore }) {
       </div>
       <div className="flex items-end gap-3">
         <svg width="170" height="92" viewBox="0 0 170 92" className="overflow-visible flex-shrink-0">
-          <path d={arcPath(-180, 0)} fill="none" stroke="#2A2320" strokeWidth="9" strokeLinecap="round" />
+          <path d={arcPath(-180, 0)} fill="none" stroke="currentColor" className="text-line" strokeWidth="9" strokeLinecap="round" />
           <path d={arcPath(-180, -108)} fill="none" stroke="#22C55E88" strokeWidth="9" strokeLinecap="round" />
           <path d={arcPath(-108, -54)} fill="none" stroke="#FFA00088" strokeWidth="9" strokeLinecap="round" />
           <path d={arcPath(-54, 0)} fill="none" stroke="#ff3d6088" strokeWidth="9" strokeLinecap="round" />

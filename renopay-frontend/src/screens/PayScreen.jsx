@@ -313,12 +313,19 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
                 <div className="mt-4 relative z-10">
                   <p className="text-muted text-[11px] tracking-wide mb-2 uppercase">Note</p>
                   <input placeholder="What's this for?" value={desc} onChange={(e) => setDesc(e.target.value)} className="mb-3" />
-                  <p className="text-muted text-[11px] tracking-wide mb-2 uppercase">Category</p>
+                  <p className="text-muted text-[11px] tracking-wide mb-2 uppercase font-semibold">Category</p>
                   <div className="flex flex-wrap gap-1.5">
                     {CATS.map((c) => (
-                      <button key={c.id} className="btn px-2.5 py-1.5 rounded-full text-[11px] font-semibold"
-                              style={{ background: category === c.id ? "#FF6A1A22" : "#151210", border: `1px solid ${category === c.id ? "#FF6A1A" : "#2A2320"}`, color: category === c.id ? "#FF6A1A" : "#5C564F" }}
-                              onClick={() => setCategory(c.id)}>
+                      <button
+                        key={c.id}
+                        type="button"
+                        className={`btn px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all border ${
+                          category === c.id
+                            ? "bg-accent/15 border-accent text-accent shadow-sm"
+                            : "bg-surf border-line text-text hover:text-textLight hover:bg-card"
+                        }`}
+                        onClick={() => setCategory(c.id)}
+                      >
                         {c.icon} {c.id}
                       </button>
                     ))}
@@ -342,14 +349,21 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
                       </button>
                     </div>
                   )}
-                  <p className="text-muted text-[11px] tracking-wide mb-2 uppercase">Note</p>
+                  <p className="text-muted text-[11px] tracking-wide mb-2 uppercase font-semibold">Note</p>
                   <input placeholder="What's this for?" value={desc} onChange={(e) => setDesc(e.target.value)} className="mb-3" />
-                  <p className="text-muted text-[11px] tracking-wide mb-2 uppercase">Category</p>
+                  <p className="text-muted text-[11px] tracking-wide mb-2 uppercase font-semibold">Category</p>
                   <div className="flex flex-wrap gap-1.5">
                     {CATS.map((c) => (
-                      <button key={c.id} className="btn px-2.5 py-1.5 rounded-full text-[11px] font-semibold"
-                              style={{ background: category === c.id ? "#FF6A1A22" : "#151210", border: `1px solid ${category === c.id ? "#FF6A1A" : "#2A2320"}`, color: category === c.id ? "#FF6A1A" : "#5C564F" }}
-                              onClick={() => setCategory(c.id)}>
+                      <button
+                        key={c.id}
+                        type="button"
+                        className={`btn px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all border ${
+                          category === c.id
+                            ? "bg-accent/15 border-accent text-accent shadow-sm"
+                            : "bg-surf border-line text-text hover:text-textLight hover:bg-card"
+                        }`}
+                        onClick={() => setCategory(c.id)}
+                      >
                         {c.icon} {c.id}
                       </button>
                     ))}

@@ -65,8 +65,17 @@ export function UPILiteScreen({ onBack }) {
           </div>
           <div className="flex gap-2 flex-wrap mb-5">
             {[100, 200, 500, 1000].map((v) => (
-              <button key={v} className="btn px-3 py-1.5 rounded-full text-xs" style={{ background: amount == v ? "#FF6A1A" : "#151210", color: amount == v ? "#fff" : "#5C564F", border: `1px solid ${amount == v ? "#FF6A1A" : "#2A2320"}`, width: "auto" }}
-                      onClick={() => setAmount(String(v))}>
+              <button
+                key={v}
+                type="button"
+                className={`btn px-3 py-1.5 rounded-full text-xs font-semibold transition-all border ${
+                  amount == v
+                    ? "bg-accent text-white border-accent shadow-sm"
+                    : "bg-surf border-line text-text hover:text-textLight hover:bg-card"
+                }`}
+                style={{ width: "auto" }}
+                onClick={() => setAmount(String(v))}
+              >
                 +₹{v}
               </button>
             ))}
