@@ -35,18 +35,18 @@ describe('GiftCardScreen', () => {
     vi.clearAllMocks();
   });
 
-  it('renders gift card creation tab with amount and generate button by default', () => {
+  it('renders gift card creation tab with amount and proceed button by default', () => {
     render(<GiftCardScreen onBack={() => {}} />);
     expect(screen.getAllByText('RenoPay Gift Card')[0]).toBeInTheDocument();
-    expect(screen.getByText(/Generate Gift Card/i)).toBeInTheDocument();
+    expect(screen.getByText(/Proceed to Gift/i)).toBeInTheDocument();
   });
 
   it('switches to claim tab and allows entering a gift card code', async () => {
     render(<GiftCardScreen onBack={() => {}} />);
     
     fireEvent.click(screen.getByText('Claim'));
-    expect(screen.getByText('Redeem RenoPay Gift Card')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('RENO-GIFT-XXXX-XXXX')).toBeInTheDocument();
+    expect(screen.getAllByText('Claim Gift Card')[0]).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/RENO-GIFT/i)).toBeInTheDocument();
   });
 
   it('claims a gift card successfully', async () => {
@@ -62,14 +62,27 @@ describe('GiftCardScreen', () => {
     render(<GiftCardScreen onBack={() => {}} />);
     fireEvent.click(screen.getByText('Claim'));
 
-    const input = screen.getByPlaceholderText('RENO-GIFT-XXXX-XXXX');
+    const input = screen.getByPlaceholderText(/RENO-GIFT/i);
     fireEvent.change(input, { target: { value: 'RENO-GIFT-ABCD-1234' } });
-    fireEvent.click(screen.getByText('Claim to Account Balance'));
+    fireEvent.click(screen.getByRole('button', { name: /^Claim Gift Card$/i }));
 
     await waitFor(() => {
       expect(GiftCardAPI.claim).toHaveBeenCalledWith('RENO-GIFT-ABCD-1234');
       expect(screen.getByText('Gift Card Claimed!')).toBeInTheDocument();
-      expect(screen.getByText(/₹500 Credited Successfully/i)).toBeInTheDocument();
+      expect(screen.getByText(/₹500 added to your account!/i)).toBeInTheDocument();
     });
   });
+
+  it('opens checkout modal with recipient name, pay mode, and PIN pad on proceed', async () => {
+    render(<GiftCardScreen onBack={() => {}} />);
+    fireEvent.click(screen.getByText(/Proceed to Gift/i));
+
+    expect(screen.getByText('Authorize Gift Card')).toBeInTheDocument();
+    expect(screen.getByText(/Kisko bhej rahe hain\?/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Normal Pay/i)[0]).toBeInTheDocument();
+    expect(screen.getAllByText(/Advance Pay/i)[0]).toBeInTheDocument();
+    expect(screen.getByTestId('pin-pad')).toBeInTheDocument();
+  });
+
+
 });

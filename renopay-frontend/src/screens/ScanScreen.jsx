@@ -226,6 +226,17 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
       try {
         const rawCode = await scanVideoFrame(video, canvas);
         if (rawCode) {
+          // Check for RenoPay Gift Card QR voucher
+          const giftMatch = rawCode.match(/RENO-GIFT-[A-Z0-9]{4}-[A-Z0-9]{4}/i) ||
+                            rawCode.match(/renopay:\/\/giftcard\/claim\?code=([^&\s]+)/i);
+          if (giftMatch) {
+            stopCamera();
+            const code = (giftMatch[1] || giftMatch[0]).toUpperCase();
+            onSuccess?.({ type: "giftcard", code });
+            isScanningRef.current = false;
+            return;
+          }
+
           const parsed = parseUniversalUpiQr(rawCode);
           if (parsed) {
             handleDetectedUpi(parsed);
@@ -233,6 +244,7 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
             return;
           }
         }
+
       } catch (e) {
         // Continue scanning
       } finally {
@@ -296,6 +308,14 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
           const rawCode = await decodeQrFromImage(img);
           setProcessingImage(false);
           if (rawCode) {
+            const giftMatch = rawCode.match(/RENO-GIFT-[A-Z0-9]{4}-[A-Z0-9]{4}/i) ||
+                              rawCode.match(/renopay:\/\/giftcard\/claim\?code=([^&\s]+)/i);
+            if (giftMatch) {
+              const code = (giftMatch[1] || giftMatch[0]).toUpperCase();
+              onSuccess?.({ type: "giftcard", code });
+              return;
+            }
+
             const parsed = parseUniversalUpiQr(rawCode);
             if (parsed) {
               handleDetectedUpi(parsed);
@@ -304,6 +324,7 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
               setErr(`Scanned text: "${rawCode.slice(0, 40)}..." is not a recognizable UPI QR code.`);
             }
           } else {
+
             setErr("No QR code detected in this image. Please upload a clearer QR code image.");
           }
         } catch (err) {

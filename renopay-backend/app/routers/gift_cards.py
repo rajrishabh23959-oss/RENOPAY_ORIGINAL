@@ -22,7 +22,7 @@ from app.schemas.gift_card import (
     GiftCardOut,
     GiftCardClaimResult,
 )
-from app.services.pdf_generator import generate_pdf, build_gift_card_data
+from app.services.pdf_generator import generate_pdf, build_gift_card_data, PDF_AVAILABLE
 
 router = APIRouter()
 
@@ -85,6 +85,7 @@ async def create_gift_card(
     # 5. Record debit transaction
     creation_txn_ref = generate_txn_ref()
     txn_group_id = uuid.uuid4()
+    mode_label = "Advance Pay" if payload.payment_mode == "advance" else "Normal Pay"
     debit_txn = Transaction(
         txn_group_id=txn_group_id,
         txn_ref=creation_txn_ref,
@@ -95,7 +96,7 @@ async def create_gift_card(
         status=TxnStatus.SUCCESS,
         category=TxnCategory.OTHER,
         amount_paise=amount_paise,
-        description=f"Gift Card Created: {card_code}" + (f" for {payload.recipient_name}" if payload.recipient_name else ""),
+        description=f"Gift Card Created ({mode_label}): {card_code}" + (f" for {payload.recipient_name}" if payload.recipient_name else ""),
     )
     db.add(debit_txn)
 
@@ -108,6 +109,7 @@ async def create_gift_card(
         creator_account_id=account.id,
         amount_paise=amount_paise,
         theme=payload.theme or "gold",
+        payment_mode=payload.payment_mode or "normal",
         recipient_name=payload.recipient_name.strip() if payload.recipient_name else None,
         message=payload.message.strip() if payload.message else None,
         status="active",
@@ -123,6 +125,7 @@ async def create_gift_card(
         card_code=gift_card.card_code,
         amount=paise_to_rupees(gift_card.amount_paise),
         theme=gift_card.theme,
+        payment_mode=gift_card.payment_mode,
         recipient_name=gift_card.recipient_name,
         message=gift_card.message,
         status=gift_card.status,
@@ -134,6 +137,7 @@ async def create_gift_card(
         creation_txn_ref=gift_card.creation_txn_ref,
         claim_txn_ref=None,
     )
+
 
 
 @router.post("/claim", response_model=GiftCardClaimResult)
@@ -256,7 +260,9 @@ async def get_my_gift_cards(
             card_code=c.card_code,
             amount=paise_to_rupees(c.amount_paise),
             theme=c.theme,
+            payment_mode=getattr(c, "payment_mode", "normal"),
             recipient_name=c.recipient_name,
+
             message=c.message,
             status=c.status,
             created_at=c.created_at,
@@ -307,14 +313,17 @@ async def get_gift_card_pdf(
         creator_user = u_res.scalar_one_or_none()
 
     context = build_gift_card_data(card, creator_user)
-    pdf_stream = await generate_pdf("gift_card", context)
-    filename = f"RenoPay_GiftCard_{card.card_code}.pdf"
+    content_type = "application/pdf" if PDF_AVAILABLE else "text/html"
+    filename_ext = "pdf" if PDF_AVAILABLE else "html"
+    filename = f"RenoPay_GiftCard_{card.card_code}.{filename_ext}"
 
     return StreamingResponse(
         pdf_stream,
-        media_type="application/pdf",
+        media_type=content_type,
         headers={
             "Content-Disposition": f"inline; filename={filename}",
+            "Access-Control-Expose-Headers": "Content-Disposition",
             "Cache-Control": "no-cache",
         },
     )
+

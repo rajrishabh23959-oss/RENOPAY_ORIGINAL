@@ -32,8 +32,10 @@ class GiftCard(Base, UUIDPKMixin, TimestampMixin):
 
     amount_paise: Mapped[int] = mapped_column(BigInteger, nullable=False)
     theme: Mapped[str] = mapped_column(String(40), default="gold", nullable=False)
+    payment_mode: Mapped[str] = mapped_column(String(20), default="normal", nullable=False)
     recipient_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     message: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
 
     status: Mapped[str] = mapped_column(String(20), default="active", index=True, nullable=False)  # active | claimed | expired
 

@@ -1810,255 +1810,256 @@ body {
 <html>
 <head>
 <meta charset="utf-8"/>
-<title>RenoPay Digital Gift Card</title>
+<title>RenoPay Digital Gift Card — {{ card_code }}</title>
 <style>
     @page {
         size: A4 portrait;
-        margin: 20mm 15mm;
+        margin: 18mm 14mm;
     }
     body {
-        font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-        background-color: #0d0b09;
-        color: #f3ede8;
+        font-family: Helvetica, Arial, sans-serif;
+        background-color: #ffffff;
+        color: #1e293b;
         margin: 0;
         padding: 0;
     }
-    .card-container {
-        border: 2px solid #d97706;
-        border-radius: 16px;
-        background: linear-gradient(135deg, #1c1815 0%, #120f0c 100%);
-        padding: 24px 28px;
-        position: relative;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-    }
-    .gold-strip {
-        height: 6px;
-        background: linear-gradient(90deg, #f59e0b, #d97706, #b45309, #f59e0b);
-        border-radius: 3px;
-        margin-bottom: 20px;
-    }
-    .header-table {
+    .main-wrapper {
         width: 100%;
-        margin-bottom: 20px;
+        margin: 0 auto;
     }
-    .brand-title {
-        font-size: 24px;
-        font-weight: 800;
-        color: #f59e0b;
-        letter-spacing: 1px;
+    .luxury-card {
+        width: 100%;
+        background-color: #0b291a;
+        border: 2.5px solid #c9a44c;
+        margin-bottom: 22px;
     }
-    .brand-sub {
+    .inner-frame {
+        border: 1.5px solid #e0be6c;
+        padding: 20px 22px;
+    }
+    .gold-header {
+        text-align: center;
+    }
+    .from-tag {
         font-size: 11px;
-        color: #a8a29e;
+        letter-spacing: 4px;
+        color: #c9a44c;
+        font-weight: bold;
         text-transform: uppercase;
+        margin-bottom: 4px;
+    }
+    .sender-title {
+        font-size: 28px;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-weight: bold;
+        color: #f3d482;
         letter-spacing: 2px;
-        margin-top: 3px;
     }
-    .badge-pill {
-        display: inline-block;
-        background: rgba(245, 158, 11, 0.15);
-        border: 1px solid #f59e0b;
-        color: #fbbf24;
-        font-size: 10px;
-        font-weight: bold;
-        padding: 4px 10px;
-        border-radius: 20px;
-        text-transform: uppercase;
+    .gold-divider {
+        height: 1.5px;
+        background-color: #c9a44c;
+        width: 160px;
+        margin: 8px auto;
     }
-    .amount-box {
-        background: rgba(0, 0, 0, 0.4);
-        border: 1px dashed #d97706;
-        border-radius: 12px;
-        padding: 18px;
-        text-align: center;
-        margin-bottom: 24px;
-    }
-    .amount-label {
-        font-size: 12px;
-        color: #a8a29e;
-        text-transform: uppercase;
-        letter-spacing: 1.5px;
-    }
-    .amount-val {
-        font-size: 42px;
-        font-weight: 900;
-        color: #fbbf24;
-        margin: 6px 0;
-        font-family: 'Courier New', Courier, monospace;
-    }
-    .amount-sub {
+    .id-tag {
         font-size: 11px;
-        color: #34d399;
-        font-weight: 600;
-    }
-    .details-table {
-        width: 100%;
-        margin-bottom: 24px;
-    }
-    .field-label {
-        font-size: 11px;
-        color: #78716c;
-        text-transform: uppercase;
-        font-weight: bold;
-    }
-    .field-value {
-        font-size: 14px;
-        color: #f3ede8;
-        font-weight: 600;
-        margin-top: 2px;
-    }
-    .message-box {
-        background: rgba(245, 158, 11, 0.07);
-        border-left: 3px solid #f59e0b;
-        padding: 10px 14px;
-        border-radius: 4px;
-        font-style: italic;
-        color: #e7e5e4;
-        font-size: 13px;
-        margin-bottom: 24px;
-    }
-    .code-section {
-        background: #000000;
-        border: 2px solid #f59e0b;
-        border-radius: 10px;
-        padding: 14px 18px;
-        margin-bottom: 24px;
-    }
-    .code-title {
-        font-size: 10px;
-        color: #f59e0b;
-        text-transform: uppercase;
-        font-weight: 800;
-        letter-spacing: 1.5px;
-    }
-    .card-code {
-        font-size: 26px;
-        font-weight: 900;
-        color: #ffffff;
-        font-family: 'Courier New', Courier, monospace;
         letter-spacing: 3px;
-        margin: 6px 0;
-    }
-    .qr-img {
-        width: 110px;
-        height: 110px;
-        border-radius: 8px;
-        border: 2px solid #ffffff;
-    }
-    .steps-box {
-        background: rgba(255, 255, 255, 0.03);
-        border-radius: 10px;
-        padding: 14px 18px;
-        margin-bottom: 20px;
-    }
-    .steps-title {
-        font-size: 12px;
+        color: #c9a44c;
         font-weight: bold;
-        color: #fbbf24;
-        margin-bottom: 6px;
+        text-transform: uppercase;
     }
-    .steps-list {
-        margin: 0;
-        padding-left: 18px;
-        font-size: 11px;
-        color: #a8a29e;
-        line-height: 1.6;
+    .id-value {
+        font-size: 24px;
+        font-family: Courier, monospace;
+        font-weight: bold;
+        color: #ffe08a;
+        letter-spacing: 3.5px;
+        margin: 4px 0;
     }
-    .footer-note {
+    .amount-display {
+        font-size: 24px;
+        font-weight: bold;
+        color: #ffd875;
+        font-family: Courier, monospace;
+    }
+    .to-text {
+        font-size: 16px;
+        color: #f3d482;
+        font-weight: bold;
+        font-family: Georgia, serif;
+    }
+    .wax-seal {
+        width: 62px;
+        height: 62px;
+        background-color: #c8963e;
+        border: 2.5px solid #fae7a5;
+        color: #432600;
+        font-family: Georgia, serif;
+        font-size: 24px;
+        font-weight: bold;
         text-align: center;
+    }
+    .qr-frame {
+        border: 2px solid #c9a44c;
+        background-color: #ffffff;
+        padding: 5px;
+        display: inline-block;
+    }
+    .instructions-box {
+        border: 1px solid #e2e8f0;
+        background-color: #f8fafc;
+        padding: 14px 18px;
+        margin-bottom: 18px;
+    }
+    .meta-table td {
         font-size: 10px;
-        color: #78716c;
-        border-top: 1px solid #292524;
-        padding-top: 14px;
-        margin-top: 10px;
+        color: #64748b;
+        padding: 4px 0;
     }
 </style>
 </head>
 <body>
-<div class="card-container">
-    <div class="gold-strip"></div>
-    <table class="header-table">
+<div class="main-wrapper">
+    <!-- Brand Subtitle Header -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 12px;">
         <tr>
-            <td width="70%">
-                <div class="brand-title">⚡ RENOPAY GIFT CARD</div>
-                <div class="brand-sub">Verified Digital Cash Voucher</div>
+            <td>
+                <div style="font-size: 20px; font-weight: bold; color: #162a45;">Reno<span style="color: #e06a10;">Pay</span></div>
+                <div style="font-size: 10px; color: #64748b;">Verified Digital Cash & Gift Card Voucher</div>
             </td>
-            <td width="30%" align="right">
-                <span class="badge-pill">Bearer Certificate</span>
+            <td align="right" valign="middle">
+                <span style="background-color: #0b291a; border: 1px solid #c9a44c; color: #ffd875; font-size: 10px; font-weight: bold; padding: 4px 12px;">
+                    {{ payment_mode_label }}
+                </span>
             </td>
         </tr>
     </table>
 
-    <div class="amount-box">
-        <div class="amount-label">Voucher Value</div>
-        <div class="amount-val">₹{{ amount_fmt }}</div>
-        <div class="amount-sub">✓ 100% Guaranteed & Redeemable to Bank / Wallet Balance</div>
-    </div>
-
-    {% if message or recipient_name %}
-    <table class="details-table">
+    <!-- EMERALD & GOLD LUXURY GIFT CARD -->
+    <table class="luxury-card" cellpadding="4" cellspacing="0">
         <tr>
-            {% if recipient_name %}
-            <td width="50%">
-                <div class="field-label">Presented To</div>
-                <div class="field-value">{{ recipient_name }}</div>
-            </td>
-            {% endif %}
-            <td width="50%">
-                <div class="field-label">Gifted By</div>
-                <div class="field-value">{{ creator_name }}</div>
+            <td>
+                <table width="100%" class="inner-frame" cellpadding="0" cellspacing="0">
+                    <!-- Top Crest, Sender & Bow Row -->
+                    <tr>
+                        <td width="22%" valign="top">
+                            <span style="font-size: 9px; color: #a1d1b5; font-weight: bold; letter-spacing: 1px;">⚡ RENOPAY</span><br/>
+                            <span style="font-size: 10px; color: #ffd875; font-weight: bold;">GIFT CARD</span>
+                        </td>
+                        <td width="56%" align="center" valign="top">
+                            <!-- Golden Pin Icon -->
+                            <div style="color: #ffd875; font-size: 18px; margin-bottom: 2px;">&#9878;</div>
+                            <div class="from-tag">F R O M</div>
+                            <div class="sender-title">{{ creator_name }}</div>
+                            <div class="gold-divider"></div>
+                        </td>
+                        <td width="22%" align="right" valign="top">
+                            <!-- Gold Ribbon Accent -->
+                            <div style="color: #ffd875; font-size: 22px;">&#10024;</div>
+                            <span style="font-size: 9px; color: #e5be6b; font-weight: bold;">OFFICIAL BEARER</span>
+                        </td>
+                    </tr>
+
+                    <!-- Card Code & Amount Centerpiece -->
+                    <tr>
+                        <td colspan="3" align="center" style="padding-top: 14px; padding-bottom: 16px;">
+                            <div class="id-tag">G I F T &nbsp; C A R D &nbsp; I D -</div>
+                            <div class="id-value">{{ card_code }}</div>
+                            <div style="margin-top: 6px;">
+                                <span style="font-size: 11px; color: #a1d1b5; text-transform: uppercase; letter-spacing: 1px;">Voucher Value: </span>
+                                <span class="amount-display">Rs. {{ amount_fmt }}</span>
+                            </div>
+                            {% if message %}
+                            <div style="font-style: italic; font-size: 11px; color: #f1f5f9; margin-top: 6px;">
+                                &ldquo;{{ message }}&rdquo;
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                    <!-- Bottom Row: Recipient, QR Code Scanner & RP Wax Seal -->
+                    <tr>
+                        <td width="38%" valign="bottom">
+                            <div class="to-text">
+                                T O : &nbsp;
+                                {% if recipient_name %}
+                                    <span style="border-bottom: 1.5px solid #c9a44c; padding-bottom: 2px;">{{ recipient_name }}</span>
+                                {% else %}
+                                    <span style="border-bottom: 1.5px solid #c9a44c; padding-bottom: 2px;">_______________________</span>
+                                {% endif %}
+                            </div>
+                            <div style="font-size: 10px; color: #a1d1b5; margin-top: 6px;">
+                                100% Guaranteed &bull; Instant Wallet Credit
+                            </div>
+                        </td>
+                        <td width="34%" align="center" valign="middle">
+                            {% if qr_base64 %}
+                            <div class="qr-frame">
+                                <img src="data:image/png;base64,{{ qr_base64 }}" width="80" height="80" alt="Scan to Claim QR"/>
+                            </div>
+                            <div style="font-size: 8.5px; color: #ffd875; font-weight: bold; margin-top: 4px; letter-spacing: 1.5px;">
+                                SCAN TO CLAIM
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td width="28%" align="right" valign="bottom">
+                            <table cellpadding="0" cellspacing="0" align="right">
+                                <tr>
+                                    <td align="center" valign="middle" class="wax-seal">
+                                        RP
+                                    </td>
+                                </tr>
+                            </table>
+                            <div style="font-size: 8px; color: #c9a44c; margin-top: 4px; text-align: right; letter-spacing: 0.5px;">
+                                AUTHENTIC SEAL
+                            </div>
+                        </td>
+                    </tr>
+                </table>
             </td>
         </tr>
     </table>
-    {% if message %}
-    <div class="message-box">
-        “{{ message }}”
-    </div>
-    {% endif %}
-    {% endif %}
 
-    <div class="code-section">
-        <table width="100%">
+    <!-- Redemption Guide -->
+    <div class="instructions-box">
+        <div style="font-size: 12px; font-weight: bold; color: #162a45; margin-bottom: 6px;">
+            📌 How to Claim & Redeem this RenoPay Gift Card:
+        </div>
+        <table width="100%" cellpadding="3" cellspacing="0" style="font-size: 10.5px; color: #334155;">
             <tr>
-                <td width="70%">
-                    <div class="code-title">Unique Gift Card Code</div>
-                    <div class="card-code">{{ card_code }}</div>
-                    <div style="font-size: 10px; color: #78716c;">Enter this unique code in RenoPay to deposit funds instantly.</div>
-                </td>
-                {% if qr_base64 %}
-                <td width="30%" align="right">
-                    <img src="data:image/png;base64,{{ qr_base64 }}" class="qr-img" alt="Claim QR"/>
-                </td>
-                {% endif %}
+                <td width="20" valign="top"><strong>1.</strong></td>
+                <td>Open the <strong>RenoPay app</strong> or visit <strong>renopay.app</strong> on your device.</td>
+            </tr>
+            <tr>
+                <td width="20" valign="top"><strong>2.</strong></td>
+                <td>Tap on <strong>Gift Card</strong> on the home screen and switch to the <strong>Claim</strong> tab.</td>
+            </tr>
+            <tr>
+                <td width="20" valign="top"><strong>3.</strong></td>
+                <td>Type or paste your unique voucher code <strong>{{ card_code }}</strong> (or point your RenoPay QR Scanner at the QR code above).</td>
+            </tr>
+            <tr>
+                <td width="20" valign="top"><strong>4.</strong></td>
+                <td>Tap <strong>Claim Gift Card</strong> — <strong>Rs. {{ amount_fmt }}</strong> is instantly credited into your RenoPay account balance!</td>
             </tr>
         </table>
     </div>
 
-    <div class="steps-box">
-        <div class="steps-title">📌 How to Redeem this Gift Card:</div>
-        <ol class="steps-list">
-            <li>Open the <strong>RenoPay</strong> app on your smartphone.</li>
-            <li>Tap on <strong>Gift Card</strong> on the home screen.</li>
-            <li>Switch to the <strong>Claim Card</strong> tab.</li>
-            <li>Type or paste your code <strong>{{ card_code }}</strong> (or scan the QR code above).</li>
-            <li>Tap <strong>Claim Gift Card</strong> — <strong>₹{{ amount_fmt }}</strong> will be credited directly to your account balance!</li>
-        </ol>
-    </div>
-
-    <table width="100%" style="font-size: 10px; color: #78716c; margin-bottom: 8px;">
+    <!-- Metadata & Audit Details -->
+    <table width="100%" class="meta-table" cellpadding="0" cellspacing="0" style="border-top: 1px solid #e2e8f0; padding-top: 8px; margin-bottom: 12px;">
         <tr>
-            <td width="50%"><strong>Issued:</strong> {{ issued_at }}</td>
+            <td width="50%"><strong>Issued At:</strong> {{ issued_at }}</td>
             <td width="50%" align="right"><strong>Valid Until:</strong> {{ expiry_at }}</td>
         </tr>
         <tr>
-            <td width="50%"><strong>Ref No:</strong> {{ txn_ref }}</td>
-            <td width="50%" align="right"><strong>Status:</strong> Pre-paid Bearer Voucher</td>
+            <td width="50%"><strong>RenoPay Txn Ref:</strong> {{ txn_ref }}</td>
+            <td width="50%" align="right"><strong>Bearer Token:</strong> VERIFIED-GIFT-{{ card_code }}</td>
         </tr>
     </table>
 
-    <div class="footer-note">
-        This RenoPay Digital Gift Card is issued by RenoPay Financial Technologies Pvt. Ltd. Redeemable only on the RenoPay Platform.
-        <br/>Non-transferable once claimed. Keep the code confidential until redemption.
+    <div style="text-align: center; font-size: 9px; color: #94a3b8; border-top: 1px dashed #e2e8f0; padding-top: 8px;">
+        This bearer gift voucher is issued by RenoPay Financial Technologies Pvt. Ltd. Redeemable only on the RenoPay Platform.
+        Keep the voucher code confidential until claimed. Once claimed, the amount cannot be reversed or transferred back.
     </div>
 </div>
 </body>
@@ -2387,18 +2388,18 @@ def build_travel_ticket_data(booking, txn=None, user=None) -> dict:
 
 
 def build_gift_card_data(gift_card, creator_user=None) -> dict:
-    """Prepare context data for the gift_card PDF template."""
-    import base64
-    import io
-    import qrcode
-
+    """Prepare context data for the luxury emerald & gold gift_card PDF template."""
     qr_b64 = ""
     try:
+        import qrcode
+        import io
+        import base64
+
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_M,
-            box_size=4,
-            border=2,
+            box_size=3,
+            border=1,
         )
         qr.add_data(f"renopay://giftcard/claim?code={gift_card.card_code}")
         qr.make(fit=True)
@@ -2406,22 +2407,30 @@ def build_gift_card_data(gift_card, creator_user=None) -> dict:
         buf = io.BytesIO()
         img.save(buf, format="PNG")
         qr_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"QR code generation notice: {e}")
 
     now_ist = to_ist(gift_card.created_at)
     exp_ist = to_ist(gift_card.expiry_at)
 
+    payment_mode = getattr(gift_card, "payment_mode", "normal")
+    payment_mode_label = "ADVANCE PAY" if payment_mode == "advance" else "NORMAL PAY"
+
+    creator_name = (creator_user.full_name if creator_user else "RISHABH Raj").strip()
+    recipient_name = (gift_card.recipient_name or "").strip()
+
     return {
         "card_code": gift_card.card_code,
         "amount_fmt": f"{gift_card.amount_paise / 100:,.2f}",
-        "creator_name": creator_user.full_name if creator_user else "RenoPay User",
-        "recipient_name": gift_card.recipient_name or "",
+        "creator_name": creator_name,
+        "recipient_name": recipient_name,
+        "payment_mode_label": payment_mode_label,
         "message": gift_card.message or "",
-        "theme": gift_card.theme or "gold",
+        "theme": gift_card.theme or "emerald",
         "qr_base64": qr_b64,
         "txn_ref": gift_card.creation_txn_ref,
         "issued_at": now_ist.strftime("%d %b %Y, %I:%M %p IST"),
         "expiry_at": exp_ist.strftime("%d %b %Y"),
     }
+
 

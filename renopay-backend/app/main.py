@@ -36,6 +36,11 @@ async def lifespan(app: FastAPI):
                 await conn.execute(text("ALTER TABLE users ALTER COLUMN avatar_url TYPE TEXT;"))
             except Exception as e:
                 print(f"Could not alter users table for avatar_url TYPE TEXT: {e}")
+            try:
+                await conn.execute(text("ALTER TABLE gift_cards ADD COLUMN IF NOT EXISTS payment_mode VARCHAR(20) DEFAULT 'normal';"))
+            except Exception as e:
+                print(f"Could not alter gift_cards table for payment_mode: {e}")
+
 
         async with AsyncSessionLocal() as session:
             res = await session.execute(select(User).where(User.phone_number == "9876543210"))

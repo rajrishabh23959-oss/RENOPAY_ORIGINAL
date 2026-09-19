@@ -37,12 +37,16 @@ function AppShell() {
   const [rechargePrefillTab, setRechargePrefillTab] = useState("mobile");
   const [loansPrefillTab, setLoansPrefillTab] = useState("personal");
   const [scanInitialMode, setScanInitialMode] = useState("camera");
+  const [giftCardPrefillCode, setGiftCardPrefillCode] = useState("");
 
   const go = (s, data) => {
     if (["home", "pay", "expenses", "history", "profile", "accounting"].includes(s)) setTab(s);
     setPayPrefill(s === "pay" ? data ?? null : null);
     if (s === "scan") {
       setScanInitialMode(typeof data === "string" ? data : data?.mode || "camera");
+    }
+    if (s === "giftcard") {
+      setGiftCardPrefillCode(typeof data === "string" ? data : data?.claimCode || "");
     }
     if (s === "travel") {
       setTravelPrefillTab(typeof data === "string" ? data : data?.tab || "train");
@@ -55,6 +59,7 @@ function AppShell() {
     }
     setScreen(s);
   };
+
 
   if (loading) {
     return <div className="min-h-screen bg-bg flex items-center justify-center text-muted text-sm">Loading...</div>;
@@ -81,16 +86,29 @@ function AppShell() {
       )}
       {screen === "expenses"      && <ExpensesScreen onBack={() => go("home")} />}
       {screen === "history"       && <HistoryScreen onBack={() => go("home")} />}
-      {screen === "giftcard"      && <GiftCardScreen onBack={() => go("home")} />}
+      {screen === "giftcard"      && (
+        <GiftCardScreen
+          onBack={() => go("home")}
+          initialClaimCode={giftCardPrefillCode}
+          onScanQr={() => go("scan")}
+        />
+      )}
       {screen === "addmoney"      && <AddMoneyScreen onBack={() => go("home")} />}
       {screen === "qr"            && <QRScreen onBack={() => go("home")} />}
       {screen === "scan"          && (
         <ScanScreen
           onBack={() => go("home")}
           initialMode={scanInitialMode}
-          onSuccess={(data) => go("pay", typeof data === "string" ? { vpa: data } : data)}
+          onSuccess={(data) => {
+            if (data?.type === "giftcard") {
+              go("giftcard", { claimCode: data.code });
+            } else {
+              go("pay", typeof data === "string" ? { vpa: data } : data);
+            }
+          }}
         />
       )}
+
       {screen === "profile"       && <ProfileScreen onBack={() => go("home")} onLoggedOut={() => go("login")} />}
       {screen === "requests"      && <RequestScreen onBack={() => go("home")} />}
       {screen === "split"         && <SplitScreen onBack={() => go("home")} />}
