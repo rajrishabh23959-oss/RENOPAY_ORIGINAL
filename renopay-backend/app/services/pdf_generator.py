@@ -1918,67 +1918,91 @@ body {
     </tr>
 </table>
 
-<div class="card-wrapper">
-    <div class="card-inner">
-        <table class="top-table" cellpadding="0" cellspacing="0">
-            <tr>
-                <td width="28%" valign="top">
-                    <span style="color: #a1d1b5; font-size: 9px; font-weight: bold; letter-spacing: 1px;">⚡ RENOPAY</span><br/>
-                    <span style="color: #ffd875; font-size: 10px; font-weight: bold;">GIFT CARD</span>
-                </td>
-                <td width="44%" align="center" valign="top">
-                    <div style="color: #c9a44c; font-size: 9px; font-weight: bold; letter-spacing: 3px;">F R O M</div>
-                    <div class="sender-title">{{ creator_name }}</div>
-                    <div style="height: 1px; width: 120px; background-color: #c9a44c; margin: 4px auto;"></div>
-                </td>
-                <td width="28%" align="right" valign="top">
-                    <span style="color: #ffd875; font-size: 9px; font-weight: bold;">✦ OFFICIAL VOUCHER</span>
-                </td>
-            </tr>
+<!-- THE RICH EMERALD & GOLD LUXURY GIFT CARD -->
+<table width="100%" cellpadding="0" cellspacing="0" bgcolor="#072417" style="border: 3.5px solid #c9a44c; background-color: #072417;">
+<tr>
+<td bgcolor="#072417" style="padding: 14px;">
+    <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#072417" style="border: 1.5px solid #dfbe6c; background-color: #072417;">
+    <tr>
+    <td bgcolor="#072417" style="padding: 16px 14px;">
+        <!-- Top Row: Brand, FROM, Official Badge -->
+        <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#072417">
+        <tr>
+            <td width="26%" valign="top" bgcolor="#072417">
+                <div style="color: #a1d1b5; font-size: 10px; font-weight: bold; letter-spacing: 1.5px;">&#10022; RENOPAY</div>
+                <div style="color: #ffd875; font-size: 9px; font-weight: bold; letter-spacing: 1px; margin-top: 2px;">GIFT CARD</div>
+            </td>
+            <td width="48%" align="center" valign="top" bgcolor="#072417">
+                <div style="color: #c9a44c; font-size: 9px; font-weight: bold; letter-spacing: 4px;">F R O M</div>
+                <div style="color: #f5d78a; font-size: 22px; font-weight: bold; margin-top: 2px;">{{ creator_name }}</div>
+                <div style="height: 1px; width: 110px; background-color: #c9a44c; margin: 4px auto;"></div>
+            </td>
+            <td width="26%" align="right" valign="top" bgcolor="#072417">
+                <span style="background-color: #03140c; border: 1px solid #c9a44c; color: #ffd875; font-size: 8.5px; font-weight: bold; padding: 3px 8px; letter-spacing: 1px;">
+                    &#10022; OFFICIAL
+                </span>
+            </td>
+        </tr>
         </table>
 
-        <div class="code-box">
-            <div style="color: #c9a44c; font-size: 9px; font-weight: bold; letter-spacing: 2px; margin-bottom: 3px;">G I F T &nbsp; C A R D &nbsp; I D -</div>
-            <div class="code-text">{{ card_code }}</div>
-            <div style="margin-top: 6px;">
-                <span style="color: #a1d1b5; font-size: 11px; font-weight: bold;">VALUE: </span>
-                <span class="value-text">Rs. {{ amount_fmt }}</span>
-            </div>
-            {% if message %}
-            <div style="color: #f1f5f9; font-style: italic; font-size: 11px; margin-top: 5px;">
-                &ldquo;{{ message }}&rdquo;
-            </div>
-            {% endif %}
-        </div>
-
-        <table class="bottom-table" cellpadding="0" cellspacing="0">
-            <tr>
-                <td width="32%" align="left" valign="bottom">
-                    {% if qr_base64 %}
-                    <div style="background: #ffffff; padding: 4px; display: inline-block; border: 1.5px solid #c9a44c;">
-                        <img src="data:image/png;base64,{{ qr_base64 }}" width="64" height="64" alt="QR"/>
-                    </div>
-                    <div style="color: #ffd875; font-size: 8px; font-weight: bold; letter-spacing: 1px; margin-top: 2px;">
-                        SCAN TO CLAIM
-                    </div>
-                    {% endif %}
-                </td>
-                <td width="40%" align="center" valign="bottom">
-                    <div style="color: #f5d78a; font-size: 13px; font-weight: bold;">
-                        TO: <span style="border-bottom: 1px solid #c9a44c; padding-bottom: 1px;">{{ recipient_name or 'Valued Bearer' }}</span>
-                    </div>
-                    <div style="color: #a1d1b5; font-size: 9px; margin-top: 4px;">
-                        100% Guaranteed Redeemable
-                    </div>
-                </td>
-                <td width="28%" align="right" valign="bottom">
-                    <div class="seal-circle" style="display: inline-block;">RP</div>
-                    <div style="color: #c9a44c; font-size: 8px; font-weight: bold; margin-top: 2px;">SEAL</div>
-                </td>
-            </tr>
+        <!-- Center: Card ID & Value -->
+        <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#072417" style="margin-top: 12px; margin-bottom: 12px;">
+        <tr>
+            <td align="center" bgcolor="#072417">
+                <div style="color: #c9a44c; font-size: 9px; font-weight: bold; letter-spacing: 3px; margin-bottom: 5px;">G I F T &nbsp; C A R D &nbsp; I D -</div>
+                <table width="75%" cellpadding="6" cellspacing="0" bgcolor="#03140c" style="border: 1.5px solid #c9a44c; margin: 0 auto;">
+                <tr>
+                    <td align="center" bgcolor="#03140c" style="padding: 6px 14px;">
+                        <span style="color: #ffe08a; font-size: 19px; font-weight: bold; font-family: Courier, monospace; letter-spacing: 2.5px;">{{ card_code }}</span>
+                    </td>
+                </tr>
+                </table>
+                <div style="margin-top: 8px;">
+                    <span style="background-color: #03140c; border: 1.5px solid #c9a44c; color: #ffd875; font-size: 14px; font-weight: bold; padding: 4px 16px; letter-spacing: 1px;">
+                        <span style="color: #a1d1b5; font-size: 9.5px;">VALUE: </span>Rs. {{ amount_fmt }}
+                    </span>
+                </div>
+                {% if message %}
+                <div style="color: #d1e7dd; font-size: 10.5px; font-style: italic; margin-top: 8px;">&ldquo;{{ message }}&rdquo;</div>
+                {% endif %}
+                <div style="height: 1px; width: 85%; background-color: #16462d; margin: 12px auto 0 auto;"></div>
+            </td>
+        </tr>
         </table>
-    </div>
-</div>
+
+        <!-- Bottom Row: QR Scanner on Left, Recipient in Center, RP Wax Seal on Right -->
+        <table width="100%" cellpadding="0" cellspacing="0" bgcolor="#072417">
+        <tr>
+            <td width="26%" align="center" valign="bottom" bgcolor="#072417">
+                {% if qr_base64 %}
+                <img src="data:image/png;base64,{{ qr_base64 }}" width="64" height="64" alt="QR"/><br/>
+                <div style="color: #ffd875; font-size: 7.5px; font-weight: bold; letter-spacing: 1px; margin-top: 3px;">
+                    SCAN TO CLAIM
+                </div>
+                {% endif %}
+            </td>
+            <td width="48%" align="center" valign="bottom" bgcolor="#072417">
+                <div style="color: #f5d78a; font-size: 13px; font-weight: bold;">
+                    TO: <span style="border-bottom: 1.5px solid #c9a44c; color: #ffffff; padding-bottom: 1px;">{{ recipient_name or 'Valued Bearer' }}</span>
+                </div>
+                <div style="color: #a1d1b5; font-size: 8.5px; margin-top: 4px;">
+                    100% Guaranteed Redeemable
+                </div>
+            </td>
+            <td width="26%" align="center" valign="bottom" bgcolor="#072417">
+                {% if seal_base64 %}
+                <img src="data:image/png;base64,{{ seal_base64 }}" width="48" height="48" alt="Seal"/><br/>
+                <div style="color: #c9a44c; font-size: 8px; font-weight: bold; letter-spacing: 1px; margin-top: 2px;">SEAL</div>
+                {% endif %}
+            </td>
+        </tr>
+        </table>
+    </td>
+    </tr>
+    </table>
+</td>
+</tr>
+</table>
 
 <div class="guide-box">
     <div style="font-size: 11px; font-weight: bold; color: #162a45; margin-bottom: 5px;">
@@ -2334,22 +2358,51 @@ def build_gift_card_data(gift_card, creator_user=None) -> dict:
         import qrcode
         import io
         import base64
+        from PIL import Image, ImageOps
 
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_M,
-            box_size=3,
+            box_size=4,
             border=1,
         )
         claim_url = f"https://renopay-original.vercel.app/?claimCode={gift_card.card_code}"
         qr.add_data(claim_url)
         qr.make(fit=True)
-        img = qr.make_image(fill_color="black", back_color="white")
+        img = qr.make_image(fill_color="black", back_color="white").convert("RGBA")
+        bordered = ImageOps.expand(img, border=3, fill="#c9a44c")
         buf = io.BytesIO()
-        img.save(buf, format="PNG")
+        bordered.save(buf, format="PNG")
         qr_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
     except Exception as e:
         print(f"QR code generation notice: {e}")
+
+    # Circular Gold Wax Seal
+    seal_b64 = ""
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+        import io
+        import base64
+
+        size = 140
+        s_img = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(s_img)
+        draw.ellipse([2, 2, size - 3, size - 3], fill="#c89838", outline="#fce5a3", width=4)
+        draw.ellipse([10, 10, size - 11, size - 11], outline="#96671a", width=2)
+        draw.ellipse([13, 13, size - 14, size - 14], fill="#b8832a", outline="#fae39d", width=2)
+        font = None
+        for f in ["georgiab.ttf", "georgia.ttf", "timesbd.ttf", "arialbd.ttf"]:
+            try:
+                font = ImageFont.truetype(f, 54)
+                break
+            except Exception:
+                pass
+        draw.text((size // 2, size // 2 - 2), "RP", fill="#3d2200", font=font, anchor="mm")
+        s_buf = io.BytesIO()
+        s_img.save(s_buf, format="PNG")
+        seal_b64 = base64.b64encode(s_buf.getvalue()).decode("utf-8")
+    except Exception as e:
+        print(f"Wax seal generation notice: {e}")
 
     now_ist = to_ist(gift_card.created_at)
     exp_ist = to_ist(gift_card.expiry_at)
@@ -2360,15 +2413,20 @@ def build_gift_card_data(gift_card, creator_user=None) -> dict:
     creator_name = (creator_user.full_name if creator_user else "RISHABH Raj").strip()
     recipient_name = (gift_card.recipient_name or "").strip()
 
+    # Clean message text of unsupported unicode surrogate/emojis for PDF
+    clean_message = (gift_card.message or "").strip()
+    clean_message = clean_message.encode("ascii", "ignore").decode("ascii").strip()
+
     return {
         "card_code": gift_card.card_code,
         "amount_fmt": f"{gift_card.amount_paise / 100:,.2f}",
         "creator_name": creator_name,
         "recipient_name": recipient_name,
         "payment_mode_label": payment_mode_label,
-        "message": gift_card.message or "",
+        "message": clean_message,
         "theme": gift_card.theme or "emerald",
         "qr_base64": qr_b64,
+        "seal_base64": seal_b64,
         "txn_ref": gift_card.creation_txn_ref,
         "issued_at": now_ist.strftime("%d %b %Y, %I:%M %p IST"),
         "expiry_at": exp_ist.strftime("%d %b %Y"),
