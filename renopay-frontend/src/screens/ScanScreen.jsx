@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import jsQR from "jsqr";
 import { PaymentAPI } from "../lib/api";
 import { Btn, Badge, Card } from "../components/ui";
+import { scanVideoFrame, decodeQrFromImage } from "../lib/qrScanner";
 
 // Universal UPI QR Parser: Handles Paytm, PhonePe, Google Pay, BharatPe, BHIM, Bank QRs, bare VPAs & dynamic bills
 export function parseUniversalUpiQr(rawText) {
@@ -109,7 +110,7 @@ export function parseUniversalUpiQr(rawText) {
   let category = "Other";
   if (mc) {
     const num = parseInt(mc, 10);
-    if ((num >= 5400 && num <= 5499) || (num >= 5300 && num <= 5399) || num === 5912 || num === 5999) {
+    if ((num >= 5000 && num <= 5999) || num === 5912 || num === 5999) {
       category = "Shopping";
     } else if (num >= 5811 && num <= 5814) {
       category = "Food";
@@ -139,8 +140,8 @@ export function parseUniversalUpiQr(rawText) {
   };
 }
 
-export function ScanScreen({ onBack, onSuccess }) {
-  const [mode, setMode] = useState("camera"); // camera | upload | manual
+export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
+  const [mode, setMode] = useState(initialMode); // camera | upload | manual
   const [vpa, setVpa] = useState("");
   const [err, setErr] = useState("");
   const [cameraStatus, setCameraStatus] = useState("starting"); // starting | active | denied | unsupported
@@ -152,11 +153,28 @@ export function ScanScreen({ onBack, onSuccess }) {
   const [uploadPreview, setUploadPreview] = useState(null);
   const [processingImage, setProcessingImage] = useState(false);
 
+  useEffect(() => {
+    if (initialMode && ["camera", "upload", "manual"].includes(initialMode)) {
+      setMode(initialMode);
+      if (initialMode === "upload") {
+        const timer = setTimeout(() => {
+          try {
+            fileInputRef.current?.click();
+          } catch {
+            // Browser might require direct user gesture, user can still click upload box
+          }
+        }, 120);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [initialMode]);
+
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
   const rafRef = useRef(null);
   const fileInputRef = useRef(null);
+  const isScanningRef = useRef(false);
 
   const stopCamera = () => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -166,55 +184,62 @@ export function ScanScreen({ onBack, onSuccess }) {
 
   const handleDetectedUpi = async (parsed) => {
     stopCamera();
+    let finalName = parsed.name || parsed.vpa;
+    let finalApp = parsed.app || "UPI";
+
     try {
       const res = await PaymentAPI.resolveVPA(parsed.vpa, parsed.name);
-      const finalName = res?.name || parsed.name || parsed.vpa;
-      const finalApp = res?.app || parsed.app || "UPI";
-
-      setDetected(parsed.vpa);
-      setDetectedName(finalName);
-      setDetectedApp(finalApp);
-      setDetectedAmount(parsed.amount);
-      setErr("");
-
-      setTimeout(() => {
-        onSuccess?.({
-          vpa: parsed.vpa,
-          name: finalName,
-          amount: parsed.amount,
-          note: parsed.note,
-          category: parsed.category,
-          app: finalApp,
-        });
-      }, 700);
+      if (res?.name) finalName = res.name;
+      if (res?.app) finalApp = res.app;
     } catch {
-      setErr(`Scanned "${parsed.vpa}" but it's not a valid UPI handle`);
-      setMode("manual");
-      setVpa(parsed.vpa);
+      // Graceful fallback: If backend resolve fails/offline, proceed with parsed QR metadata
     }
+
+    setDetected(parsed.vpa);
+    setDetectedName(finalName);
+    setDetectedApp(finalApp);
+    setDetectedAmount(parsed.amount);
+    setErr("");
+
+    setTimeout(() => {
+      onSuccess?.({
+        vpa: parsed.vpa,
+        name: finalName,
+        amount: parsed.amount,
+        note: parsed.note,
+        category: parsed.category,
+        app: finalApp,
+      });
+    }, 700);
   };
 
-  const scanFrame = () => {
+  const scanFrame = async () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    if (!video || !canvas || video.readyState !== video.HAVE_ENOUGH_DATA) {
+    if (!video || !canvas || video.readyState < 2) {
       rafRef.current = requestAnimationFrame(scanFrame);
       return;
     }
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "attemptBoth" });
 
-    if (code?.data) {
-      const parsed = parseUniversalUpiQr(code.data);
-      if (parsed) {
-        handleDetectedUpi(parsed);
-        return;
+    if (!isScanningRef.current) {
+      isScanningRef.current = true;
+      try {
+        const rawCode = await scanVideoFrame(video, canvas);
+        if (rawCode) {
+          const parsed = parseUniversalUpiQr(rawCode);
+          if (parsed) {
+            handleDetectedUpi(parsed);
+            isScanningRef.current = false;
+            return;
+          }
+        }
+      } catch (e) {
+        // Continue scanning
+      } finally {
+        isScanningRef.current = false;
       }
     }
+
     rafRef.current = requestAnimationFrame(scanFrame);
   };
 
@@ -232,7 +257,13 @@ export function ScanScreen({ onBack, onSuccess }) {
         return;
       }
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: "environment",
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
+        });
         if (cancelled) { stream.getTracks().forEach((t) => t.stop()); return; }
         streamRef.current = stream;
         if (videoRef.current) {
@@ -259,26 +290,25 @@ export function ScanScreen({ onBack, onSuccess }) {
     const reader = new FileReader();
     reader.onload = (event) => {
       const img = new Image();
-      img.onload = () => {
+      img.onload = async () => {
         setUploadPreview(event.target.result);
-        const oc = document.createElement("canvas");
-        oc.width = img.width;
-        oc.height = img.height;
-        const ctx = oc.getContext("2d");
-        ctx.drawImage(img, 0, 0);
-        const imgData = ctx.getImageData(0, 0, img.width, img.height);
-        const code = jsQR(imgData.data, imgData.width, imgData.height, { inversionAttempts: "attemptBoth" });
-
-        setProcessingImage(false);
-        if (code?.data) {
-          const parsed = parseUniversalUpiQr(code.data);
-          if (parsed) {
-            handleDetectedUpi(parsed);
+        try {
+          const rawCode = await decodeQrFromImage(img);
+          setProcessingImage(false);
+          if (rawCode) {
+            const parsed = parseUniversalUpiQr(rawCode);
+            if (parsed) {
+              handleDetectedUpi(parsed);
+              return;
+            } else {
+              setErr(`Scanned text: "${rawCode.slice(0, 40)}..." is not a recognizable UPI QR code.`);
+            }
           } else {
-            setErr(`Scanned text: "${code.data.slice(0, 40)}..." is not a recognizable UPI QR code.`);
+            setErr("No QR code detected in this image. Please upload a clearer QR code image.");
           }
-        } else {
-          setErr("No QR code detected in this image. Please upload a clearer QR code image.");
+        } catch (err) {
+          setProcessingImage(false);
+          setErr("Failed to process QR code from image.");
         }
       };
       img.onerror = () => {

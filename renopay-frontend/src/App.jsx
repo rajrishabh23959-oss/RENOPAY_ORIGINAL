@@ -35,10 +35,14 @@ function AppShell() {
   const [travelPrefillTab, setTravelPrefillTab] = useState("train");
   const [rechargePrefillTab, setRechargePrefillTab] = useState("mobile");
   const [loansPrefillTab, setLoansPrefillTab] = useState("personal");
+  const [scanInitialMode, setScanInitialMode] = useState("camera");
 
   const go = (s, data) => {
     if (["home", "pay", "expenses", "history", "profile", "accounting"].includes(s)) setTab(s);
     setPayPrefill(s === "pay" ? data ?? null : null);
+    if (s === "scan") {
+      setScanInitialMode(typeof data === "string" ? data : data?.mode || "camera");
+    }
     if (s === "travel") {
       setTravelPrefillTab(typeof data === "string" ? data : data?.tab || "train");
     }
@@ -78,7 +82,13 @@ function AppShell() {
       {screen === "history"       && <HistoryScreen onBack={() => go("home")} />}
       {screen === "addmoney"      && <AddMoneyScreen onBack={() => go("home")} />}
       {screen === "qr"            && <QRScreen onBack={() => go("home")} />}
-      {screen === "scan"          && <ScanScreen onBack={() => go("home")} onSuccess={(data) => go("pay", typeof data === "string" ? { vpa: data } : data)} />}
+      {screen === "scan"          && (
+        <ScanScreen
+          onBack={() => go("home")}
+          initialMode={scanInitialMode}
+          onSuccess={(data) => go("pay", typeof data === "string" ? { vpa: data } : data)}
+        />
+      )}
       {screen === "profile"       && <ProfileScreen onBack={() => go("home")} onLoggedOut={() => go("login")} />}
       {screen === "requests"      && <RequestScreen onBack={() => go("home")} />}
       {screen === "split"         && <SplitScreen onBack={() => go("home")} />}

@@ -27,17 +27,24 @@ async def resolve_vpa(
     db: AsyncSession = Depends(get_db),
 ):
     clean_vpa = vpa.strip()
-    result = await db.execute(select(Account, User).join(User, Account.user_id == User.id).where(Account.vpa == clean_vpa))
-    row = result.first()
-    if row is not None:
-        _, user = row
-        return ResolveVPAResponse(vpa=clean_vpa, name=user.full_name, app="RenoPay", bank="RenoPay Virtual Bank")
+    clean_vpa_lower = clean_vpa.lower()
 
-    # External UPI handle validation (Paytm, PhonePe, Google Pay, BharatPe, BHIM, Banks, etc.)
-    if "@" in clean_vpa:
-        parts = clean_vpa.split("@")
+    # 1. If internal RenoPay handle, look up user from database
+    if clean_vpa_lower.endswith("@renopay"):
+        try:
+            result = await db.execute(select(Account, User).join(User, Account.user_id == User.id).where(Account.vpa == clean_vpa_lower))
+            row = result.first()
+            if row is not None:
+                _, user = row
+                return ResolveVPAResponse(vpa=clean_vpa, name=user.full_name, app="RenoPay", bank="RenoPay Virtual Bank")
+        except Exception:
+            pass
+
+    # 2. External UPI handle validation (Paytm, PhonePe, Google Pay, YESPay/Flipkart, BharatPe, BHIM, Banks, etc.)
+    if "@" in clean_vpa_lower:
+        parts = clean_vpa_lower.split("@")
         if len(parts) == 2 and parts[0] and parts[1]:
-            info = identify_upi_provider(clean_vpa)
+            info = identify_upi_provider(clean_vpa_lower)
             display_name = pn.strip() if (pn and pn.strip()) else format_name_from_vpa(clean_vpa)
             return ResolveVPAResponse(
                 vpa=clean_vpa,

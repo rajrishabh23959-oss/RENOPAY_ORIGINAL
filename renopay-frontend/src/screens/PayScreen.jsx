@@ -10,6 +10,7 @@ import { fmt } from "../lib/format";
 import { PdfPreviewModal } from "../components/PdfPreviewModal";
 import { parseUniversalUpiQr } from "./ScanScreen";
 import { downloadOrSharePdf } from "../lib/download";
+import { scanVideoFrame, decodeQrFromImage } from "../lib/qrScanner";
 
 const CATS = [
   { id: "Food", icon: "🍔" }, { id: "Shopping", icon: "🛍️" }, { id: "Transport", icon: "🚗" },
@@ -54,6 +55,7 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
   const streamRef = useRef(null);
   const rafRef = useRef(null);
   const fileInputRef = useRef(null);
+  const isScanningRef = useRef(false);
   const [cameraStatus, setCameraStatus] = useState("starting"); // starting | active | denied | unsupported
   const [cameraRetry, setCameraRetry] = useState(0);
   const [uploadingQr, setUploadingQr] = useState(false);
@@ -67,22 +69,24 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
   const handleDetectedQr = async (parsed) => {
     stopCamera();
     setErr("");
+    let finalName = parsed.name || parsed.vpa;
+    let finalApp = parsed.app || "UPI";
+
     try {
       const res = await PaymentAPI.resolveVPA(parsed.vpa, parsed.name);
-      const finalName = res?.name || parsed.name || parsed.vpa;
-      const finalApp = res?.app || parsed.app || "UPI";
-
-      setResolvedName(finalName);
-      setPayeeApp(finalApp);
-      setVpa(parsed.vpa);
-      if (parsed.amount) setAmount(String(parsed.amount));
-      if (parsed.note) setDesc(parsed.note);
-      if (parsed.category) setCategory(parsed.category);
-      setStep("amount");
+      if (res?.name) finalName = res.name;
+      if (res?.app) finalApp = res.app;
     } catch {
-      setErr(`Scanned "${parsed.vpa}" but it's not a valid UPI handle`);
-      setVpa(parsed.vpa);
+      // Graceful fallback: Proceed with parsed QR data even if backend resolve is offline/unavailable
     }
+
+    setResolvedName(finalName);
+    setPayeeApp(finalApp);
+    setVpa(parsed.vpa);
+    if (parsed.amount) setAmount(String(parsed.amount));
+    if (parsed.note) setDesc(parsed.note);
+    if (parsed.category) setCategory(parsed.category);
+    setStep("amount");
   };
 
   const handleQrImageUpload = (e) => {
@@ -94,27 +98,23 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
     const reader = new FileReader();
     reader.onload = (event) => {
       const img = new Image();
-      img.onload = () => {
-        const oc = document.createElement("canvas");
-        oc.width = img.width;
-        oc.height = img.height;
-        const ctx = oc.getContext("2d");
-        ctx.drawImage(img, 0, 0);
-        const imgData = ctx.getImageData(0, 0, img.width, img.height);
-        const code = jsQR(imgData.data, imgData.width, imgData.height, {
-          inversionAttempts: "dontInvert",
-        });
-
-        setUploadingQr(false);
-        if (code?.data) {
-          const parsed = parseUniversalUpiQr(code.data);
-          if (parsed?.vpa) {
-            handleDetectedQr(parsed);
+      img.onload = async () => {
+        try {
+          const rawCode = await decodeQrFromImage(img);
+          setUploadingQr(false);
+          if (rawCode) {
+            const parsed = parseUniversalUpiQr(rawCode);
+            if (parsed?.vpa) {
+              handleDetectedQr(parsed);
+            } else {
+              setErr(`Scanned text: "${rawCode.slice(0, 45)}..." is not a recognizable UPI QR code.`);
+            }
           } else {
-            setErr(`Scanned text: "${code.data.slice(0, 45)}..." is not a recognizable UPI QR code.`);
+            setErr("No QR code detected in this image. Please upload a clear QR code.");
           }
-        } else {
-          setErr("No QR code detected in this image. Please upload a clear QR code.");
+        } catch {
+          setUploadingQr(false);
+          setErr("Failed to process QR code from image.");
         }
       };
       img.onerror = () => {
@@ -127,29 +127,33 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
     e.target.value = "";
   };
 
-  const scanFrame = () => {
+  const scanFrame = async () => {
     const video = videoRef.current;
     const canvas = canvasRef.current;
-    if (!video || !canvas || video.readyState !== video.HAVE_ENOUGH_DATA) {
+    if (!video || !canvas || video.readyState < 2) {
       rafRef.current = requestAnimationFrame(scanFrame);
       return;
     }
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const code = jsQR(imageData.data, imageData.width, imageData.height, {
-      inversionAttempts: "dontInvert",
-    });
 
-    if (code?.data) {
-      const parsed = parseUniversalUpiQr(code.data);
-      if (parsed?.vpa) {
-        handleDetectedQr(parsed);
-        return;
+    if (!isScanningRef.current) {
+      isScanningRef.current = true;
+      try {
+        const rawCode = await scanVideoFrame(video, canvas);
+        if (rawCode) {
+          const parsed = parseUniversalUpiQr(rawCode);
+          if (parsed?.vpa) {
+            handleDetectedQr(parsed);
+            isScanningRef.current = false;
+            return;
+          }
+        }
+      } catch {
+        // Continue scanning
+      } finally {
+        isScanningRef.current = false;
       }
     }
+
     rafRef.current = requestAnimationFrame(scanFrame);
   };
 
@@ -168,7 +172,11 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
       }
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
+          video: {
+            facingMode: "environment",
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+          },
         });
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
