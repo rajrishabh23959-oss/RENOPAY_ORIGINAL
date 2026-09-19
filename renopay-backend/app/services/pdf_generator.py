@@ -228,39 +228,43 @@ body {
     </div>
 
     <!-- Highlight Amount Card -->
-    <div class="receipt-box">
-        <div style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; margin-bottom: 6px;">
-            AMOUNT {{ 'CREDITED' if type == 'credit' else 'DEBITED' }}
-        </div>
-        <div style="font-size: 32px; font-weight: bold; color: {{ '#15803d' if type == 'credit' else '#162a45' }}; margin-bottom: 6px;">
-            Rs {{ "%.2f"|format(amount) }}
-        </div>
-        <div style="font-size: 11px; font-weight: bold; color: #334155;">
-            {{ type | upper }} &nbsp;<span style="color: #e06a10;">|</span>&nbsp; Category: {{ category }}
-        </div>
-    </div>
+    <table width="100%" cellpadding="0" cellspacing="0" class="receipt-box" style="margin-top: 14px; margin-bottom: 18px; border: 1px solid #e2e8f0; background-color: #f8fafc; border-radius: 8px;">
+        <tr>
+            <td align="center" style="padding: 16px 12px; text-align: center;">
+                <div style="font-size: 11px; font-weight: bold; color: #64748b; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; text-align: center;">
+                    AMOUNT {{ 'CREDITED' if type == 'credit' else 'DEBITED' }}
+                </div>
+                <div style="font-size: 32px; font-weight: bold; color: {{ '#15803d' if type == 'credit' else '#162a45' }}; margin-bottom: 6px; text-align: center;">
+                    Rs {{ "%.2f"|format(amount) }}
+                </div>
+                <div style="font-size: 11px; font-weight: bold; color: #334155; text-align: center;">
+                    {{ type | upper }} &nbsp;<span style="color: #e06a10;">|</span>&nbsp; Category: {{ category }}
+                </div>
+            </td>
+        </tr>
+    </table>
 
     <!-- Key-Value Detail Table -->
     <table width="100%" cellpadding="7" cellspacing="0" style="border-collapse: collapse; margin-bottom: 22px;">
         <tr style="background-color: #f1f5f9;">
-            <td width="35%" style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #334155; font-size: 11px;">Transaction ID</td>
-            <td width="65%" align="right" style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #162a45; font-size: 11px; font-family: Courier, monospace;">{{ txn_ref }}</td>
+            <td width="40%" style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #334155; font-size: 11px; vertical-align: middle;">Transaction ID</td>
+            <td width="60%" align="right" style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #162a45; font-size: 11px; font-family: Courier, monospace; vertical-align: middle;">{{ txn_ref }}</td>
         </tr>
         <tr>
-            <td style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #334155; font-size: 11px;">Status</td>
-            <td align="right" style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: {{ '#15803d' if status == 'success' else '#dc2626' }}; font-size: 11px;">{{ status | upper }}</td>
+            <td width="40%" style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #334155; font-size: 11px; vertical-align: middle;">Status</td>
+            <td width="60%" align="right" style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: {{ '#15803d' if status == 'success' else '#dc2626' }}; font-size: 11px; vertical-align: middle;">{{ status | upper }}</td>
         </tr>
         <tr style="background-color: #f1f5f9;">
-            <td style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #334155; font-size: 11px;">Type</td>
-            <td align="right" style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #162a45; font-size: 11px;">{{ type | upper }}</td>
+            <td width="40%" style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #334155; font-size: 11px; vertical-align: middle;">Type</td>
+            <td width="60%" align="right" style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #162a45; font-size: 11px; vertical-align: middle;">{{ type | upper }}</td>
         </tr>
         <tr>
-            <td style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #334155; font-size: 11px;">Amount</td>
-            <td align="right" style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #162a45; font-size: 11px;">Rs {{ "%.2f"|format(amount) }}</td>
+            <td width="40%" style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #334155; font-size: 11px; vertical-align: middle;">Amount {{ 'Credited' if type == 'credit' else 'Debited' }}</td>
+            <td width="60%" align="right" style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: {{ '#15803d' if type == 'credit' else '#162a45' }}; font-size: 11.5px; vertical-align: middle;">Rs {{ "%.2f"|format(amount) }}</td>
         </tr>
         <tr style="background-color: #f1f5f9;">
-            <td style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #334155; font-size: 11px;">Category</td>
-            <td align="right" style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #162a45; font-size: 11px;">{{ category }}</td>
+            <td width="40%" style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #334155; font-size: 11px; vertical-align: middle;">Category</td>
+            <td width="60%" align="right" style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #162a45; font-size: 11px; vertical-align: middle;">{{ category }}</td>
         </tr>
         <tr>
             <td style="border-bottom: 1px solid #e2e8f0; font-weight: bold; color: #334155; font-size: 11px;">To / From</td>

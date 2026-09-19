@@ -175,11 +175,9 @@ export function DigitalGoldScreen({ onBack }) {
             <>
               {/* Hero Gold Vault Card */}
               <div
-                className="rounded-[22px] overflow-hidden p-6 relative glow-hero"
+                className="rounded-[22px] overflow-hidden p-6 relative glow-hero bg-card border border-accent/35 dark:bg-gradient-to-br dark:from-[#151210] dark:via-[#1a1512] dark:to-[#201a14]"
                 style={{
-                  background: "linear-gradient(135deg, #151210 0%, #1a1512 60%, #201a14 100%)",
-                  border: "1.5px solid rgba(255,106,26,.35)",
-                  boxShadow: glowing ? "0 0 40px rgba(255,106,26,.3), 0 8px 32px rgba(0,0,0,.3)" : "0 8px 32px rgba(0,0,0,.2)",
+                  boxShadow: glowing ? "0 0 40px rgba(255,106,26,.3), 0 8px 32px rgba(0,0,0,.12)" : "0 8px 32px rgba(0,0,0,.08)",
                   animation: glowing ? "goldPulse 1.5s ease" : "none",
                 }}
               >
@@ -218,8 +216,9 @@ export function DigitalGoldScreen({ onBack }) {
                   <p className="text-muted text-[11px] mt-0.5">Round every payment to nearest ₹10, invest the difference</p>
                 </div>
                 <button
-                  className="btn relative w-14 h-7 rounded-full transition-colors duration-300"
-                  style={{ background: roundUpEnabled ? "#FF6A1A" : "#5C564F44" }}
+                  className={`btn relative w-14 h-7 rounded-full transition-colors duration-300 ${
+                    roundUpEnabled ? "bg-accent" : "bg-line"
+                  }`}
                   onClick={handleToggleRoundUp}
                   disabled={toggling}
                 >

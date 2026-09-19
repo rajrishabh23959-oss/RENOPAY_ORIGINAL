@@ -63,9 +63,15 @@ export function RequestScreen({ onBack }) {
       <div className="px-[22px]">
         <div className="flex gap-2 mb-4">
           {[["send", "Send Request"], ["inbox", "Inbox"]].map(([v, l]) => (
-            <button key={v} className="btn flex-1 py-2.5 rounded-[10px] text-xs font-semibold"
-                    style={{ background: tab === v ? "#FF6A1A" : "#151210", color: tab === v ? "#fff" : "#5C564F", border: `1px solid ${tab === v ? "#FF6A1A" : "#2A2320"}` }}
-                    onClick={() => setTab(v)}>
+            <button
+              key={v}
+              className={`btn flex-1 py-2.5 rounded-[10px] text-xs font-semibold transition-all ${
+                tab === v
+                  ? "bg-accent text-white shadow-sm border border-accent"
+                  : "bg-card text-muted hover:text-textLight border border-line"
+              }`}
+              onClick={() => setTab(v)}
+            >
               {l}{v === "inbox" && pendingCount > 0 && <span className="ml-1.5 bg-danger text-white rounded-full px-1.5 text-[10px]">{pendingCount}</span>}
             </button>
           ))}
@@ -109,7 +115,7 @@ export function RequestScreen({ onBack }) {
           <div className="animate-fadeUp">
             {inbox.length === 0 && <p className="text-muted text-center py-10">No incoming requests</p>}
             {inbox.map((r) => (
-              <Card key={r.id} className="p-4 mb-2.5" style={{ border: `1px solid ${r.status === "pending" ? "#FFA00044" : "#2A2320"}` }}>
+              <Card key={r.id} className={`p-4 mb-2.5 ${r.status === "pending" ? "border-warn/40" : "border-line"}`}>
                 <div className="flex justify-between items-start mb-2.5">
                   <div><p className="font-bold text-sm text-textLight">{r.from_vpa}</p><p className="text-muted text-[11px]">{r.note || "No note"} · {ago(r.created_at)}</p></div>
                   <p className="font-mono font-bold text-lg text-warn">{fmt(r.amount)}</p>

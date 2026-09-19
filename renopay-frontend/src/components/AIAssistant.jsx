@@ -786,7 +786,7 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
 
           {/* Docked Audio Controller under circle (Handwritten diagram layout) */}
           {speakingMessageId && speechStatus !== "idle" && (
-            <div className="mt-2.5 flex items-center gap-2 bg-[#171310]/95 backdrop-blur-xl border border-teal/50 px-3 py-1.5 rounded-full shadow-[0_12px_30px_rgba(0,0,0,0.95)] animate-fade-in z-[95]">
+            <div className="mt-2.5 flex items-center gap-2 bg-surf/95 backdrop-blur-xl border border-teal/50 px-3 py-1.5 rounded-full shadow-[0_12px_30px_rgba(0,0,0,0.5)] animate-fade-in z-[95]">
               {speechStatus === "ended" ? (
                 /* Replay Button (shown when voice finishes) */
                 <button
@@ -802,14 +802,14 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
                 <button
                   type="button"
                   onClick={toggleSpeechPause}
-                  className="btn px-2.5 py-1 rounded-full text-xs font-bold bg-white/10 hover:bg-white/20 text-white flex items-center gap-1 transition-all active:scale-95 cursor-pointer"
+                  className="btn px-2.5 py-1 rounded-full text-xs font-bold bg-card hover:bg-surf text-textLight flex items-center gap-1 transition-all active:scale-95 cursor-pointer border border-line"
                   title={speechStatus === "paused" ? "Resume Saathi Voice" : "Pause Saathi Voice"}
                 >
                   <span>{speechStatus === "paused" ? "▶️ Play" : "⏸️ Pause"}</span>
                 </button>
               )}
 
-              <span className="w-px h-3.5 bg-white/20" />
+              <span className="w-px h-3.5 bg-line" />
 
               {/* Stop Button (Cancels audio & resets icon to normal) */}
               <button
@@ -828,7 +828,7 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
       {/* ── 2. Centered Modal Overlay ("BEECH ME KRO") ───────────────── */}
       {isOpen && (
         <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-2.5 sm:p-5 bg-black/80 backdrop-blur-md transition-all duration-200"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-2.5 sm:p-5 bg-black/75 backdrop-blur-md transition-all duration-200"
           onClick={(e) => {
             if (e.target === e.currentTarget) handleClose();
           }}
@@ -836,20 +836,20 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
           {/* Centered Modal Card */}
           <div
             ref={modalRef}
-            className="relative w-full max-w-[460px] h-[88dvh] max-h-[640px] flex flex-col bg-[#120F0D] border border-accent/40 rounded-3xl shadow-[0_25px_70px_rgba(0,0,0,0.85),0_0_35px_rgba(255,106,26,0.2)] overflow-hidden ring-1 ring-white/10 animate-fade-in"
+            className="relative w-full max-w-[460px] h-[88dvh] max-h-[640px] flex flex-col bg-card border border-accent/40 rounded-3xl shadow-[0_25px_70px_rgba(0,0,0,0.85),0_0_35px_rgba(255,106,26,0.2)] overflow-hidden ring-1 ring-black/5 dark:ring-white/10 animate-fade-in"
           >
             {/* Top subtle decorative ambient glow */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-80 h-28 bg-gradient-to-b from-accent/25 to-transparent blur-3xl pointer-events-none -z-0" />
 
             {/* Mobile Top Grab / Close Bar (Guaranteed Cut button on phone) */}
-            <div className="sm:hidden flex items-center justify-between px-3.5 py-2 bg-[#171310] border-b border-line/60 flex-shrink-0 z-20">
+            <div className="sm:hidden flex items-center justify-between px-3.5 py-2 bg-surf border-b border-line flex-shrink-0 z-20">
               <span className="text-xs font-bold text-muted flex items-center gap-1.5">
                 <span>✨</span> Saathi AI Assistant
               </span>
               <button
                 type="button"
                 onClick={handleClose}
-                className="px-3 py-1 rounded-full bg-white/15 active:bg-danger text-white text-xs font-black flex items-center gap-1 border border-white/25 shadow-sm cursor-pointer"
+                className="px-3 py-1 rounded-full bg-card hover:bg-surf border border-line active:bg-danger text-textLight text-xs font-black flex items-center gap-1 shadow-sm cursor-pointer"
                 aria-label="Close Saathi Chat"
               >
                 ✕ Close
@@ -857,21 +857,21 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
             </div>
 
             {/* Header Bar */}
-            <div className="relative z-10 px-3.5 sm:px-4 py-3 bg-[#181412]/95 backdrop-blur-md border-b border-line/80 flex items-center justify-between gap-2 flex-shrink-0">
+            <div className="relative z-10 px-3.5 sm:px-4 py-3 bg-surf/95 backdrop-blur-md border-b border-line flex items-center justify-between gap-2 flex-shrink-0">
               {/* Saathi Brand & Status */}
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
                 <div className="relative w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0">
                   <img
                     src={saathiLogo}
                     alt="Saathi Logo"
-                    className="w-10 h-10 rounded-full object-cover border-2 border-accent/50 shadow-md ring-1 ring-white/10"
+                    className="w-10 h-10 rounded-full object-cover border-2 border-accent/50 shadow-md ring-1 ring-black/5 dark:ring-white/10"
                   />
                   {/* Online Dot */}
-                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-teal border-2 border-[#181412] shadow-sm animate-pulse" />
+                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-teal border-2 border-card shadow-sm animate-pulse" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <h3 className="text-sm sm:text-base font-black text-white tracking-wide truncate">
+                    <h3 className="text-sm sm:text-base font-black text-textLight tracking-wide truncate">
                       Saathi
                     </h3>
                     <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-teal/15 text-teal font-bold border border-teal/30 flex-shrink-0">
@@ -898,11 +898,11 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
                         .catch(() => { });
                     }
                   }}
-                  className="bg-[#1D1815] border border-accent/40 text-[11px] text-accent font-bold rounded-xl px-2 py-1.5 outline-none cursor-pointer max-w-[120px] sm:max-w-none truncate hover:border-accent transition-colors"
+                  className="bg-card border border-accent/40 text-[11px] text-accent font-bold rounded-xl px-2 py-1.5 outline-none cursor-pointer max-w-[120px] sm:max-w-none truncate hover:border-accent transition-colors"
                   title="Change AI Language"
                 >
                   {LANGUAGES.map((l) => (
-                    <option key={l.code} value={l.code} className="bg-[#181412] text-white">
+                    <option key={l.code} value={l.code} className="bg-card text-textLight">
                       {l.flag} {l.native}
                     </option>
                   ))}
@@ -912,7 +912,7 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
                 <button
                   type="button"
                   onClick={handleClose}
-                  className="w-9 h-9 rounded-full bg-white/15 hover:bg-white/25 active:bg-danger/60 border border-white/20 text-white flex items-center justify-center text-base font-black transition-all cursor-pointer flex-shrink-0 shadow-sm"
+                  className="w-9 h-9 rounded-full bg-card hover:bg-surf active:bg-danger/60 border border-line text-textLight flex items-center justify-center text-base font-black transition-all cursor-pointer flex-shrink-0 shadow-sm"
                   title="Close (Esc)"
                   aria-label="Close Saathi Chat"
                 >
@@ -960,14 +960,14 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
                             ? "bg-gradient-to-r from-accent to-[#D43D0A] text-white rounded-br-none shadow-md font-medium"
                             : m.isError
                               ? "bg-danger/15 text-danger border border-danger/30 rounded-bl-none"
-                              : "bg-[#1B1614] text-zinc-100 border border-white/10 rounded-bl-none shadow-sm"
+                              : "bg-surf text-textLight border border-line rounded-bl-none shadow-sm"
                           }`}
                       >
                         <div className="whitespace-pre-wrap">{m.content}</div>
 
                         {/* Footer with Timestamp & Listen / Pause / Stop buttons */}
                         {!isUser && !m.isError && (
-                          <div className="mt-2.5 pt-2 border-t border-white/[0.08] flex items-center justify-between text-[11px] text-muted">
+                          <div className="mt-2.5 pt-2 border-t border-line/60 flex items-center justify-between text-[11px] text-muted">
                             <span className="text-[10px]">{m.time}</span>
                             {speakingMessageId === m.id && speechStatus !== "idle" ? (
                               <div className="flex items-center gap-1.5">
@@ -978,7 +978,7 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
                                       e.stopPropagation();
                                       replaySpeech();
                                     }}
-                                    className="text-white hover:text-accent font-bold transition-colors flex items-center gap-1 cursor-pointer bg-accent/25 hover:bg-accent/40 px-2 py-0.5 rounded-md border border-accent/40 text-[10px]"
+                                    className="text-accent hover:brightness-110 font-bold transition-colors flex items-center gap-1 cursor-pointer bg-accent/15 hover:bg-accent/25 px-2 py-0.5 rounded-md border border-accent/30 text-[10px]"
                                     title="Replay voice from start"
                                   >
                                     <span>🔁 Replay</span>
@@ -990,7 +990,7 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
                                       e.stopPropagation();
                                       toggleSpeechPause();
                                     }}
-                                    className="text-white hover:text-accent font-bold transition-colors flex items-center gap-1 cursor-pointer bg-white/10 px-2 py-0.5 rounded-md border border-white/10 text-[10px]"
+                                    className="text-textLight hover:text-accent font-bold transition-colors flex items-center gap-1 cursor-pointer bg-card px-2 py-0.5 rounded-md border border-line text-[10px]"
                                     title={speechStatus === "paused" ? "Resume voice" : "Pause voice"}
                                   >
                                     <span>{speechStatus === "paused" ? "▶️ Play" : "⏸️ Pause"}</span>
@@ -1013,7 +1013,7 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
                               <button
                                 type="button"
                                 onClick={() => toggleSpeechSynthesis(m.id, m.content)}
-                                className="text-muted hover:text-accent font-semibold transition-colors flex items-center gap-1 cursor-pointer bg-white/5 px-2 py-0.5 rounded-md border border-white/5"
+                                className="text-muted hover:text-accent font-semibold transition-colors flex items-center gap-1 cursor-pointer bg-card px-2 py-0.5 rounded-md border border-line"
                                 title="Listen audio"
                               >
                                 <span>🔊 Listen</span>
@@ -1034,7 +1034,7 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
 
               {/* Saathi Thinking Animation */}
               {busy && (
-                <div className="flex items-center gap-2.5 p-3.5 rounded-2xl bg-[#1B1614] border border-white/10 w-fit animate-pulse">
+                <div className="flex items-center gap-2.5 p-3.5 rounded-2xl bg-surf border border-line w-fit animate-pulse shadow-sm">
                   <img
                     src={saathiLogo}
                     alt="Saathi"
@@ -1057,13 +1057,13 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
 
             {/* Quick Context-Aware Suggestion Chips */}
             {messages.length <= 4 && (
-              <div className="relative z-10 px-4 py-2.5 bg-[#15110E] border-t border-line/80 flex gap-2 overflow-x-auto scrollbar-none">
+              <div className="relative z-10 px-4 py-2.5 bg-surf/95 border-t border-line flex gap-2 overflow-x-auto scrollbar-none">
                 {currentPrompts.map((prompt, i) => (
                   <button
                     key={i}
                     type="button"
                     onClick={() => handleSend(prompt)}
-                    className="whitespace-nowrap px-3 py-1.5 rounded-full bg-[#1F1916] border border-white/10 text-xs text-muted hover:text-white hover:border-accent/50 hover:bg-accent/15 transition-all cursor-pointer font-medium"
+                    className="whitespace-nowrap px-3 py-1.5 rounded-full bg-card border border-line text-xs text-text hover:text-textLight hover:border-accent/50 hover:bg-accent/10 transition-all cursor-pointer font-medium"
                   >
                     💡 {prompt}
                   </button>
@@ -1091,14 +1091,14 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
             )}
 
             {/* Input Footer Bar */}
-            <div className="relative z-10 p-3.5 bg-[#181412] border-t border-line/80 flex items-center gap-2.5">
+            <div className="relative z-10 p-3.5 bg-surf border-t border-line flex items-center gap-2.5">
               {/* Mic Voice Button */}
               <button
                 type="button"
                 onClick={toggleSpeechRecognition}
                 className={`w-11 h-11 rounded-2xl flex items-center justify-center text-lg transition-all cursor-pointer flex-shrink-0 ${isListening
                     ? "bg-[#FF3D60] text-white animate-pulse shadow-lg ring-2 ring-[#FF3D60]/50"
-                    : "bg-[#1F1916] border border-white/10 text-muted hover:text-accent hover:border-accent/40"
+                    : "bg-card border border-line text-muted hover:text-accent hover:border-accent/40"
                   }`}
                 title={isListening ? "Listening..." : "Tap to Speak (Voice)"}
               >
@@ -1116,7 +1116,7 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
                     ? "RenoPay, UPI, Accounting ya Stock Market ke baare me poochein..."
                     : `Ask about RenoPay, UPI, Accounting or Stocks in ${currentLangObj.native}...`
                 }
-                className="flex-1 bg-[#120F0D] border border-white/15 rounded-2xl py-2.5 px-4 text-xs sm:text-sm text-white placeholder:text-muted/60 outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
+                className="flex-1 bg-bg border border-line rounded-2xl py-2.5 px-4 text-xs sm:text-sm text-textLight placeholder:text-muted outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
                 disabled={busy}
                 autoFocus
               />

@@ -151,18 +151,18 @@ function VaultCard({ vault, onRefresh }) {
   const activeReq = vault.active_withdrawal;
 
   return (
-    <Card className="p-[18px] mb-5 border-accent/[.3] shadow-lg relative bg-gradient-to-b from-[#211A16] to-[#171311]">
+    <Card className="p-[18px] mb-5 border-accent/[.3] shadow-lg relative bg-card dark:bg-gradient-to-b dark:from-[#211A16] dark:to-[#171311]">
       {/* Toast Notification */}
       {successMsg && (
         <div className="mb-3 p-2.5 rounded-xl bg-success/20 border border-success/40 text-success text-xs font-semibold flex items-center justify-between animate-fadeUp">
           <span>✓ {successMsg}</span>
-          <button onClick={() => setSuccessMsg("")} className="text-white text-xs cursor-pointer ml-2">✕</button>
+          <button onClick={() => setSuccessMsg("")} className="text-textLight text-xs cursor-pointer ml-2">✕</button>
         </div>
       )}
       {err && (
         <div className="mb-3 p-2.5 rounded-xl bg-danger/20 border border-danger/40 text-danger text-xs font-semibold flex items-center justify-between animate-fadeUp">
           <span>⚠ {err}</span>
-          <button onClick={() => setErr("")} className="text-white text-xs cursor-pointer ml-2">✕</button>
+          <button onClick={() => setErr("")} className="text-textLight text-xs cursor-pointer ml-2">✕</button>
         </div>
       )}
 
@@ -171,7 +171,7 @@ function VaultCard({ vault, onRefresh }) {
         <div>
           <div className="flex items-center gap-2">
             <span className="text-2xl">{vault.icon}</span>
-            <h3 className="font-extrabold text-base text-white">{vault.name}</h3>
+            <h3 className="font-extrabold text-base text-textLight">{vault.name}</h3>
           </div>
           <p className="text-muted text-[11px] mt-0.5">
             <span className="font-mono font-bold text-accent">{fmt(vault.balance)}</span> of {fmt(vault.target)}
@@ -210,7 +210,7 @@ function VaultCard({ vault, onRefresh }) {
 
       {/* ACTIVE FULL VAULT WITHDRAWAL REQUEST BANNER */}
       {activeReq && (
-        <div className="p-4 mb-4 rounded-2xl bg-gradient-to-r from-[#3A1E11] to-[#25150E] border-2 border-accent shadow-xl animate-fadeUp">
+        <div className="p-4 mb-4 rounded-2xl bg-card border-2 border-accent shadow-xl animate-fadeUp dark:bg-gradient-to-r dark:from-[#3A1E11] dark:to-[#25150E]">
           <div className="flex items-start gap-3">
             <span className="text-3xl animate-bounce">🔔</span>
             <div className="flex-1 min-w-0">
@@ -220,10 +220,10 @@ function VaultCard({ vault, onRefresh }) {
                 </span>
                 <span className="text-[10px] text-muted">{ago(activeReq.created_at)}</span>
               </div>
-              <p className="text-xs font-bold text-white">
+              <p className="text-xs font-bold text-textLight">
                 <span className="text-accent font-extrabold">{activeReq.requester_name}</span> has requested to withdraw the full vault:
               </p>
-              <p className="text-2xl font-mono font-black text-white my-1 tracking-tight">
+              <p className="text-2xl font-mono font-black text-textLight my-1 tracking-tight">
                 {fmt(activeReq.amount)}
               </p>
               <p className="text-[11px] text-muted">
@@ -258,7 +258,7 @@ function VaultCard({ vault, onRefresh }) {
                   <button
                     type="button"
                     onClick={handleRejectWithdrawal}
-                    className="btn py-2.5 px-3 rounded-xl bg-surf border border-line text-muted hover:text-white font-bold text-xs cursor-pointer"
+                    className="btn py-2.5 px-3 rounded-xl bg-surf border border-line text-muted hover:text-textLight font-bold text-xs cursor-pointer"
                   >
                     Reject
                   </button>
@@ -272,7 +272,7 @@ function VaultCard({ vault, onRefresh }) {
       {/* MEMBERS & STAKE CONTRIBUTION BREAKDOWN */}
       <div className="mb-4">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-bold text-white flex items-center gap-1.5">
+          <p className="text-xs font-bold text-textLight flex items-center gap-1.5">
             <span>👥</span> Vault Members ({vault.members?.length || 0})
           </p>
           <button
@@ -298,7 +298,7 @@ function VaultCard({ vault, onRefresh }) {
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="text-sm">{m.is_creator ? "👑" : "👤"}</span>
-                  <p className="text-xs font-bold text-white truncate">{m.name}</p>
+                  <p className="text-xs font-bold text-textLight truncate">{m.name}</p>
                   {m.is_current_user && (
                     <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-accent/20 text-accent border border-accent/30">
                       You
@@ -309,7 +309,7 @@ function VaultCard({ vault, onRefresh }) {
               </div>
 
               <div className="text-right shrink-0">
-                <p className="font-mono font-bold text-xs text-white">
+                <p className="font-mono font-bold text-xs text-textLight">
                   {fmt(m.contributed_amount)}
                 </p>
                 <span className="text-[9px] text-muted">Contributed</span>
@@ -320,7 +320,7 @@ function VaultCard({ vault, onRefresh }) {
 
         {/* PERSONAL CONTRIBUTION REFUND (No other member's request needed) */}
         {myContributedAmount > 0 && (
-          <div className="mt-2.5 p-2.5 rounded-xl bg-[#2A1D16] border border-warn/30 flex items-center justify-between gap-2">
+          <div className="mt-2.5 p-2.5 rounded-xl bg-card border border-warn/40 flex items-center justify-between gap-2 dark:bg-[#2A1D16]">
             <div>
               <p className="text-[11px] font-bold text-textLight">Your Personal Contribution</p>
               <p className="font-mono text-xs font-bold text-[#FFA000]">{fmt(myContributedAmount)}</p>
@@ -332,7 +332,7 @@ function VaultCard({ vault, onRefresh }) {
                 setErr("");
                 setWithdrawMyPinOpen(true);
               }}
-              className="btn py-1.5 px-3 rounded-lg bg-warn/20 hover:bg-warn/30 border border-warn/40 text-warn hover:text-white text-xs font-bold transition-all cursor-pointer"
+              className="btn py-1.5 px-3 rounded-lg bg-warn/20 hover:bg-warn/30 border border-warn/40 text-warn hover:text-textLight text-xs font-bold transition-all cursor-pointer"
             >
               Withdraw My Money ↩
             </button>
@@ -415,14 +415,14 @@ function VaultCard({ vault, onRefresh }) {
 
       {/* MODAL 1: Enter UPI PIN to Contribute */}
       {contributePinOpen && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[999] p-4 animate-fadeUp">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[999] p-4 animate-fadeUp">
           <Card className="p-6 max-w-[320px] w-full border-accent/40 shadow-2xl">
-            <p className="text-center font-bold text-white text-sm mb-1">Confirm Contribution</p>
+            <p className="text-center font-bold text-textLight text-sm mb-1">Confirm Contribution</p>
             <p className="text-center text-muted text-xs mb-4">
               Adding <strong className="text-accent">{fmt(Number(contributeAmount))}</strong> to {vault.name}
             </p>
             <PINPad onComplete={confirmContributePin} label="Enter 6-digit UPI PIN" actionType="pay" actionLabel="Contribute" />
-            <button className="btn w-full mt-3 text-muted text-xs cursor-pointer" onClick={() => setContributePinOpen(false)}>
+            <button className="btn w-full mt-3 text-muted text-xs cursor-pointer hover:text-textLight" onClick={() => setContributePinOpen(false)}>
               Cancel
             </button>
           </Card>
@@ -431,9 +431,9 @@ function VaultCard({ vault, onRefresh }) {
 
       {/* MODAL 2: Add Member (Phone Number or UPI ID) */}
       {addMemberOpen && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[999] p-4 animate-fadeUp">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[999] p-4 animate-fadeUp">
           <Card className="p-5 max-w-[340px] w-full border-accent/40 shadow-2xl">
-            <h4 className="font-extrabold text-base text-white mb-1">Add Member to Vault</h4>
+            <h4 className="font-extrabold text-base text-textLight mb-1">Add Member to Vault</h4>
             <p className="text-xs text-muted mb-3">Enter the member's UPI ID or 10-digit phone number</p>
             <form onSubmit={handleAddMember}>
               <input
@@ -458,14 +458,14 @@ function VaultCard({ vault, onRefresh }) {
 
       {/* MODAL 3: Personal Contribution Withdrawal (No one else's approval needed) */}
       {withdrawMyPinOpen && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[999] p-4 animate-fadeUp">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[999] p-4 animate-fadeUp">
           <Card className="p-6 max-w-[320px] w-full border-warn/40 shadow-2xl">
-            <p className="text-center font-bold text-white text-sm mb-1">Withdraw Your Contribution</p>
+            <p className="text-center font-bold text-textLight text-sm mb-1">Withdraw Your Contribution</p>
             <p className="text-center text-muted text-xs mb-4">
               Refunding <strong className="text-warn">{fmt(myContributedAmount)}</strong> back to your main account balance
             </p>
             <PINPad onComplete={confirmWithdrawMyContribution} label="Enter 6-digit UPI PIN" actionType="withdraw" actionLabel="Withdraw" />
-            <button className="btn w-full mt-3 text-muted text-xs cursor-pointer" onClick={() => setWithdrawMyPinOpen(false)}>
+            <button className="btn w-full mt-3 text-muted text-xs cursor-pointer hover:text-textLight" onClick={() => setWithdrawMyPinOpen(false)}>
               Cancel
             </button>
           </Card>
@@ -474,14 +474,14 @@ function VaultCard({ vault, onRefresh }) {
 
       {/* MODAL 4: Request Full Vault Withdrawal (Requires other members' consent) */}
       {vaultWithdrawPinOpen && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[999] p-4 animate-fadeUp">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[999] p-4 animate-fadeUp">
           <Card className="p-6 max-w-[320px] w-full border-accent/40 shadow-2xl">
-            <p className="text-center font-extrabold text-white text-base mb-1">Withdraw Full Vault</p>
+            <p className="text-center font-extrabold text-textLight text-base mb-1">Withdraw Full Vault</p>
             <p className="text-center text-xs text-muted mb-4">
               A withdrawal request for <strong className="text-accent">{fmt(vault.balance)}</strong> will be sent to all vault members. Once all members accept with their UPI PIN, funds will be transferred to your account.
             </p>
             <PINPad onComplete={confirmRequestVaultWithdrawPin} label="Enter 6-digit UPI PIN to Request" actionType="withdraw" actionLabel="Send Request" />
-            <button className="btn w-full mt-3 text-muted text-xs cursor-pointer" onClick={() => setVaultWithdrawPinOpen(false)}>
+            <button className="btn w-full mt-3 text-muted text-xs cursor-pointer hover:text-textLight" onClick={() => setVaultWithdrawPinOpen(false)}>
               Cancel
             </button>
           </Card>
@@ -490,15 +490,15 @@ function VaultCard({ vault, onRefresh }) {
 
       {/* MODAL 5: Member Approval PIN (Accept & Pay) */}
       {approvePinOpen && activeReq && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[999] p-4 animate-fadeUp">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-[999] p-4 animate-fadeUp">
           <Card className="p-6 max-w-[320px] w-full border-accent/40 shadow-2xl">
-            <p className="text-center font-bold text-white text-sm mb-1">Allow Vault Withdrawal</p>
+            <p className="text-center font-bold text-textLight text-sm mb-1">Allow Vault Withdrawal</p>
             <p className="text-center text-muted text-xs mb-4">
-              Allowing <strong className="text-white">{activeReq.requester_name}</strong> to withdraw full vault{" "}
+              Allowing <strong className="text-textLight">{activeReq.requester_name}</strong> to withdraw full vault{" "}
               <strong className="text-accent">{fmt(activeReq.amount)}</strong>
             </p>
             <PINPad onComplete={confirmApprovePin} label="Enter 6-digit UPI PIN to Allow" actionType="withdraw" actionLabel="Accept & Pay" />
-            <button className="btn w-full mt-3 text-muted text-xs cursor-pointer" onClick={() => setApprovePinOpen(false)}>
+            <button className="btn w-full mt-3 text-muted text-xs cursor-pointer hover:text-textLight" onClick={() => setApprovePinOpen(false)}>
               Cancel
             </button>
           </Card>
@@ -587,7 +587,7 @@ export function VaultScreen({ onBack }) {
             ←
           </button>
           <div>
-            <h2 className="text-[20px] font-extrabold text-white leading-tight flex items-center gap-1.5">
+            <h2 className="text-[20px] font-extrabold text-textLight leading-tight flex items-center gap-1.5">
               Shared Vaults <span>🏖️</span>
             </h2>
             <p className="text-[11px] text-muted">Save together with friends & multi-party consensus</p>
@@ -599,7 +599,7 @@ export function VaultScreen({ onBack }) {
         {vaults.length === 0 && !showNew && !loading && (
           <div className="text-center py-12">
             <p className="text-4xl mb-2">🏖️</p>
-            <p className="text-white font-bold text-sm">No shared vaults yet</p>
+            <p className="text-textLight font-bold text-sm">No shared vaults yet</p>
             <p className="text-muted text-xs mt-1">Create a group vault with friends via phone numbers or UPI IDs!</p>
           </div>
         )}
@@ -609,7 +609,7 @@ export function VaultScreen({ onBack }) {
         ))}
 
         {showNew ? (
-          <Card className="p-5 border-accent/[.35] shadow-2xl bg-[#1F1814] mb-6">
+          <Card className="p-5 border-accent/[.35] shadow-2xl bg-card dark:bg-[#1F1814] mb-6">
             <p className="font-extrabold text-base mb-3 text-accent flex items-center gap-2">
               <span>➕</span> New Shared Vault
             </p>
@@ -620,11 +620,11 @@ export function VaultScreen({ onBack }) {
                 <button
                   key={ic}
                   type="button"
-                  className="btn p-2 rounded-xl text-xl cursor-pointer transition-all active:scale-95"
-                  style={{
-                    background: form.icon === ic ? "#FF6A1A2A" : "#161210",
-                    border: `1.5px solid ${form.icon === ic ? "#FF6A1A" : "#2A2320"}`,
-                  }}
+                  className={`btn p-2 rounded-xl text-xl cursor-pointer transition-all active:scale-95 border ${
+                    form.icon === ic
+                      ? "bg-accent/20 border-accent text-accent"
+                      : "bg-surf border-line text-textLight hover:border-accent/40"
+                  }`}
                   onClick={() => setForm((f) => ({ ...f, icon: ic }))}
                 >
                   {ic}

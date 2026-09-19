@@ -184,12 +184,11 @@ export function ExpensesScreen({ onBack }) {
           ].map(([v, l]) => (
             <button
               key={v}
-              className="btn flex-1 py-2 rounded-[10px] text-xs font-semibold transition-all"
-              style={{
-                background: period === v ? "#FF6A1A" : "#151210",
-                color: period === v ? "#fff" : "#8C827A",
-                border: `1px solid ${period === v ? "#FF6A1A" : "#2A2320"}`,
-              }}
+              className={`btn flex-1 py-2 rounded-[10px] text-xs font-semibold transition-all ${
+                period === v
+                  ? "bg-accent text-white shadow-sm border border-accent"
+                  : "bg-card text-muted hover:text-textLight border border-line"
+              }`}
               onClick={() => setPeriod(v)}
             >
               {l}
@@ -199,7 +198,7 @@ export function ExpensesScreen({ onBack }) {
 
         {/* Custom Calendar Date Range Picker */}
         {period === "custom" && (
-          <Card className="p-4 border-accent/30 bg-gradient-to-b from-[#1F1916] to-[#141110] animate-fadeUp">
+          <Card className="p-4 border-accent/30 bg-card dark:bg-gradient-to-b dark:from-[#1F1916] dark:to-[#141110] animate-fadeUp">
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-bold text-textLight flex items-center gap-1.5">
                 <span>📅</span> Select Custom Date Range
@@ -274,12 +273,12 @@ export function ExpensesScreen({ onBack }) {
           <>
             {/* Top Stat Cards */}
             <div className="grid grid-cols-2 gap-3">
-              <Card className="p-4 border-danger/[.25] bg-gradient-to-br from-[#201515] to-[#151210]">
+              <Card className="p-4 border-danger/[.25] bg-card dark:bg-gradient-to-br dark:from-[#201515] dark:to-[#151210]">
                 <p className="text-muted text-[10px] tracking-wide font-semibold uppercase">Total Spent</p>
                 <p className="font-mono text-2xl font-black text-danger mt-1.5">{fmt(data.total_spent)}</p>
                 <p className="text-[10px] text-muted mt-1">Outflow</p>
               </Card>
-              <Card className="p-4 border-teal/[.25] bg-gradient-to-br from-[#12201c] to-[#151210]">
+              <Card className="p-4 border-teal/[.25] bg-card dark:bg-gradient-to-br dark:from-[#12201c] dark:to-[#151210]">
                 <p className="text-muted text-[10px] tracking-wide font-semibold uppercase">Total Inflow</p>
                 <p className="font-mono text-2xl font-black text-teal mt-1.5">{fmt(data.total_income)}</p>
                 <p className="text-[10px] mt-1" style={{ color: data.net >= 0 ? "#22C55E" : "#ef4444" }}>
@@ -289,7 +288,7 @@ export function ExpensesScreen({ onBack }) {
             </div>
 
             {/* Monthly Budget Card with Gauge */}
-            <Card className="p-[18px] border-line/60 bg-gradient-to-b from-[#1c1815] to-[#141210]">
+            <Card className="p-[18px] border-line/60 bg-card dark:bg-gradient-to-b dark:from-[#1c1815] dark:to-[#141210]">
               <div className="flex justify-between items-center mb-2.5">
                 <div>
                   <p className="text-[13px] font-bold text-textLight">Monthly Budget Adherence</p>
@@ -379,7 +378,7 @@ export function ExpensesScreen({ onBack }) {
             </Card>
 
             {/* Bottom Statement Download CTA Card */}
-            <Card className="p-4 border-accent/30 bg-gradient-to-r from-[#211A16] to-[#171311] flex items-center justify-between">
+            <Card className="p-4 border-accent/30 bg-card dark:bg-gradient-to-r dark:from-[#211A16] dark:to-[#171311] flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-accent/20 border border-accent/40 flex items-center justify-center text-lg">
                   📄

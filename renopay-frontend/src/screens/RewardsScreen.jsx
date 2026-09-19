@@ -231,7 +231,7 @@ export function RewardsScreen({ onBack }) {
             ←
           </button>
           <div>
-            <h2 className="text-[20px] font-extrabold text-white leading-tight flex items-center gap-1.5">
+            <h2 className="text-[20px] font-extrabold text-textLight leading-tight flex items-center gap-1.5">
               Rewards & Cashback <span>🎰</span>
             </h2>
             <p className="text-[11px] text-muted">Earn 1%–2% up to ₹5 on payments of ₹100+</p>
@@ -243,7 +243,7 @@ export function RewardsScreen({ onBack }) {
         {/* Main Stats Grid */}
         <div className="grid grid-cols-2 gap-2.5 mb-3.5">
           {/* Total Reward Received */}
-          <Card className="p-3.5 border-accent/30 bg-gradient-to-br from-[#271d17] to-[#1a1512]">
+          <Card className="p-3.5 border-accent/30 bg-card dark:bg-gradient-to-br dark:from-[#271d17] dark:to-[#1a1512]">
             <p className="text-muted text-[10px] uppercase font-bold tracking-wider mb-1">Total Received</p>
             <p className="font-mono text-xl font-extrabold text-[#FF8542]">
               {fmt(summary.total_received)}
@@ -262,11 +262,11 @@ export function RewardsScreen({ onBack }) {
         </div>
 
         {/* Digital Gold Info */}
-        <div className="p-3 mb-3.5 rounded-2xl bg-[#221c17] border border-[#FF6A1A]/20 flex items-center justify-between text-xs">
+        <div className="p-3 mb-3.5 rounded-2xl bg-card border border-line flex items-center justify-between text-xs">
           <div className="flex items-center gap-2.5">
             <span className="text-2xl">🪙</span>
             <div>
-              <p className="font-bold text-white text-xs">Digital Gold Vault</p>
+              <p className="font-bold text-textLight text-xs">Digital Gold Vault</p>
               <p className="text-muted text-[10px]">Auto-saved & gold rewards</p>
             </div>
           </div>
@@ -276,11 +276,11 @@ export function RewardsScreen({ onBack }) {
         </div>
 
         {/* Available to Withdraw Banner & Action Card */}
-        <Card className="p-4 sm:p-5 mb-5 border-accent bg-gradient-to-b from-[#2E1E14] via-[#211611] to-[#1A120E] shadow-xl relative overflow-hidden">
+        <Card className="p-4 sm:p-5 mb-5 border-accent bg-card dark:bg-gradient-to-b dark:from-[#2E1E14] dark:via-[#211611] dark:to-[#1A120E] shadow-xl relative overflow-hidden">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <span className="text-xl">💰</span>
-              <span className="text-xs font-extrabold uppercase tracking-wide text-white">Available to Withdraw</span>
+              <span className="text-xs font-extrabold uppercase tracking-wide text-textLight">Available to Withdraw</span>
             </div>
             {summary.available_balance > 0 && (
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-success/20 text-success border border-success/30 animate-pulse">
@@ -290,7 +290,7 @@ export function RewardsScreen({ onBack }) {
           </div>
 
           <div className="my-2">
-            <span className="text-3xl sm:text-4xl font-mono font-black text-white tracking-tight">
+            <span className="text-3xl sm:text-4xl font-mono font-black text-textLight tracking-tight">
               {fmt(summary.available_balance)}
             </span>
             <p className="text-[11px] text-muted mt-1">
@@ -328,7 +328,7 @@ export function RewardsScreen({ onBack }) {
         {unscratchedCards.length > 0 && (
           <div className="mb-5">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-extrabold text-white flex items-center gap-1.5">
+              <h3 className="text-sm font-extrabold text-textLight flex items-center gap-1.5">
                 <span>🎁</span> Unscratched Cards ({unscratchedCards.length})
               </h3>
               <span className="text-[11px] text-accent font-semibold animate-pulse">Scratch now!</span>
@@ -342,7 +342,7 @@ export function RewardsScreen({ onBack }) {
         {/* All Reward Transactions & History */}
         <div className="mt-6">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="text-base font-bold text-white flex items-center gap-2">
+            <h3 className="text-base font-bold text-textLight flex items-center gap-2">
               <span>📋</span> All Reward Transactions
             </h3>
             <span className="text-xs text-muted font-mono">{summary.cards.length} Total</span>
@@ -362,7 +362,7 @@ export function RewardsScreen({ onBack }) {
                 className={`flex-1 py-1.5 px-2.5 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all cursor-pointer ${
                   activeTab === t.id
                     ? "bg-accent text-white shadow-sm"
-                    : "text-muted hover:text-white"
+                    : "text-muted hover:text-textLight"
                 }`}
               >
                 {t.label}
@@ -374,7 +374,7 @@ export function RewardsScreen({ onBack }) {
           {displayedCards.length === 0 ? (
             <Card className="p-8 text-center text-muted">
               <p className="text-3xl mb-2">🎰</p>
-              <p className="text-xs font-bold text-white">No transactions in this category</p>
+              <p className="text-xs font-bold text-textLight">No transactions in this category</p>
               <p className="text-[11px] text-muted mt-1">
                 Pay ₹100 or more on any transaction to earn instant rewards!
               </p>
@@ -404,7 +404,7 @@ export function RewardsScreen({ onBack }) {
                         {isWithdrawn ? "💸" : isCashback ? "💰" : "🪙"}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-xs font-bold text-white truncate">
+                        <p className="text-xs font-bold text-textLight truncate">
                           {card.label || (isCashback ? "Cashback Reward" : "Gold Reward")}
                         </p>
                         <p className="text-[10px] text-muted mt-0.5">
@@ -447,11 +447,11 @@ export function RewardsScreen({ onBack }) {
 
       {/* Withdraw Modal with UPI PIN Pad */}
       {withdrawModalOpen && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeUp">
-          <div className="bg-[#1C1714] border border-accent/30 rounded-3xl p-5 w-full max-w-sm relative shadow-2xl">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeUp">
+          <div className="bg-card border border-accent/40 rounded-3xl p-5 w-full max-w-sm relative shadow-2xl">
             <button
               type="button"
-              className="absolute top-4 right-4 text-muted hover:text-white text-lg cursor-pointer"
+              className="absolute top-4 right-4 text-muted hover:text-textLight text-lg cursor-pointer"
               onClick={() => {
                 setWithdrawModalOpen(false);
                 setWithdrawError("");
@@ -462,7 +462,7 @@ export function RewardsScreen({ onBack }) {
 
             <div className="text-center mb-4">
               <span className="text-3xl">🏧</span>
-              <h3 className="text-lg font-extrabold text-white mt-1">Withdraw Rewards</h3>
+              <h3 className="text-lg font-extrabold text-textLight mt-1">Withdraw Rewards</h3>
               <p className="text-xs text-muted">
                 Transferring <span className="font-mono font-bold text-accent">{fmt(summary.available_balance)}</span> directly to your main balance
               </p>
@@ -483,7 +483,7 @@ export function RewardsScreen({ onBack }) {
 
             <button
               type="button"
-              className="w-full mt-3 py-2 text-xs font-semibold text-muted hover:text-white cursor-pointer"
+              className="w-full mt-3 py-2 text-xs font-semibold text-muted hover:text-textLight cursor-pointer"
               onClick={() => {
                 setWithdrawModalOpen(false);
                 setWithdrawError("");
@@ -497,12 +497,12 @@ export function RewardsScreen({ onBack }) {
 
       {/* Success Celebration Modal */}
       {successModal && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeUp">
-          <div className="bg-[#1C1714] border border-success/40 rounded-3xl p-6 w-full max-w-sm text-center shadow-2xl">
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeUp">
+          <div className="bg-card border border-success/40 rounded-3xl p-6 w-full max-w-sm text-center shadow-2xl">
             <div className="w-16 h-16 rounded-full bg-success/20 border border-success/40 flex items-center justify-center text-3xl mx-auto mb-3 animate-bounce">
               ✓
             </div>
-            <h3 className="text-xl font-black text-white">Withdrawal Successful!</h3>
+            <h3 className="text-xl font-black text-textLight">Withdrawal Successful!</h3>
             <p className="text-2xl font-mono font-black text-success my-2">
               +{fmt(successModal.amount)}
             </p>
@@ -511,7 +511,7 @@ export function RewardsScreen({ onBack }) {
             </p>
             <div className="p-3 bg-surf rounded-xl border border-line mb-5 text-xs text-muted flex justify-between">
               <span>Updated Main Balance:</span>
-              <span className="font-mono font-bold text-white">{fmt(successModal.newBalance)}</span>
+              <span className="font-mono font-bold text-textLight">{fmt(successModal.newBalance)}</span>
             </div>
             <Btn
               onClick={() => setSuccessModal(null)}
