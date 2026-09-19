@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import QRCode from "qrcode";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 import { AccountAPI, AuthAPI, GoldAPI } from "../lib/api";
 import { getDeviceFingerprint, getDeviceLabel, fmt } from "../lib/format";
 import { Btn, Badge, Card } from "../components/ui";
@@ -10,6 +11,7 @@ import iconAccount from "../assets/actions/account.png";
 
 export function ProfileScreen({ onBack, onLoggedOut }) {
   const { profile, logout, refreshProfile } = useAuth();
+  const { theme, isNightMode, toggleTheme, setTheme } = useTheme();
   const [busy, setBusy] = useState(false);
   const [editingBudget, setEditingBudget] = useState(false);
   const [budgetInput, setBudgetInput] = useState("");
@@ -586,6 +588,93 @@ export function ProfileScreen({ onBack, onLoggedOut }) {
             >
               <span className="text-base">📥</span>
               <span>{downloadingQr ? "Generating Card..." : "Download QR Code"}</span>
+            </button>
+          </div>
+        </Card>
+
+        {/* App Theme Selector Card (Day Mode / Night Mode) - Placed directly above UPI PIN */}
+        <Card className="p-4 mb-3.5 border-accent/[.25] transition-all">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-xl transition-all ${
+                isNightMode
+                  ? "bg-accent/15 border border-accent/30 text-accent shadow-sm"
+                  : "bg-amber-500/15 border border-amber-400/40 text-amber-600 shadow-sm"
+              }`}>
+                {isNightMode ? "🌙" : "☀️"}
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="font-bold text-sm text-textLight">
+                    {isNightMode ? "Night Mode" : "Day Mode"}
+                  </p>
+                  <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${
+                    isNightMode
+                      ? "bg-accent/10 border-accent/40 text-accent"
+                      : "bg-amber-500/15 border-amber-500/40 text-amber-600"
+                  }`}>
+                    {isNightMode ? "Dark Active" : "Daylight Active"}
+                  </span>
+                </div>
+                <p className="text-muted text-[11.5px] mt-0.5">
+                  {isNightMode
+                    ? "Deep OLED dark theme (Default)"
+                    : "Bright crisp daylight theme"}
+                </p>
+              </div>
+            </div>
+
+            {/* Toggle Switch (ON = Night Mode, OFF = Day Mode) */}
+            <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={isNightMode}
+                onClick={toggleTheme}
+                className={`btn w-[54px] h-8 rounded-full relative transition-all duration-300 cursor-pointer p-0.5 ${
+                  isNightMode
+                    ? "bg-accent shadow-accentGlow"
+                    : "bg-slate-300 dark:bg-slate-700"
+                }`}
+                title={isNightMode ? "Switch to Day Mode" : "Switch to Night Mode"}
+              >
+                <div
+                  className="absolute top-[3px] w-[26px] h-[26px] rounded-full bg-white shadow-md flex items-center justify-center text-[12px] transition-all duration-300 transform"
+                  style={{ left: isNightMode ? "25px" : "3px" }}
+                >
+                  {isNightMode ? "🌙" : "☀️"}
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* Quick 1-Tap Mode Selector Pills */}
+          <div className="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-line">
+            <button
+              type="button"
+              onClick={() => setTheme("light")}
+              className={`btn py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all border ${
+                !isNightMode
+                  ? "bg-accent text-white border-accent shadow-sm scale-[1.02]"
+                  : "bg-surf border-line text-muted hover:text-textLight hover:bg-card"
+              }`}
+            >
+              <span>☀️</span>
+              <span>Day Mode</span>
+              {!isNightMode && <span className="text-[10px] ml-1">✓</span>}
+            </button>
+            <button
+              type="button"
+              onClick={() => setTheme("dark")}
+              className={`btn py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all border ${
+                isNightMode
+                  ? "bg-accent text-white border-accent shadow-accentGlow scale-[1.02]"
+                  : "bg-surf border-line text-muted hover:text-textLight hover:bg-card"
+              }`}
+            >
+              <span>🌙</span>
+              <span>Night Mode</span>
+              {isNightMode && <span className="text-[10px] ml-1">✓</span>}
             </button>
           </div>
         </Card>

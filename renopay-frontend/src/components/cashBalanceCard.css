@@ -391,3 +391,46 @@
   color: #FF6A1A;
   font-variant-numeric: tabular-nums;
 }
+
+/* ── Light / Day Mode Overrides ─────────────────── */
+[data-theme="light"] .cbc-card {
+  background: #FFFFFF;
+  border-color: #E5E7EB;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+[data-theme="light"] .cbc-card:hover {
+  border-color: rgba(255, 106, 26, 0.4);
+}
+[data-theme="light"] .cbc-toggle-bar {
+  background: #F3F4F6;
+  border-bottom-color: #E5E7EB;
+}
+[data-theme="light"] .cbc-toggle-tab {
+  color: #6B7280;
+}
+[data-theme="light"] .cbc-toggle-tab:hover:not(.active) {
+  color: #111827;
+  background: rgba(0, 0, 0, 0.04);
+}
+[data-theme="light"] .cbc-balance-sub,
+[data-theme="light"] .cbc-vpa-label,
+[data-theme="light"] .cbc-denom-note-count {
+  color: #6B7280;
+}
+[data-theme="light"] .cbc-denom-note-label,
+[data-theme="light"] .cbc-denom-total-val,
+[data-theme="light"] .cbc-denom-cat-title {
+  color: #111827;
+}
+[data-theme="light"] .cbc-denom-row {
+  border-bottom-color: #F3F4F6;
+}
+[data-theme="light"] .cbc-chip {
+  background: #F3F4F6;
+  border-color: #E5E7EB;
+  color: #111827;
+}
+[data-theme="light"] .cbc-chip:hover {
+  background: #E5E7EB;
+}
+

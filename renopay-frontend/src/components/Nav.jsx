@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 
 export function Nav({ active, onNavigate }) {
   const { profile } = useAuth();
+  const { isNightMode } = useTheme();
   const [isActionMenuOpen, setIsActionMenuOpen] = useState(false);
 
   // Close radial menu when active screen changes or on Escape key
@@ -147,7 +149,11 @@ export function Nav({ active, onNavigate }) {
           )}
 
           {/* ── PILL-SHAPED BAR WITH RAISED NOTCH CUTOUT ────────────────────── */}
-          <div className="relative w-full h-[66px] filter drop-shadow-[0_12px_32px_rgba(0,0,0,0.7)]">
+          <div className={`relative w-full h-[66px] filter ${
+            isNightMode
+              ? "drop-shadow-[0_12px_32px_rgba(0,0,0,0.7)]"
+              : "drop-shadow-[0_8px_24px_rgba(0,0,0,0.12)]"
+          }`}>
             {/* Curved SVG Cutout Backdrop */}
             <svg
               viewBox="0 0 400 70"
@@ -156,15 +162,10 @@ export function Nav({ active, onNavigate }) {
             >
               <defs>
                 <linearGradient id="pillGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#1B1715" />
-                  <stop offset="100%" stopColor="#110E0D" />
+                  <stop offset="0%" stopColor={isNightMode ? "#1B1715" : "#FFFFFF"} />
+                  <stop offset="100%" stopColor={isNightMode ? "#110E0D" : "#F3F4F6"} />
                 </linearGradient>
               </defs>
-              {/*
-                Smooth continuous pill path with centered circular cutout notch:
-                Start at (30,0) -> straight to (154,0) -> smooth dip to (200,32) -> smooth rise to (246,0) -> straight to (370,0)
-                -> rounded right cap -> bottom edge -> rounded left cap -> back to start
-              */}
               <path
                 d="M 32 0
                    H 152
@@ -180,7 +181,7 @@ export function Nav({ active, onNavigate }) {
                    A 32 32 0 0 1 32 0
                    Z"
                 fill="url(#pillGrad)"
-                stroke="#2F2723"
+                stroke={isNightMode ? "#2F2723" : "#E5E7EB"}
                 strokeWidth="1.2"
               />
             </svg>
@@ -228,7 +229,7 @@ export function Nav({ active, onNavigate }) {
                   type="button"
                   onClick={() => onNavigate("home")}
                   className="btn flex flex-col items-center justify-center gap-1 group py-1 min-w-[50px]"
-                  style={{ color: active === "home" ? "#FF6A1A" : "#7D746C" }}
+                  style={{ color: active === "home" ? "#FF6A1A" : (isNightMode ? "#7D746C" : "#64748B") }}
                   aria-label="Home"
                 >
                   <div className="w-5 h-5 flex items-center justify-center transition-transform group-hover:scale-110">
@@ -247,7 +248,7 @@ export function Nav({ active, onNavigate }) {
                   type="button"
                   onClick={() => onNavigate("accounting")}
                   className="btn flex flex-col items-center justify-center gap-1 group py-1 min-w-[50px]"
-                  style={{ color: active === "accounting" ? "#FF6A1A" : "#7D746C" }}
+                  style={{ color: active === "accounting" ? "#FF6A1A" : (isNightMode ? "#7D746C" : "#64748B") }}
                   aria-label="Accounting"
                 >
                   <div className="w-5 h-5 flex items-center justify-center transition-transform group-hover:scale-110">
@@ -266,7 +267,7 @@ export function Nav({ active, onNavigate }) {
               <div className="w-[20%] flex flex-col items-center justify-end pb-1.5 pointer-events-none">
                 <span
                   className="text-[9px] font-bold tracking-widest uppercase transition-colors"
-                  style={{ color: isPayActive ? "#FF6A1A" : "#8C827A" }}
+                  style={{ color: isPayActive ? "#FF6A1A" : (isNightMode ? "#8C827A" : "#64748B") }}
                 >
                   Pay
                 </span>
@@ -279,7 +280,7 @@ export function Nav({ active, onNavigate }) {
                   type="button"
                   onClick={() => onNavigate("history")}
                   className="btn flex flex-col items-center justify-center gap-1 group py-1 min-w-[50px]"
-                  style={{ color: active === "history" ? "#FF6A1A" : "#7D746C" }}
+                  style={{ color: active === "history" ? "#FF6A1A" : (isNightMode ? "#7D746C" : "#64748B") }}
                   aria-label="History"
                 >
                   <div className="w-5 h-5 flex items-center justify-center transition-transform group-hover:scale-110">
@@ -298,7 +299,7 @@ export function Nav({ active, onNavigate }) {
                   type="button"
                   onClick={() => onNavigate("profile")}
                   className="btn flex flex-col items-center justify-center gap-1 group py-1 min-w-[50px]"
-                  style={{ color: active === "profile" ? "#FF6A1A" : "#7D746C" }}
+                  style={{ color: active === "profile" ? "#FF6A1A" : (isNightMode ? "#7D746C" : "#64748B") }}
                   aria-label="Profile"
                 >
                   <div className="w-5 h-5 flex items-center justify-center transition-transform group-hover:scale-110">
@@ -307,7 +308,7 @@ export function Nav({ active, onNavigate }) {
                         src={profile.avatar_url}
                         alt="Profile"
                         className={`w-5 h-5 object-cover rounded-full border ${
-                          active === "profile" ? "border-accent ring-1 ring-accent" : "border-white/30"
+                          active === "profile" ? "border-accent ring-1 ring-accent" : (isNightMode ? "border-white/30" : "border-slate-300")
                         }`}
                       />
                     ) : (

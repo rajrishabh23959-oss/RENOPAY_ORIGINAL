@@ -1,21 +1,30 @@
+function withOpacity(variableName) {
+  return ({ opacityValue }) => {
+    if (opacityValue !== undefined) {
+      return `rgba(var(${variableName}), ${opacityValue})`;
+    }
+    return `rgb(var(${variableName}))`;
+  };
+}
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{js,jsx}"],
   theme: {
     extend: {
       colors: {
-        bg: "#0A0908",
-        surf: "#151210",
-        card: "#151210",
-        line: "#2A2320",
+        bg: withOpacity("--color-bg"),
+        surf: withOpacity("--color-surf"),
+        card: withOpacity("--color-card"),
+        line: withOpacity("--color-line"),
         accent: "#FF6A1A",
         teal: "#22C55E",
         gold: "#FF6A1A",
         danger: "#ff3d60",
         warn: "#FFA000",
-        text: "#9A938C",
-        textLight: "#F5F3F0",
-        muted: "#5C564F",
+        text: withOpacity("--color-text"),
+        textLight: withOpacity("--color-textLight"),
+        muted: withOpacity("--color-muted"),
         success: "#22C55E",
       },
       fontFamily: {

@@ -144,8 +144,12 @@ export function LoginScreen({ onDone, initialMode = "login" }) {
       <div className="glow-hero w-full max-w-[430px] flex flex-col items-center">
         {/* Brand Header */}
         <div className="relative z-10 flex flex-col items-center mb-5 text-center">
-          <div className="w-[50px] h-[50px] rounded-[16px] bg-gradient-to-br from-accent to-[#B8420E] flex items-center justify-center text-2xl font-black text-white shadow-accentGlow mb-2.5">
-            ₹
+          <div className="w-[58px] h-[58px] rounded-full overflow-hidden shadow-accentGlow mb-2.5 bg-accent/20 border-2 border-accent/40 flex items-center justify-center">
+            <img
+              src="/logo.png"
+              alt="RenoPay Logo"
+              className="w-full h-full object-cover"
+            />
           </div>
           <h2 className="text-[22px] font-black tracking-tight text-textLight">
             Reno<span className="text-accent">Pay</span>
@@ -156,13 +160,13 @@ export function LoginScreen({ onDone, initialMode = "login" }) {
         </div>
 
         {/* Top Segmented Tab Toggle: Log In | Register */}
-        <div className="w-full max-w-[390px] bg-[#171311] border border-[#2C2420] p-1 rounded-2xl flex gap-1 mb-5 shadow-inner">
+        <div className="w-full max-w-[390px] bg-card border border-line p-1 rounded-2xl flex gap-1 mb-5 shadow-inner">
           <button
             type="button"
             className={`flex-1 py-2.5 text-center text-[13.5px] font-bold rounded-xl transition-all duration-200 cursor-pointer ${
               mode === "login"
                 ? "bg-gradient-to-r from-accent to-[#D9480F] text-white shadow-md"
-                : "text-muted hover:text-textLight hover:bg-[#201A17]"
+                : "text-muted hover:text-textLight hover:bg-surf"
             }`}
             onClick={() => {
               setMode("login");
@@ -176,7 +180,7 @@ export function LoginScreen({ onDone, initialMode = "login" }) {
             className={`flex-1 py-2.5 text-center text-[13.5px] font-bold rounded-xl transition-all duration-200 cursor-pointer ${
               mode === "register"
                 ? "bg-gradient-to-r from-accent to-[#D9480F] text-white shadow-md"
-                : "text-muted hover:text-textLight hover:bg-[#201A17]"
+                : "text-muted hover:text-textLight hover:bg-surf"
             }`}
             onClick={() => {
               setMode("register");
@@ -240,7 +244,7 @@ export function LoginScreen({ onDone, initialMode = "login" }) {
               </div>
 
               {/* Demo Fast-Fill helper buttons */}
-              <div className="mb-4 p-2.5 rounded-xl bg-[#14100E] border border-[#261E1A]">
+              <div className="mb-4 p-2.5 rounded-xl bg-surf border border-line">
                 <p className="text-[10.5px] text-muted uppercase font-bold tracking-wider mb-2">
                   ⚡ Quick Demo Login:
                 </p>
@@ -248,7 +252,7 @@ export function LoginScreen({ onDone, initialMode = "login" }) {
                   <button
                     type="button"
                     onClick={() => fillDemo("9876543210", "123456")}
-                    className="flex-1 py-1.5 px-2 rounded-lg bg-[#201916] hover:bg-[#2E2420] border border-line text-[11.5px] text-textLight font-medium transition cursor-pointer text-left flex items-center gap-1.5"
+                    className="flex-1 py-1.5 px-2 rounded-lg bg-card hover:bg-surf border border-line text-[11.5px] text-textLight font-medium transition cursor-pointer text-left flex items-center gap-1.5"
                   >
                     <span>👤</span>
                     <div>
@@ -259,7 +263,7 @@ export function LoginScreen({ onDone, initialMode = "login" }) {
                   <button
                     type="button"
                     onClick={() => fillDemo("9876543211", "123456")}
-                    className="flex-1 py-1.5 px-2 rounded-lg bg-[#201916] hover:bg-[#2E2420] border border-line text-[11.5px] text-textLight font-medium transition cursor-pointer text-left flex items-center gap-1.5"
+                    className="flex-1 py-1.5 px-2 rounded-lg bg-card hover:bg-surf border border-line text-[11.5px] text-textLight font-medium transition cursor-pointer text-left flex items-center gap-1.5"
                   >
                     <span>👤</span>
                     <div>
