@@ -4,10 +4,19 @@ import { GiftCardAPI } from "../lib/api";
 import { fmt } from "../lib/format";
 import { downloadOrSharePdf } from "../lib/download";
 import { Card, Btn, Badge } from "../components/ui";
-import { PINPad } from "../components/PINPad";
+import { PaymentMethodModal } from "../components/PaymentMethodModal";
 import { PdfPreviewModal } from "../components/PdfPreviewModal";
 
 const PRESET_AMOUNTS = [100, 250, 500, 1000, 2000, 5000];
+
+const GREETINGS = [
+  "Best Wishes! 🌟",
+  "Happy Birthday! 🎂",
+  "Congratulations! 🎉",
+  "Festival Greetings! 🪔",
+  "Thank You! 🙏",
+  "Just for You! 💖",
+];
 
 export function GiftCardScreen({ onBack, initialClaimCode = "", onScanQr }) {
   const { profile, refreshProfile } = useAuth();
@@ -16,9 +25,8 @@ export function GiftCardScreen({ onBack, initialClaimCode = "", onScanQr }) {
   // Creation State
   const [amount, setAmount] = useState("500");
   const [recipientName, setRecipientName] = useState("");
-  const [paymentMode, setPaymentMode] = useState("normal"); // "normal" | "advance"
   const [message, setMessage] = useState("Best Wishes! 🌟");
-  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [showPayModal, setShowPayModal] = useState(false);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState("");
   const [createdCard, setCreatedCard] = useState(null);
@@ -69,35 +77,30 @@ export function GiftCardScreen({ onBack, initialClaimCode = "", onScanQr }) {
     }
   }, [tab, fetchHistory]);
 
-  const handleStartCheckout = (e) => {
+  const handleOpenPayModal = (e) => {
     e?.preventDefault();
     const num = Number(amount);
     if (!num || num <= 0) {
       setCreateError("Please enter a valid amount greater than ₹0.");
       return;
     }
-    const currentBal = (profile?.account?.balance ?? 0);
-    if (paymentMode === "normal" && num > currentBal) {
-      setCreateError(`Insufficient wallet balance for Normal Pay (Available: ${fmt(currentBal)}). Switch to Advance Pay or enter a lower amount.`);
-      return;
-    }
     setCreateError("");
-    setShowCheckoutModal(true);
+    setShowPayModal(true);
   };
 
-  const handlePinComplete = async (pin) => {
+  const handleConfirmCreate = async (pin, payMode) => {
     setCreating(true);
     setCreateError("");
     try {
       const res = await GiftCardAPI.create({
         amount: Number(amount),
         pin,
-        payment_mode: paymentMode,
+        payment_mode: payMode || "normal",
         recipient_name: recipientName.trim() || undefined,
         message: message.trim() || undefined,
         theme: "emerald",
       });
-      setShowCheckoutModal(false);
+      setShowPayModal(false);
       setCreatedCard(res);
       await refreshProfile?.();
     } catch (err) {
@@ -224,7 +227,7 @@ export function GiftCardScreen({ onBack, initialClaimCode = "", onScanQr }) {
           </button>
           <div>
             <h2 className="text-[20px] font-extrabold text-textLight">RenoPay Gift Card</h2>
-            <p className="text-muted text-[11px]">Luxury digital cash vouchers</p>
+            <p className="text-muted text-[11px]">Send instant digital cash vouchers</p>
           </div>
         </div>
         <div className="text-right">
@@ -281,108 +284,22 @@ export function GiftCardScreen({ onBack, initialClaimCode = "", onScanQr }) {
           <div className="animate-fadeUp">
             {!createdCard ? (
               <>
-                {/* 🌟 EMERALD & GOLD LUXURY GIFT CARD PREVIEW (Exact match to reference) */}
-                <div className="relative rounded-[22px] border-2 border-[#c9a44c] p-[3px] shadow-[0_15px_35px_rgba(0,0,0,0.6)] mb-5 overflow-hidden bg-gradient-to-b from-[#123824] via-[#092b1b] to-[#051a10]">
-                  {/* Inner Hairline Frame */}
-                  <div className="border border-[#e0be6c]/70 rounded-[18px] p-5 relative">
-                    {/* Top Row: Ribbon Bow, Crest & Mode */}
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <span className="text-[9px] font-bold text-[#a1d1b5] tracking-widest uppercase">⚡ RENOPAY</span>
-                        <div className="text-[10px] font-extrabold text-[#ffd875]">LUXURY VOUCHER</div>
-                      </div>
+                {/* 1. Recipient Input */}
+                <Card className="p-4 mb-4 border-line">
+                  <label className="text-xs text-textLight font-bold block mb-1.5">
+                    👤 Gift To (Kise dena chahte hain?)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Enter Recipient Name (e.g. Priya Sharma / Friend)"
+                    value={recipientName}
+                    onChange={(e) => setRecipientName(e.target.value)}
+                    maxLength={60}
+                    className="w-full text-sm font-semibold p-2.5 rounded-xl bg-surf border border-line text-white focus:border-accent focus:outline-none"
+                  />
+                </Card>
 
-                      {/* Top Crest & FROM */}
-                      <div className="text-center -mt-1">
-                        {/* Golden Pin Icon */}
-                        <div className="text-[#ffd875] text-lg leading-none">📌</div>
-                        <div className="text-[10px] font-bold text-[#c9a44c] tracking-[4px] uppercase mt-0.5">
-                          F R O M
-                        </div>
-                        <div className="font-serif text-[22px] font-bold text-[#f5d78a] tracking-wide leading-tight mt-0.5 drop-shadow">
-                          {senderDisplayName}
-                        </div>
-                        <div className="h-[1px] w-28 bg-[#c9a44c]/70 mx-auto my-1.5"></div>
-                      </div>
-
-                      {/* Top-Right Golden Ribbon Bow */}
-                      <div className="text-right">
-                        <div className="inline-block text-2xl filter drop-shadow-[0_2px_6px_rgba(255,215,0,0.5)]">
-                          🎀
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Middle Row: Gift Card ID & Value */}
-                    <div className="my-3.5 text-center">
-                      <div className="text-[10px] font-bold text-[#c9a44c] tracking-[3px] uppercase">
-                        G I F T &nbsp; C A R D &nbsp; I D -
-                      </div>
-                      <div className="font-mono text-xl font-extrabold text-[#ffe08a] tracking-[3px] my-1">
-                        RENO-GIFT •••• ••••
-                      </div>
-
-                      {/* Amount Centerpiece */}
-                      <div className="mt-2 inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-black/40 border border-[#c9a44c]/40 backdrop-blur-sm">
-                        <span className="text-[11px] text-[#a1d1b5] uppercase font-bold tracking-wider">VALUE:</span>
-                        <span className="font-mono text-2xl font-extrabold text-[#ffd875]">
-                          {fmt(Number(amount) || 0)}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Bottom Row: Recipient, QR Scanner Box & RP Wax Seal */}
-                    <div className="flex justify-between items-end pt-2 border-t border-[#c9a44c]/30">
-                      {/* TO: Recipient */}
-                      <div className="max-w-[140px]">
-                        <div className="font-serif text-sm font-bold text-[#f5d78a] flex items-center gap-1">
-                          <span>TO</span>
-                          <span className="border-b border-[#c9a44c] pb-0.5 truncate text-white">
-                            {recipientName.trim() || "___________________"}
-                          </span>
-                        </div>
-                        <div className="text-[9px] text-[#a1d1b5] mt-1 font-medium">
-                          100% Redeemable to Wallet
-                        </div>
-                      </div>
-
-                      {/* Dynamic QR Scanner Box on the Card */}
-                      <div className="flex flex-col items-center">
-                        <div className="w-[58px] h-[58px] p-1 bg-white rounded-lg border-2 border-[#c9a44c] shadow flex items-center justify-center">
-                          {/* Miniature High-Contrast QR Matrix Preview */}
-                          <div className="w-full h-full bg-black flex flex-col justify-between p-1 rounded">
-                            <div className="flex justify-between">
-                              <div className="w-2.5 h-2.5 bg-white border border-black"></div>
-                              <div className="w-2.5 h-2.5 bg-white border border-black"></div>
-                            </div>
-                            <div className="text-[6px] text-white font-mono text-center tracking-tighter">
-                              RENO-QR
-                            </div>
-                            <div className="flex justify-between">
-                              <div className="w-2.5 h-2.5 bg-white border border-black"></div>
-                              <div className="w-1.5 h-1.5 bg-white"></div>
-                            </div>
-                          </div>
-                        </div>
-                        <span className="text-[7.5px] font-extrabold text-[#ffd875] tracking-wider mt-1 uppercase">
-                          SCAN TO CLAIM
-                        </span>
-                      </div>
-
-                      {/* Bottom-Right Golden Wax Seal with RP Monogram */}
-                      <div className="flex flex-col items-center">
-                        <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#f0c36b] via-[#c49233] to-[#7a4f0c] border-2 border-[#fff0c2] shadow-[0_4px_10px_rgba(0,0,0,0.5)] flex items-center justify-center font-serif text-lg font-black text-[#3d2402] tracking-tighter">
-                          RP
-                        </div>
-                        <span className="text-[7.5px] font-bold text-[#c9a44c] mt-1 tracking-wider uppercase">
-                          SEAL
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Amount Selection */}
+                {/* 2. Amount Selection */}
                 <Card className="p-4 mb-4 border-accent/[.2]">
                   <p className="text-muted text-[11px] font-bold uppercase tracking-wide mb-2.5">
                     Select or Enter Amount
@@ -403,7 +320,7 @@ export function GiftCardScreen({ onBack, initialClaimCode = "", onScanQr }) {
                       <button
                         key={p}
                         type="button"
-                        className={`py-1.5 rounded-xl font-bold text-xs border transition-all cursor-pointer ${
+                        className={`py-2 rounded-xl font-bold text-xs border transition-all cursor-pointer ${
                           Number(amount) === p
                             ? "bg-accent/20 border-accent text-accent shadow-sm"
                             : "bg-surf/80 border-line text-muted hover:text-textLight hover:border-accent/40"
@@ -416,53 +333,34 @@ export function GiftCardScreen({ onBack, initialClaimCode = "", onScanQr }) {
                   </div>
                 </Card>
 
-                {/* Payment Mode Selector */}
-                <Card className="p-4 mb-4 border-line">
-                  <p className="text-muted text-[11px] font-bold uppercase tracking-wide mb-2.5">
-                    Choose Pay Option
-                  </p>
-                  <div className="grid grid-cols-2 gap-2.5">
-                    <button
-                      type="button"
-                      className={`p-3 rounded-xl text-left border transition-all cursor-pointer ${
-                        paymentMode === "normal"
-                          ? "bg-emerald-500/15 border-emerald-500 text-white shadow"
-                          : "bg-surf border-line text-muted hover:text-textLight"
-                      }`}
-                      onClick={() => setPaymentMode("normal")}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-extrabold text-emerald-400">🟢 Normal Pay</span>
-                        {paymentMode === "normal" && <span className="text-emerald-400 text-xs">✓</span>}
-                      </div>
-                      <p className="text-[10px] text-muted leading-tight">
-                        Deduct from RenoPay Wallet
-                      </p>
-                      <p className="text-[10px] font-mono text-emerald-400 mt-1">
-                        Avail: {fmt(profile?.account?.balance ?? 0)}
-                      </p>
-                    </button>
-
-                    <button
-                      type="button"
-                      className={`p-3 rounded-xl text-left border transition-all cursor-pointer ${
-                        paymentMode === "advance"
-                          ? "bg-accent/15 border-accent text-white shadow"
-                          : "bg-surf border-line text-muted hover:text-textLight"
-                      }`}
-                      onClick={() => setPaymentMode("advance")}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-extrabold text-accent">⚡ Advance Pay</span>
-                        {paymentMode === "advance" && <span className="text-accent text-xs">✓</span>}
-                      </div>
-                      <p className="text-[10px] text-muted leading-tight">
-                        Bank Account / Advance Line
-                      </p>
-                      <p className="text-[10px] font-mono text-accent mt-1">
-                        Verified UPI Mandate
-                      </p>
-                    </button>
+                {/* 3. Greeting Message */}
+                <Card className="p-4 mb-5 border-line">
+                  <label className="text-xs text-textLight font-bold block mb-1.5">
+                    💌 Greeting Message (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Best Wishes! 🌟"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    maxLength={100}
+                    className="w-full text-xs p-2.5 rounded-xl bg-surf border border-line text-white focus:border-accent focus:outline-none mb-2.5"
+                  />
+                  <div className="flex gap-1.5 flex-wrap">
+                    {GREETINGS.map((g) => (
+                      <button
+                        key={g}
+                        type="button"
+                        className={`text-[10px] px-2.5 py-1 rounded-full border transition-all cursor-pointer ${
+                          message === g
+                            ? "bg-accent/20 border-accent text-accent font-bold"
+                            : "bg-surf border-line text-muted hover:text-textLight"
+                        }`}
+                        onClick={() => setMessage(g)}
+                      >
+                        {g}
+                      </button>
+                    ))}
                   </div>
                 </Card>
 
@@ -470,12 +368,12 @@ export function GiftCardScreen({ onBack, initialClaimCode = "", onScanQr }) {
                   <p className="text-danger text-xs text-center mb-3">{createError}</p>
                 )}
 
-                <Btn onClick={handleStartCheckout} disabled={creating}>
-                  {`Proceed to Gift • ₹${amount || 0}`}
+                <Btn onClick={handleOpenPayModal} disabled={creating}>
+                  {`Proceed to Pay • ₹${amount || 0}`}
                 </Btn>
               </>
             ) : (
-              /* Success Creation Screen */
+              /* Success Creation Screen - Shows the Generated Emerald Luxury Card */
               <div className="animate-fadeUp text-center pt-2">
                 <div className="w-[74px] h-[74px] rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center text-3xl mx-auto mb-3 animate-bounce">
                   🎁
@@ -485,22 +383,41 @@ export function GiftCardScreen({ onBack, initialClaimCode = "", onScanQr }) {
                   ₹{createdCard.amount} pre-funded and ready to download & share
                 </p>
 
-                {/* Voucher Card Result in Emerald & Gold */}
+                {/* Voucher Card Result in Emerald & Gold (with Scanner on Bottom Left, Recipient in Center, Wax Seal on Right) */}
                 <div className="my-5 rounded-[22px] border-2 border-[#c9a44c] p-[3px] shadow-2xl text-left bg-gradient-to-b from-[#123824] via-[#092b1b] to-[#051a10]">
-                  <div className="border border-[#e0be6c]/70 rounded-[18px] p-5">
-                    <div className="flex justify-between items-center mb-2">
-                      <span className="text-[10px] font-extrabold text-[#ffd875] tracking-widest uppercase">
-                        ⚡ RENOPAY GIFT CARD
-                      </span>
-                      <Badge color="#22C55E">ACTIVE</Badge>
+                  <div className="border border-[#e0be6c]/70 rounded-[18px] p-5 relative">
+                    {/* Top Row: Ribbon Bow, Crest & FROM */}
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <span className="text-[9px] font-bold text-[#a1d1b5] tracking-widest uppercase">⚡ RENOPAY</span>
+                        <div className="text-[10px] font-extrabold text-[#ffd875]">LUXURY VOUCHER</div>
+                      </div>
+
+                      <div className="text-center -mt-1">
+                        <div className="text-[#ffd875] text-lg leading-none">📌</div>
+                        <div className="text-[10px] font-bold text-[#c9a44c] tracking-[4px] uppercase mt-0.5">
+                          F R O M
+                        </div>
+                        <div className="font-serif text-[20px] font-bold text-[#f5d78a] tracking-wide leading-tight mt-0.5 drop-shadow">
+                          {senderDisplayName}
+                        </div>
+                        <div className="h-[1px] w-28 bg-[#c9a44c]/70 mx-auto my-1.5"></div>
+                      </div>
+
+                      <div className="text-right">
+                        <div className="inline-block text-2xl filter drop-shadow-[0_2px_6px_rgba(255,215,0,0.5)]">
+                          🎀
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="text-center my-3">
-                      <p className="text-[10px] text-[#c9a44c] uppercase font-bold tracking-[3px]">
+                    {/* Middle Row: Gift Card ID & Value */}
+                    <div className="my-3 text-center">
+                      <div className="text-[10px] font-bold text-[#c9a44c] tracking-[3px] uppercase">
                         G I F T &nbsp; C A R D &nbsp; I D -
-                      </p>
-                      <div className="flex items-center justify-between bg-black/60 p-3 rounded-xl border border-[#c9a44c]/40 my-2">
-                        <span className="font-mono text-xl font-extrabold text-[#ffe08a] tracking-wider select-all">
+                      </div>
+                      <div className="flex items-center justify-between bg-black/60 p-2.5 rounded-xl border border-[#c9a44c]/40 my-2">
+                        <span className="font-mono text-lg font-extrabold text-[#ffe08a] tracking-wider select-all">
                           {createdCard.card_code}
                         </span>
                         <button
@@ -511,20 +428,55 @@ export function GiftCardScreen({ onBack, initialClaimCode = "", onScanQr }) {
                           {copiedCode ? "✓ Copied" : "Copy"}
                         </button>
                       </div>
+
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/40 border border-[#c9a44c]/40">
+                        <span className="text-[10px] text-[#a1d1b5] uppercase font-bold tracking-wider">VALUE:</span>
+                        <span className="font-mono text-xl font-extrabold text-[#ffd875]">
+                          ₹{createdCard.amount}
+                        </span>
+                      </div>
                     </div>
 
-                    <div className="flex justify-between items-end pt-2 border-t border-[#c9a44c]/30 text-xs">
-                      <div>
-                        <p className="text-[#a1d1b5] text-[10px]">Recipient</p>
-                        <p className="font-semibold text-white">
-                          {createdCard.recipient_name || "Valued Bearer"}
-                        </p>
+                    {/* Bottom Row: Scanner on Left, Recipient in Center, RP Wax Seal on Right */}
+                    <div className="flex justify-between items-end pt-3 border-t border-[#c9a44c]/30">
+                      {/* Left: Scanner Box */}
+                      <div className="flex flex-col items-center">
+                        <div className="w-[54px] h-[54px] p-1 bg-white rounded-lg border-2 border-[#c9a44c] shadow flex items-center justify-center">
+                          <div className="w-full h-full bg-black flex flex-col justify-between p-1 rounded">
+                            <div className="flex justify-between">
+                              <div className="w-2 h-2 bg-white"></div>
+                              <div className="w-2 h-2 bg-white"></div>
+                            </div>
+                            <div className="text-[5.5px] text-white font-mono text-center">QR</div>
+                            <div className="flex justify-between">
+                              <div className="w-2 h-2 bg-white"></div>
+                              <div className="w-1.5 h-1.5 bg-white"></div>
+                            </div>
+                          </div>
+                        </div>
+                        <span className="text-[7px] font-extrabold text-[#ffd875] tracking-wider mt-1 uppercase">
+                          SCAN TO CLAIM
+                        </span>
                       </div>
-                      <div className="text-right">
-                        <p className="text-[#a1d1b5] text-[10px]">Value</p>
-                        <p className="font-mono font-bold text-[#ffd875] text-base">
-                          ₹{createdCard.amount}
-                        </p>
+
+                      {/* Center: Recipient Name */}
+                      <div className="text-center px-2 flex-1 max-w-[150px]">
+                        <div className="font-serif text-xs font-bold text-[#f5d78a]">
+                          TO: <span className="border-b border-[#c9a44c] pb-0.5 text-white">{createdCard.recipient_name || "Valued Bearer"}</span>
+                        </div>
+                        <div className="text-[8.5px] text-[#a1d1b5] mt-1">
+                          100% Guaranteed Redeemable
+                        </div>
+                      </div>
+
+                      {/* Right: RP Wax Seal */}
+                      <div className="flex flex-col items-center">
+                        <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[#f0c36b] via-[#c49233] to-[#7a4f0c] border-2 border-[#fff0c2] shadow flex items-center justify-center font-serif text-base font-black text-[#3d2402]">
+                          RP
+                        </div>
+                        <span className="text-[7px] font-bold text-[#c9a44c] mt-1 uppercase">
+                          SEAL
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -567,95 +519,26 @@ export function GiftCardScreen({ onBack, initialClaimCode = "", onScanQr }) {
           </div>
         )}
 
-        {/* ---------------- CHECKOUT & PIN MODAL ---------------- */}
-        {showCheckoutModal && (
-          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex items-end justify-center animate-fadeUp p-0">
-            <div className="w-full max-w-[430px] bg-card border-t border-line rounded-t-3xl p-5 pb-8 max-h-[92vh] overflow-y-auto">
-              <div className="w-12 h-1 bg-line rounded-full mx-auto mb-4"></div>
-
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-lg font-extrabold text-white">Authorize Gift Card</h3>
-                  <p className="text-xs text-muted">Amount: <strong className="text-accent font-mono">₹{amount}</strong></p>
-                </div>
-                <button
-                  type="button"
-                  className="w-8 h-8 rounded-full bg-surf border border-line text-muted flex items-center justify-center text-sm hover:text-white cursor-pointer"
-                  onClick={() => setShowCheckoutModal(false)}
-                >
-                  ✕
-                </button>
-              </div>
-
-              {/* 1. Recipient Name Prompt */}
-              <div className="mb-4">
-                <label className="text-xs text-[#ffd875] font-bold block mb-1.5">
-                  👤 Kisko bhej rahe hain? (Recipient Name)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Priya Sharma / Sister / Friend"
-                  value={recipientName}
-                  onChange={(e) => setRecipientName(e.target.value)}
-                  maxLength={60}
-                  className="w-full p-3 rounded-xl bg-surf border border-line text-sm text-white focus:border-accent focus:outline-none"
-                />
-              </div>
-
-              {/* 2. Payment Mode Selection */}
-              <div className="mb-5">
-                <label className="text-xs text-muted font-bold block mb-1.5">
-                  💳 Payment Mode
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    className={`p-2.5 rounded-xl text-left border text-xs font-semibold cursor-pointer ${
-                      paymentMode === "normal"
-                        ? "bg-emerald-500/15 border-emerald-500 text-white"
-                        : "bg-surf border-line text-muted"
-                    }`}
-                    onClick={() => setPaymentMode("normal")}
-                  >
-                    🟢 Normal Pay
-                    <div className="text-[10px] text-muted font-normal">Wallet Balance</div>
-                  </button>
-                  <button
-                    type="button"
-                    className={`p-2.5 rounded-xl text-left border text-xs font-semibold cursor-pointer ${
-                      paymentMode === "advance"
-                        ? "bg-accent/15 border-accent text-white"
-                        : "bg-surf border-line text-muted"
-                    }`}
-                    onClick={() => setPaymentMode("advance")}
-                  >
-                    ⚡ Advance Pay
-                    <div className="text-[10px] text-muted font-normal">Bank Account</div>
-                  </button>
-                </div>
-              </div>
-
-              {/* 3. PIN Pad */}
-              <div className="text-center mb-2">
-                <p className="text-xs font-bold text-muted mb-2">Enter 6-Digit UPI PIN to Confirm</p>
-                <PINPad
-                  onComplete={handlePinComplete}
-                  length={6}
-                />
-              </div>
-
-              {creating && (
-                <div className="text-center py-2 text-accent text-xs font-bold animate-pulse">
-                  Generating Emerald Gift Card & PDF Voucher...
-                </div>
-              )}
-
-              {createError && (
-                <p className="text-danger text-xs text-center mt-2">{createError}</p>
-              )}
-            </div>
-          </div>
-        )}
+        {/* ---------------- STANDARD PAYMENT METHOD MODAL (Normal Pay vs Advance Pay with Note Slider) ---------------- */}
+        <PaymentMethodModal
+          isOpen={showPayModal}
+          onClose={() => {
+            setShowPayModal(false);
+            setCreateError("");
+          }}
+          title="Create RenoPay Gift Card"
+          subtitle={`Recipient: ${recipientName.trim() || "Bearer Voucher"}`}
+          amount={Number(amount) || 0}
+          recipient={recipientName.trim() || "RenoPay Gift Card Vault"}
+          accountBalance={profile?.account?.balance ?? 0}
+          onAddMoney={() => {
+            setShowPayModal(false);
+            onBack();
+          }}
+          onConfirm={handleConfirmCreate}
+          loading={creating}
+          error={createError}
+        />
 
         {/* ---------------- CLAIM GIFT CARD ---------------- */}
         {tab === "claim" && (

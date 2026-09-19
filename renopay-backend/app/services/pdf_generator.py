@@ -1977,30 +1977,30 @@ body {
                         </td>
                     </tr>
 
-                    <!-- Bottom Row: Recipient, QR Code Scanner & RP Wax Seal -->
+                    <!-- Bottom Row: QR Scanner on Left, Recipient in Center, Wax Seal on Right -->
                     <tr>
-                        <td width="38%" valign="bottom">
-                            <div class="to-text">
+                        <td width="30%" align="left" valign="bottom">
+                            {% if qr_base64 %}
+                            <div class="qr-frame">
+                                <img src="data:image/png;base64,{{ qr_base64 }}" width="76" height="76" alt="Scan to Claim QR"/>
+                            </div>
+                            <div style="font-size: 8px; color: #ffd875; font-weight: bold; margin-top: 3px; letter-spacing: 1.5px;">
+                                SCAN TO CLAIM
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td width="42%" align="center" valign="bottom">
+                            <div class="to-text" style="text-align: center;">
                                 T O : &nbsp;
                                 {% if recipient_name %}
                                     <span style="border-bottom: 1.5px solid #c9a44c; padding-bottom: 2px;">{{ recipient_name }}</span>
                                 {% else %}
-                                    <span style="border-bottom: 1.5px solid #c9a44c; padding-bottom: 2px;">_______________________</span>
+                                    <span style="border-bottom: 1.5px solid #c9a44c; padding-bottom: 2px;">____________________</span>
                                 {% endif %}
                             </div>
-                            <div style="font-size: 10px; color: #a1d1b5; margin-top: 6px;">
+                            <div style="font-size: 9.5px; color: #a1d1b5; margin-top: 5px; text-align: center;">
                                 100% Guaranteed &bull; Instant Wallet Credit
                             </div>
-                        </td>
-                        <td width="34%" align="center" valign="middle">
-                            {% if qr_base64 %}
-                            <div class="qr-frame">
-                                <img src="data:image/png;base64,{{ qr_base64 }}" width="80" height="80" alt="Scan to Claim QR"/>
-                            </div>
-                            <div style="font-size: 8.5px; color: #ffd875; font-weight: bold; margin-top: 4px; letter-spacing: 1.5px;">
-                                SCAN TO CLAIM
-                            </div>
-                            {% endif %}
                         </td>
                         <td width="28%" align="right" valign="bottom">
                             <table cellpadding="0" cellspacing="0" align="right">
@@ -2015,6 +2015,7 @@ body {
                             </div>
                         </td>
                     </tr>
+
                 </table>
             </td>
         </tr>

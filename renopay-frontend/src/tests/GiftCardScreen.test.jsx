@@ -22,11 +22,14 @@ vi.mock('../lib/api', () => ({
   },
 }));
 
-vi.mock('../components/PINPad', () => ({
-  PINPad: ({ onComplete }) => (
-    <div data-testid="pin-pad">
-      <button onClick={() => onComplete('123456')}>Submit PIN</button>
-    </div>
+vi.mock('../components/PaymentMethodModal', () => ({
+  PaymentMethodModal: ({ isOpen, onConfirm }) => (
+    isOpen ? (
+      <div data-testid="payment-method-modal">
+        <button onClick={() => onConfirm('123456', 'advance')}>Confirm Advance Pay</button>
+        <button onClick={() => onConfirm('123456', 'normal')}>Confirm Normal Pay</button>
+      </div>
+    ) : null
   ),
 }));
 
@@ -35,10 +38,11 @@ describe('GiftCardScreen', () => {
     vi.clearAllMocks();
   });
 
-  it('renders gift card creation tab with amount and proceed button by default', () => {
+  it('renders gift card creation tab with amount, recipient input and proceed button by default', () => {
     render(<GiftCardScreen onBack={() => {}} />);
     expect(screen.getAllByText('RenoPay Gift Card')[0]).toBeInTheDocument();
-    expect(screen.getByText(/Proceed to Gift/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/Enter Recipient Name/i)).toBeInTheDocument();
+    expect(screen.getByText(/Proceed to Pay/i)).toBeInTheDocument();
   });
 
   it('switches to claim tab and allows entering a gift card code', async () => {
@@ -73,16 +77,10 @@ describe('GiftCardScreen', () => {
     });
   });
 
-  it('opens checkout modal with recipient name, pay mode, and PIN pad on proceed', async () => {
+  it('opens PaymentMethodModal with NoteSlider on proceed to pay', async () => {
     render(<GiftCardScreen onBack={() => {}} />);
-    fireEvent.click(screen.getByText(/Proceed to Gift/i));
+    fireEvent.click(screen.getByText(/Proceed to Pay/i));
 
-    expect(screen.getByText('Authorize Gift Card')).toBeInTheDocument();
-    expect(screen.getByText(/Kisko bhej rahe hain\?/i)).toBeInTheDocument();
-    expect(screen.getAllByText(/Normal Pay/i)[0]).toBeInTheDocument();
-    expect(screen.getAllByText(/Advance Pay/i)[0]).toBeInTheDocument();
-    expect(screen.getByTestId('pin-pad')).toBeInTheDocument();
+    expect(screen.getByTestId('payment-method-modal')).toBeInTheDocument();
   });
-
-
 });

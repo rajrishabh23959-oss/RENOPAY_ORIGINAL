@@ -313,12 +313,14 @@ async def get_gift_card_pdf(
         creator_user = u_res.scalar_one_or_none()
 
     context = build_gift_card_data(card, creator_user)
+    pdf_stream = await generate_pdf("gift_card", context)
     content_type = "application/pdf" if PDF_AVAILABLE else "text/html"
     filename_ext = "pdf" if PDF_AVAILABLE else "html"
     filename = f"RenoPay_GiftCard_{card.card_code}.{filename_ext}"
 
     return StreamingResponse(
         pdf_stream,
+
         media_type=content_type,
         headers={
             "Content-Disposition": f"inline; filename={filename}",
