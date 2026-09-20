@@ -1,11 +1,11 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status, Body
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_current_user, get_current_account
-from app.core.money import rupees_to_paise
+from app.core.money import rupees_to_paise, paise_to_rupees
 from app.db.session import get_db
 from app.models.user import User
 from app.models.account import Account
@@ -23,16 +23,46 @@ async def create_request(
     account: Account = Depends(get_current_account),
     db: AsyncSession = Depends(get_db),
 ):
-    target = await db.execute(select(Account).where(Account.vpa == payload.to_vpa))
-    if target.scalar_one_or_none() is None:
+    clean_target = payload.to_vpa.strip().lower()
+    if "@" not in clean_target and clean_target.isdigit() and len(clean_target) == 10:
+        clean_target = f"{clean_target}@renopay"
+
+    if clean_target == account.vpa.lower():
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Cannot send money request to yourself")
+
+    target = await db.execute(select(Account).where(func.lower(Account.vpa) == clean_target))
+    target_acc = target.scalar_one_or_none()
+    if target_acc is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "VPA not found")
+
     req = MoneyRequest(
-        from_vpa=account.vpa, to_vpa=payload.to_vpa,
-        amount_paise=rupees_to_paise(payload.amount), note=payload.note,
+        id=uuid.uuid4(),
+        from_vpa=account.vpa.lower(),
+        to_vpa=clean_target,
+        amount_paise=rupees_to_paise(payload.amount),
+        note=payload.note,
+        status=RequestStatus.PENDING,
     )
     db.add(req)
     await db.commit()
     await db.refresh(req)
+
+    # Real-time push to recipient
+    try:
+        from app.ws.manager import manager as ws_manager
+        await ws_manager.push(
+            target_acc.user_id,
+            "money_request_received",
+            {
+                "from_vpa": req.from_vpa,
+                "to_vpa": req.to_vpa,
+                "amount": paise_to_rupees(req.amount_paise),
+                "note": req.note,
+            },
+        )
+    except Exception:
+        pass
+
     return MoneyRequestOut.from_model(req)
 
 
@@ -55,7 +85,7 @@ async def create_split(
             clean_vpa = f"{clean_vpa}@renopay"
         req = MoneyRequest(
             id=uuid.uuid4(),
-            from_vpa=account.vpa,
+            from_vpa=account.vpa.lower(),
             to_vpa=clean_vpa,
             amount_paise=share_paise,
             note=f"{payload.description or 'Bill split'} - {person.name}'s share",
@@ -73,7 +103,7 @@ async def create_split(
     try:
         from app.ws.manager import manager as ws_manager
         for r in created:
-            recipient_acc = (await db.execute(select(Account).where(Account.vpa == r.to_vpa))).scalar_one_or_none()
+            recipient_acc = (await db.execute(select(Account).where(func.lower(Account.vpa) == r.to_vpa.lower()))).scalar_one_or_none()
             if recipient_acc:
                 await ws_manager.push(
                     recipient_acc.user_id,
@@ -94,7 +124,7 @@ async def create_split(
 @router.get("/inbox", response_model=list[MoneyRequestOut])
 async def inbox(account: Account = Depends(get_current_account), db: AsyncSession = Depends(get_db)):
     result = await db.execute(
-        select(MoneyRequest).where(MoneyRequest.to_vpa == account.vpa).order_by(MoneyRequest.created_at.desc())
+        select(MoneyRequest).where(func.lower(MoneyRequest.to_vpa) == account.vpa.lower()).order_by(MoneyRequest.created_at.desc())
     )
     return [MoneyRequestOut.from_model(r) for r in result.scalars().all()]
 
@@ -102,7 +132,7 @@ async def inbox(account: Account = Depends(get_current_account), db: AsyncSessio
 @router.get("/sent", response_model=list[MoneyRequestOut])
 async def sent(account: Account = Depends(get_current_account), db: AsyncSession = Depends(get_db)):
     result = await db.execute(
-        select(MoneyRequest).where(MoneyRequest.from_vpa == account.vpa).order_by(MoneyRequest.created_at.desc())
+        select(MoneyRequest).where(func.lower(MoneyRequest.from_vpa) == account.vpa.lower()).order_by(MoneyRequest.created_at.desc())
     )
     return [MoneyRequestOut.from_model(r) for r in result.scalars().all()]
 
@@ -119,11 +149,11 @@ async def pay_request(
     req = result.scalar_one_or_none()
     if req is None or req.status != RequestStatus.PENDING:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Request not found or already resolved")
-    if req.to_vpa != account.vpa:
+    if req.to_vpa.lower() != account.vpa.lower():
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not authorized to pay this request")
 
-    # If paying user's own split share
-    if req.from_vpa == req.to_vpa:
+    # If paying user's own split share (case-insensitive check)
+    if req.from_vpa.lower() == req.to_vpa.lower():
         from app.services.pin_auth import verify_user_pin, PinError
         try:
             await verify_user_pin(db, user, pin)
@@ -155,7 +185,7 @@ async def decline_request(
     req = result.scalar_one_or_none()
     if req is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Request not found")
-    if req.to_vpa != account.vpa:
+    if req.to_vpa.lower() != account.vpa.lower():
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not authorized to decline this request")
     req.status = RequestStatus.DECLINED
     await db.commit()

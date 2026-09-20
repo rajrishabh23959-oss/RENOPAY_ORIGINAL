@@ -18,16 +18,29 @@ export function RequestScreen({ onBack }) {
   useEffect(() => { loadAll(); }, []);
 
   const sendRequest = async () => {
-    if (!toVpa.includes("@")) { setErr("Enter valid VPA"); return; }
-    if (!Number(amount) || Number(amount) < 1) { setErr("Enter valid amount"); return; }
+    let cleanVpa = toVpa.trim().toLowerCase();
+    if (!cleanVpa.includes("@") && /^\d{10}$/.test(cleanVpa)) {
+      cleanVpa = `${cleanVpa}@renopay`;
+    }
+    if (!cleanVpa.includes("@")) {
+      setErr("Enter a valid UPI ID (e.g. name@renopay or 10-digit mobile number)");
+      return;
+    }
+    const num = Number(amount);
+    if (!amount || isNaN(num) || num < 1) {
+      setErr("Enter valid amount (minimum ₹1)");
+      return;
+    }
     setErr("");
     try {
-      await RequestAPI.create(toVpa, Number(amount), note);
+      await RequestAPI.create(cleanVpa, num, note);
       setDone(true);
       await loadAll();
       setTimeout(() => { setDone(false); setToVpa(""); setAmount(""); setNote(""); }, 1500);
     } catch (e) {
-      setErr(e.response?.data?.detail?.message || "VPA not found");
+      const detail = e.response?.data?.detail;
+      const msg = typeof detail === "string" ? detail : (detail?.message || "VPA not found");
+      setErr(msg);
     }
   };
 
@@ -37,7 +50,9 @@ export function RequestScreen({ onBack }) {
       setPayingId(null);
       await loadAll();
     } catch (e) {
-      setErr(e.response?.data?.detail?.message || "Payment failed — check your PIN");
+      const detail = e.response?.data?.detail;
+      const msg = typeof detail === "string" ? detail : (detail?.message || "Payment failed — check your PIN");
+      setErr(msg);
       setPayingId(null);
     }
   };
@@ -82,6 +97,22 @@ export function RequestScreen({ onBack }) {
             <Card className="p-5 mb-4 border-accent/[.2]">
               <p className="text-muted text-[11px] tracking-wide mb-2 uppercase">Request from (UPI ID)</p>
               <input placeholder="rishabhraj@renopay" value={toVpa} onChange={(e) => setToVpa(e.target.value)} />
+              <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                <span className="text-[10px] text-muted">Quick Handle:</span>
+                {["@renopay", "@oksbi", "@okhdfcbank", "@paytm"].map((suffix) => (
+                  <button
+                    key={suffix}
+                    type="button"
+                    onClick={() => {
+                      const base = toVpa.includes("@") ? toVpa.split("@")[0] : toVpa;
+                      setToVpa(`${base}${suffix}`);
+                    }}
+                    className="text-[10px] text-accent bg-accent/10 border border-accent/20 rounded px-1.5 py-0.5 hover:bg-accent/20 transition-all"
+                  >
+                    {suffix}
+                  </button>
+                ))}
+              </div>
               <p className="text-muted text-[11px] tracking-wide mb-2 mt-3.5 uppercase">Amount</p>
               <div className="flex items-center gap-2">
                 <span className="text-[22px] text-accent">₹</span>
