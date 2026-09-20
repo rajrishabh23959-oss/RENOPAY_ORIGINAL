@@ -51,12 +51,16 @@ async def create_split(
     created = []
     for person in payers:
         clean_vpa = person.vpa.strip().lower()
+        if "@" not in clean_vpa and clean_vpa.isdigit() and len(clean_vpa) == 10:
+            clean_vpa = f"{clean_vpa}@renopay"
         req = MoneyRequest(
+            id=uuid.uuid4(),
             from_vpa=account.vpa,
             to_vpa=clean_vpa,
             amount_paise=share_paise,
             note=f"{payload.description or 'Bill split'} - {person.name}'s share",
             split_group_id=split_group_id,
+            status=RequestStatus.PENDING,
         )
         db.add(req)
         created.append(req)
@@ -65,21 +69,24 @@ async def create_split(
     for r in created:
         await db.refresh(r)
 
-    # Broadcast real-time push to all recipients
-    from app.ws.manager import manager as ws_manager
-    for r in created:
-        recipient_acc = (await db.execute(select(Account).where(Account.vpa == r.to_vpa))).scalar_one_or_none()
-        if recipient_acc:
-            await ws_manager.push(
-                recipient_acc.user_id,
-                "money_request_received",
-                {
-                    "from_vpa": r.from_vpa,
-                    "to_vpa": r.to_vpa,
-                    "amount": paise_to_rupees(r.amount_paise),
-                    "note": r.note,
-                },
-            )
+    # Broadcast real-time push to all recipients (best effort, never fail request if WS fails)
+    try:
+        from app.ws.manager import manager as ws_manager
+        for r in created:
+            recipient_acc = (await db.execute(select(Account).where(Account.vpa == r.to_vpa))).scalar_one_or_none()
+            if recipient_acc:
+                await ws_manager.push(
+                    recipient_acc.user_id,
+                    "money_request_received",
+                    {
+                        "from_vpa": r.from_vpa,
+                        "to_vpa": r.to_vpa,
+                        "amount": paise_to_rupees(r.amount_paise),
+                        "note": r.note,
+                    },
+                )
+    except Exception:
+        pass
 
     return [MoneyRequestOut.from_model(r) for r in created]
 
