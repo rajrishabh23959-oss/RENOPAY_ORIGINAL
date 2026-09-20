@@ -7,7 +7,7 @@ pytestmark = pytest.mark.asyncio
 
 
 async def test_mandate_lifecycle(db_session):
-    user, account = await make_user_with_account(db_session, name="Mandate User", phone="9999999999", pin="123456")
+    user, account = await make_user_with_account(db_session, name="Mandate User", phone="9999999999", pin="123456", balance_paise=100000)
     
     # 1. Create
     req = CreateMandateRequest(
@@ -15,7 +15,7 @@ async def test_mandate_lifecycle(db_session):
         icon="netflix",
         merchant_vpa="netflix@razorpay",
         amount=199.0,
-        max_limit=500.0,
+        max_limit=199.0,
         frequency="monthly",
         category="Entertainment",
         pin="123456"

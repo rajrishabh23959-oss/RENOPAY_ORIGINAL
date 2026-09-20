@@ -82,6 +82,7 @@ async def send_money(
     device_tilt_deg: float | None = None,
     skip_fraud_check: bool = False,
     skip_pin_check: bool = False,
+    skip_round_up: bool = False,
     idempotency_key: str | None = None,
     use_upi_lite: bool = False,
     receiver_name: str | None = None,
@@ -243,7 +244,7 @@ async def send_money(
     # --- Round-up to Digital Gold ---
     round_up_paise = 0
     gold_pot_info = {}
-    if sender_account.round_up_enabled:
+    if sender_account.round_up_enabled and not skip_round_up:
         rounded = ((amount_paise // 1000) + 1) * 1000 if amount_paise % 1000 else amount_paise
         round_up_paise = rounded - amount_paise
         if round_up_paise > 0 and sender_account.current_balance_paise >= round_up_paise:

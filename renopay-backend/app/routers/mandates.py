@@ -10,8 +10,11 @@ from app.core.money import rupees_to_paise
 from app.db.session import get_db
 from app.models.user import User
 from app.models.mandate import Mandate, MandateFrequency, MandateStatus
+from app.models.transaction import TxnCategory
 from app.schemas.features import CreateMandateRequest, MandateOut
 from app.services.pin_auth import verify_user_pin, PinError
+from app.services import payment_engine
+from app.services.payment_engine import PaymentError
 
 router = APIRouter()
 
@@ -28,19 +31,43 @@ async def list_mandates(user: User = Depends(get_current_user), db: AsyncSession
 async def create_mandate(
     payload: CreateMandateRequest, user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)
 ):
-    # Creating a mandate authorizes future recurring debits without the
-    # user present for each one — exactly the kind of standing
-    # authorization that should require PIN confirmation at setup time,
-    # same as real UPI AutoPay registration does.
+    # 1. Verify UPI PIN first
     try:
         await verify_user_pin(db, user, payload.pin)
     except PinError as e:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, {"code": e.code, "message": e.message})
 
+    # 2. Strict exact plan amount (paise)
+    amount_paise = rupees_to_paise(payload.amount)
+
+    # 3. Process the exact payment for the selected subscription plan immediately
+    # Debits ONLY the exact plan amount (skip_round_up=True ensures zero extra deductions)
+    try:
+        await payment_engine.send_money(
+            db,
+            sender_user_id=user.id,
+            receiver_vpa=payload.merchant_vpa,
+            amount_paise=amount_paise,
+            pin=payload.pin,
+            description=f"Subscription: {payload.name}",
+            category=TxnCategory.BILLS,
+            skip_fraud_check=True,
+            skip_round_up=True,
+            receiver_name=payload.name,
+        )
+    except PaymentError as e:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, {"code": e.code, "message": e.message})
+
     days = _FREQUENCY_DAYS.get(payload.frequency, 30)
+
+    # 4. Save mandate with exact plan amount (max_limit strictly locked to plan amount)
     mandate = Mandate(
-        user_id=user.id, name=payload.name, icon=payload.icon, merchant_vpa=payload.merchant_vpa,
-        amount_paise=rupees_to_paise(payload.amount), max_limit_paise=rupees_to_paise(payload.max_limit),
+        user_id=user.id,
+        name=payload.name,
+        icon=payload.icon,
+        merchant_vpa=payload.merchant_vpa,
+        amount_paise=amount_paise,
+        max_limit_paise=amount_paise,  # Strictly equal to plan amount! Never more!
         frequency=MandateFrequency(payload.frequency),
         next_payment_at=datetime.now(timezone.utc) + timedelta(days=days),
         category=payload.category,

@@ -290,6 +290,13 @@ export function SubscriptionsScreen({ onBack }) {
     await load();
   };
 
+  const handleDelete = async (id) => {
+    if (window.confirm("Are you sure you want to cancel this subscription mandate?")) {
+      await MandateAPI.cancel(id);
+      await load();
+    }
+  };
+
   // When user chooses an app from the catalog
   const handleSelectApp = (app) => {
     setSelectedApp(app);
@@ -299,7 +306,7 @@ export function SubscriptionsScreen({ onBack }) {
       icon: app.icon,
       merchant_vpa: app.merchant_vpa,
       amount: String(defaultPlan.amount),
-      max_limit: String(defaultPlan.amount * 2),
+      max_limit: String(defaultPlan.amount), // EXACT PLAN AMOUNT, NOT * 2
       frequency: defaultPlan.frequency,
       category: app.category,
     });
@@ -314,7 +321,7 @@ export function SubscriptionsScreen({ onBack }) {
       ...prev,
       name: `${selectedApp.name} (${plan.name})`,
       amount: String(plan.amount),
-      max_limit: String(plan.amount * 2),
+      max_limit: String(plan.amount), // EXACT PLAN AMOUNT, NOT * 2
       frequency: plan.frequency,
     }));
   };
@@ -346,12 +353,13 @@ export function SubscriptionsScreen({ onBack }) {
 
   const confirmPin = async (pin) => {
     try {
+      const planAmount = Number(form.amount);
       await MandateAPI.create({
         name: form.name,
         icon: form.icon,
         merchant_vpa: form.merchant_vpa,
-        amount: Number(form.amount),
-        max_limit: Number(form.max_limit || form.amount) * 2,
+        amount: planAmount,
+        max_limit: planAmount, // STRICTLY EXACT PLAN AMOUNT, NEVER MULTIPLIED!
         frequency: form.frequency,
         category: form.category,
         pin,
@@ -402,9 +410,12 @@ export function SubscriptionsScreen({ onBack }) {
             <p className="text-center text-textLight font-extrabold text-base mb-0.5">
               Authorize AutoPay
             </p>
-            <p className="text-center text-accent font-mono font-bold text-lg mb-1">
+            <p className="text-center text-accent font-mono font-bold text-lg mb-0.5">
               {fmt(Number(form.amount))}
               <span className="text-xs font-normal text-muted capitalize"> /{form.frequency}</span>
+            </p>
+            <p className="text-center text-teal text-[11px] font-semibold mb-2">
+              ✓ Exact plan amount (Zero extra charges)
             </p>
             <p className="text-center text-muted text-[11px] mb-4">
               to {form.merchant_vpa}
@@ -488,19 +499,28 @@ export function SubscriptionsScreen({ onBack }) {
                       {m.frequency} · {m.merchant_vpa}
                     </p>
                   </div>
-                  <div className="text-right shrink-0">
+                  <div className="text-right shrink-0 flex flex-col items-end gap-1">
                     <p className="font-mono font-bold text-sm text-textLight">{fmt(m.amount)}</p>
-                    <button
-                      className="btn mt-1.5 px-3 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer"
-                      style={{
-                        background: m.status === "active" ? "#ff3d6015" : "#22C55E15",
-                        color: m.status === "active" ? "#ff3d60" : "#22C55E",
-                        border: `1px solid ${m.status === "active" ? "#ff3d6030" : "#22C55E30"}`,
-                      }}
-                      onClick={() => toggle(m.id)}
-                    >
-                      {m.status === "active" ? "Pause" : "Resume"}
-                    </button>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <button
+                        className="btn px-2.5 py-1 rounded-full text-[10px] font-bold transition-all cursor-pointer"
+                        style={{
+                          background: m.status === "active" ? "#ff3d6015" : "#22C55E15",
+                          color: m.status === "active" ? "#ff3d60" : "#22C55E",
+                          border: `1px solid ${m.status === "active" ? "#ff3d6030" : "#22C55E30"}`,
+                        }}
+                        onClick={() => toggle(m.id)}
+                      >
+                        {m.status === "active" ? "Pause" : "Resume"}
+                      </button>
+                      <button
+                        className="btn w-6 h-6 rounded-full flex items-center justify-center text-[10px] text-muted hover:text-danger hover:bg-danger/15 border border-line hover:border-danger/30 transition-all cursor-pointer"
+                        onClick={() => handleDelete(m.id)}
+                        title="Cancel mandate"
+                      >
+                        ✕
+                      </button>
+                    </div>
                   </div>
                 </div>
               </Card>
@@ -667,7 +687,7 @@ export function SubscriptionsScreen({ onBack }) {
                       setForm((f) => ({
                         ...f,
                         amount: e.target.value,
-                        max_limit: String(Number(e.target.value) * 2),
+                        max_limit: e.target.value,
                       }))
                     }
                     className="text-xs py-2.5"
@@ -737,15 +757,26 @@ export function SubscriptionsScreen({ onBack }) {
 
                 {/* If Advance Pay is active, render NoteSlider */}
                 {payMode === "slider" && (
-                  <div className="mt-3 mb-2 animate-fade-in">
+                  <div className="mt-3 mb-2 animate-fade-in bg-bg p-3.5 rounded-2xl border border-line">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-xs font-bold text-textLight">Advance Note Slider</span>
+                      <span className="text-xs font-extrabold text-accent font-mono">
+                        Plan Amount: {fmt(Number(form.amount))}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-muted mb-3">
+                      Interactive note slider verification for {fmt(Number(form.amount))}. You will be charged exactly {fmt(Number(form.amount))}.
+                    </p>
                     <NoteSlider
-                      onAmountChange={(v) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          amount: String(v),
-                          max_limit: String(v * 2),
-                        }))
-                      }
+                      onAmountChange={(v) => {
+                        if (selectedApp?.id === "custom") {
+                          setForm((prev) => ({
+                            ...prev,
+                            amount: String(v),
+                            max_limit: String(v),
+                          }));
+                        }
+                      }}
                       recipientName={form.name || selectedApp.name}
                       recipientVpa={form.merchant_vpa}
                     />
