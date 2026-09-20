@@ -5,17 +5,24 @@ import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.media.AudioAttributes;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.MediaStore;
 import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import android.util.Base64;
 import android.webkit.JavascriptInterface;
+import android.webkit.PermissionRequest;
+import android.webkit.WebChromeClient;
+import android.webkit.WebView;
 import android.widget.Toast;
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
@@ -27,8 +34,6 @@ import com.getcapacitor.PluginMethod;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.annotation.CapacitorPlugin;
 
-import android.os.Handler;
-import android.os.Looper;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
@@ -43,6 +48,7 @@ public class MainActivity extends BridgeActivity {
     private boolean isTtsInitialized = false;
     private String pendingSpeakText = null;
     private String pendingSpeakLang = null;
+    private String pendingVoiceLang = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,6 +57,7 @@ public class MainActivity extends BridgeActivity {
         checkAndRequestAppPermissions();
         initTextToSpeech();
         setupJavascriptInterfaces();
+        configureWebViewForAudio();
     }
 
     @Override
@@ -69,6 +76,7 @@ public class MainActivity extends BridgeActivity {
         ArrayList<String> perms = new ArrayList<>();
         perms.add(Manifest.permission.CAMERA);
         perms.add(Manifest.permission.RECORD_AUDIO);
+        perms.add(Manifest.permission.MODIFY_AUDIO_SETTINGS);
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
             perms.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
         }
@@ -84,11 +92,45 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
+    private void configureWebViewForAudio() {
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            try {
+                if (getBridge() != null && getBridge().getWebView() != null) {
+                    WebView wv = getBridge().getWebView();
+                    // Ensure microphone and camera permissions requested inside WebView on Android 10+ are granted
+                    WebChromeClient existingClient = wv.getWebChromeClient();
+                    wv.setWebChromeClient(new WebChromeClient() {
+                        @Override
+                        public void onPermissionRequest(final PermissionRequest request) {
+                            runOnUiThread(() -> {
+                                try {
+                                    request.grant(request.getResources());
+                                } catch (Exception e) {
+                                    super.onPermissionRequest(request);
+                                }
+                            });
+                        }
+                    });
+                }
+            } catch (Exception ignored) {}
+        }, 500);
+    }
+
     private void initTextToSpeech() {
         try {
             textToSpeech = new TextToSpeech(getApplicationContext(), status -> {
                 if (status == TextToSpeech.SUCCESS) {
                     isTtsInitialized = true;
+
+                    // Modern AudioAttributes for Android 10+ (API 29+)
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                        AudioAttributes audioAttributes = new AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_ASSISTANT)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                            .build();
+                        textToSpeech.setAudioAttributes(audioAttributes);
+                    }
+
                     applyTtsLanguage("hi");
 
                     textToSpeech.setOnUtteranceProgressListener(new UtteranceProgressListener() {
@@ -126,7 +168,7 @@ public class MainActivity extends BridgeActivity {
                         }
                     });
 
-                    // If a speech request was made before TTS finished initializing
+                    // Flush any pending text requested before TTS was ready
                     if (pendingSpeakText != null) {
                         final String queuedText = pendingSpeakText;
                         final String queuedLang = pendingSpeakLang;
@@ -161,7 +203,7 @@ public class MainActivity extends BridgeActivity {
         try {
             int result = textToSpeech.setLanguage(targetLocale);
             if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                // Fallback to English (India) or default English if Hindi/regional voice pack is not installed
+                // Fallback to Indian English or standard English
                 int fallbackResult = textToSpeech.setLanguage(new Locale("en", "IN"));
                 if (fallbackResult == TextToSpeech.LANG_MISSING_DATA || fallbackResult == TextToSpeech.LANG_NOT_SUPPORTED) {
                     textToSpeech.setLanguage(Locale.ENGLISH);
@@ -209,7 +251,17 @@ public class MainActivity extends BridgeActivity {
         return isTtsInitialized && textToSpeech != null;
     }
 
+    /**
+     * Launch Speech-to-Text with full Android 10+ runtime permission safety
+     */
     public void startVoiceRecognition(String lang) {
+        // Ensure RECORD_AUDIO permission is granted before launching speech intent
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            pendingVoiceLang = lang;
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, PERMISSION_REQUEST_CODE);
+            return;
+        }
+
         runOnUiThread(() -> {
             try {
                 Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
@@ -224,11 +276,59 @@ public class MainActivity extends BridgeActivity {
                     intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "en-IN");
                 }
                 intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak to Saathi AI…");
+                intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
                 startActivityForResult(intent, SPEECH_REQUEST_CODE);
             } catch (Exception e) {
-                Toast.makeText(this, "Voice recognition not available on this device", Toast.LENGTH_SHORT).show();
+                notifySpeechResult("");
+                Toast.makeText(this, "Voice recognition not available. Please install Google Speech Services.", Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void notifySpeechResult(String spokenText) {
+        if (getBridge() != null && getBridge().getWebView() != null) {
+            getBridge().getWebView().post(() -> {
+                String safeText = spokenText == null ? "" : spokenText.replace("\\", "\\\\").replace("'", "\\'").replace("\n", " ");
+                getBridge().getWebView().evaluateJavascript(
+                    "window.__onNativeSpeechResult && window.__onNativeSpeechResult('" + safeText + "');",
+                    null
+                );
+            });
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == PERMISSION_REQUEST_CODE) {
+            for (int i = 0; i < permissions.length; i++) {
+                if (Manifest.permission.RECORD_AUDIO.equals(permissions[i]) && grantResults[i] == PackageManager.PERMISSION_GRANTED) {
+                    if (pendingVoiceLang != null) {
+                        String lang = pendingVoiceLang;
+                        pendingVoiceLang = null;
+                        startVoiceRecognition(lang);
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == SPEECH_REQUEST_CODE) {
+            if (resultCode == RESULT_OK && data != null) {
+                ArrayList<String> results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                if (results != null && !results.isEmpty()) {
+                    notifySpeechResult(results.get(0));
+                } else {
+                    notifySpeechResult("");
+                }
+            } else {
+                // Cancelled or no speech detected: notify frontend so isListening resets cleanly
+                notifySpeechResult("");
+            }
+        }
     }
 
     public void saveBase64ToDownloads(String base64Data, String filename, String mimeType) {
@@ -260,7 +360,7 @@ public class MainActivity extends BridgeActivity {
             try {
                 byte[] fileBytes = Base64.decode(base64Data, Base64.DEFAULT);
 
-                // 1. Save directly to Phone Downloads / RenoPay folder via MediaStore (Android 10+)
+                // Save directly to Phone Downloads / RenoPay folder via MediaStore (Android 10+)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     ContentValues values = new ContentValues();
                     values.put(MediaStore.MediaColumns.DISPLAY_NAME, finalFilename);
@@ -298,7 +398,6 @@ public class MainActivity extends BridgeActivity {
                     sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(legacyFile)));
                 }
 
-                // 2. Also save to app-specific external files dir to reliably launch FileProvider ACTION_VIEW
                 File appDownloads = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
                 if (appDownloads != null && !appDownloads.exists()) {
                     appDownloads.mkdirs();
@@ -324,14 +423,14 @@ public class MainActivity extends BridgeActivity {
                         viewIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                         startActivity(Intent.createChooser(viewIntent, "Open " + finalFilename));
                     } catch (Exception ex) {
-                        // Viewer app may not be present, file is safely in Downloads
+                        // Viewer app may not be present
                     }
                 });
 
             } catch (Exception e) {
                 final String errorMsg = e.getMessage();
                 runOnUiThread(() -> {
-                    Toast.makeText(this, "Could not save PDF: " + errorMsg, Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, "Could not save file: " + errorMsg, Toast.LENGTH_LONG).show();
                 });
             }
         }).start();
@@ -343,7 +442,7 @@ public class MainActivity extends BridgeActivity {
             new Handler(Looper.getMainLooper()).postDelayed(() -> {
                 try {
                     if (getBridge() != null && getBridge().getWebView() != null) {
-                        android.webkit.WebView wv = getBridge().getWebView();
+                        WebView wv = getBridge().getWebView();
                         wv.addJavascriptInterface(new AndroidDownloaderInterface(MainActivity.this), "AndroidDownloader");
                         wv.addJavascriptInterface(new AndroidTTSInterface(MainActivity.this), "AndroidTTS");
                         wv.addJavascriptInterface(new AndroidSTTInterface(MainActivity.this), "AndroidSTT");
@@ -356,7 +455,8 @@ public class MainActivity extends BridgeActivity {
                             "    stop: function() { window.Capacitor.Plugins.RenoTTS.stop(); }," +
                             "    isAvailable: function() { return true; }" +
                             "  };" +
-                            "}", null
+                            "}" +
+                            "window.__isRenoPayAndroid = true;", null
                         );
                     }
                 } catch (Exception ignored) {}
@@ -364,7 +464,6 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
-    // Capacitor Native Plugin for 100% Reliable Cross-Android Speech (Android 12, 13, 14, 15, 16)
     @CapacitorPlugin(name = "RenoTTS")
     public static class RenoTTSPlugin extends Plugin {
         @PluginMethod
@@ -400,7 +499,6 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
-    // Public Named Interfaces for WebView Reflection Security
     public static class AndroidDownloaderInterface {
         private final MainActivity activity;
 
@@ -448,24 +546,10 @@ public class MainActivity extends BridgeActivity {
         public void startListening(String lang) {
             activity.startVoiceRecognition(lang);
         }
-    }
 
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == SPEECH_REQUEST_CODE && resultCode == RESULT_OK && data != null) {
-            ArrayList<String> results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-            if (results != null && !results.isEmpty()) {
-                String spokenText = results.get(0).replace("'", "\\'").replace("\n", " ");
-                if (getBridge() != null && getBridge().getWebView() != null) {
-                    getBridge().getWebView().post(() -> {
-                        getBridge().getWebView().evaluateJavascript(
-                            "window.__onNativeSpeechResult && window.__onNativeSpeechResult('" + spokenText + "');",
-                            null
-                        );
-                    });
-                }
-            }
+        @JavascriptInterface
+        public void stopListening() {
+            activity.runOnUiThread(activity::stopSpeech);
         }
     }
 

@@ -1,5 +1,14 @@
 {
   "appId": "com.rishabh.renopay",
   "appName": "RENOPAY",
-  "webDir": "www"
+  "webDir": "www",
+  "server": {
+    "url": "https://renopay-original.vercel.app",
+    "cleartext": true,
+    "androidScheme": "https",
+    "allowNavigation": [
+      "renopay-original.vercel.app",
+      "*.vercel.app"
+    ]
+  }
 }

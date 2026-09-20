@@ -408,13 +408,21 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
   };
 
   // Speech-to-Text (STT)
-  // Speech-to-Text (STT)
   const toggleSpeechRecognition = () => {
+    if (isListening) {
+      if (window.AndroidSTT?.stopListening) {
+        window.AndroidSTT.stopListening();
+      }
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      return;
+    }
+
     // 1. If running in Android APK with native AndroidSTT
     if (window.AndroidSTT?.startListening) {
       window.__onNativeSpeechResult = (spokenText) => {
         setIsListening(false);
-        if (spokenText) {
+        if (spokenText && spokenText.trim()) {
           setInput(spokenText);
           handleSend(spokenText);
         }
@@ -430,12 +438,6 @@ export function AIAssistant({ currentScreen = "home", onNavigate }) {
 
     if (!SpeechRecognition) {
       alert("Voice input: Tap the microphone on your phone keyboard (Gboard), or use Chrome/Edge on web!");
-      return;
-    }
-
-    if (isListening) {
-      recognitionRef.current?.stop();
-      setIsListening(false);
       return;
     }
 
