@@ -144,14 +144,14 @@ export function PdfPreviewModal({ isOpen, onClose, pdfBlob, title = "PDF Preview
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/70 backdrop-blur-md animate-fade-in">
       {/* Backdrop click */}
       <div className="absolute inset-0" onClick={onClose} />
 
-      {/* Modal Window */}
-      <div className="relative z-10 w-full max-w-4xl h-[92vh] max-h-[880px] bg-[#141210] border border-line rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+      {/* Modal Window — uses theme-aware colors */}
+      <div className="relative z-10 w-full max-w-4xl h-[92vh] max-h-[880px] bg-surf border border-line rounded-2xl shadow-2xl flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-3.5 sm:px-4 py-3 border-b border-line bg-surf/95 shrink-0">
+        <div className="flex items-center justify-between px-3.5 sm:px-4 py-3 border-b border-line bg-card shrink-0">
           <div className="flex items-center gap-2 sm:gap-2.5 overflow-hidden">
             <span className="text-xl shrink-0">📄</span>
             <div className="min-w-0">
@@ -159,7 +159,7 @@ export function PdfPreviewModal({ isOpen, onClose, pdfBlob, title = "PDF Preview
               <div className="flex items-center gap-2">
                 <p className="text-[10px] sm:text-[11px] text-muted font-mono truncate max-w-[140px] sm:max-w-[240px]">{filename}</p>
                 {numPages > 0 && (
-                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-white/10 text-textLight">
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-accent/15 text-accent border border-accent/20">
                     {numPages} {numPages === 1 ? "page" : "pages"}
                   </span>
                 )}
@@ -171,7 +171,7 @@ export function PdfPreviewModal({ isOpen, onClose, pdfBlob, title = "PDF Preview
             <button
               onClick={handleOpenNewTab}
               disabled={!blobUrl || loading}
-              className="px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-[12px] font-semibold bg-bg border border-line text-textLight hover:bg-white/5 transition-colors disabled:opacity-40 flex items-center gap-1"
+              className="px-2.5 sm:px-3 py-1.5 rounded-lg text-[11px] sm:text-[12px] font-semibold bg-bg border border-line text-textLight hover:border-accent transition-colors disabled:opacity-40 flex items-center gap-1"
               title="Open in new browser tab"
             >
               <span>↗</span>
@@ -189,7 +189,7 @@ export function PdfPreviewModal({ isOpen, onClose, pdfBlob, title = "PDF Preview
 
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:text-white hover:bg-white/10 text-lg transition-colors ml-0.5"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:text-textLight hover:bg-line/40 text-lg transition-colors ml-0.5"
               aria-label="Close modal"
             >
               ✕
@@ -200,13 +200,13 @@ export function PdfPreviewModal({ isOpen, onClose, pdfBlob, title = "PDF Preview
         {/* Content Area */}
         <div
           ref={containerRef}
-          className="flex-1 bg-[#0d0c0a] p-2 sm:p-4 relative overflow-y-auto overflow-x-hidden flex flex-col items-center"
+          className="flex-1 bg-bg p-2 sm:p-4 relative overflow-y-auto overflow-x-hidden flex flex-col items-center"
         >
           {loading || renderLoading ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#0d0c0a]/90 z-20">
-              <div className="w-10 h-10 border-3 border-accent/30 border-t-accent rounded-full animate-spin" />
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-bg/90 z-20">
+              <div className="w-10 h-10 border-[3px] border-accent/30 border-t-accent rounded-full animate-spin" />
               <p className="text-sm font-semibold text-textLight">
-                {loading ? "Generating document…" : "Rendering PDF for mobile & desktop…"}
+                {loading ? "Generating document…" : "Rendering PDF…"}
               </p>
               <p className="text-xs text-muted">Please wait a moment</p>
             </div>
@@ -214,12 +214,12 @@ export function PdfPreviewModal({ isOpen, onClose, pdfBlob, title = "PDF Preview
 
           {renderError ? (
             <div className="flex flex-col items-center justify-center my-auto p-6 text-center max-w-sm">
-              <div className="w-12 h-12 rounded-full bg-warn/10 flex items-center justify-center text-2xl mb-3">
+              <div className="w-12 h-12 rounded-full bg-warn/10 border border-warn/20 flex items-center justify-center text-2xl mb-3">
                 ⚠️
               </div>
               <h4 className="text-sm font-bold text-textLight mb-1">Direct preview unavailable</h4>
               <p className="text-xs text-muted mb-4">
-                Mobile browser blocked the inline canvas. You can still download or open the PDF directly.
+                Your browser blocked the inline preview. You can still download or open the PDF directly.
               </p>
               <div className="flex gap-2.5">
                 <button
@@ -231,7 +231,7 @@ export function PdfPreviewModal({ isOpen, onClose, pdfBlob, title = "PDF Preview
                 {blobUrl && (
                   <button
                     onClick={handleOpenNewTab}
-                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-surf border border-line text-textLight"
+                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-card border border-line text-textLight hover:border-accent transition-colors"
                   >
                     Open in Tab
                   </button>
@@ -240,12 +240,26 @@ export function PdfPreviewModal({ isOpen, onClose, pdfBlob, title = "PDF Preview
             </div>
           ) : (
             <div className="w-full flex flex-col items-center gap-4 py-2">
+              {numPages === 0 && !loading && !renderLoading && (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <div className="w-14 h-14 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center text-3xl mb-4">
+                    📄
+                  </div>
+                  <p className="text-sm font-semibold text-textLight mb-1">No PDF loaded</p>
+                  <p className="text-xs text-muted">Use "View PDF" to generate your statement</p>
+                </div>
+              )}
               {Array.from({ length: numPages }).map((_, idx) => (
                 <div
                   key={idx}
-                  className="w-full flex flex-col items-center bg-white rounded-lg shadow-xl overflow-hidden border border-white/10"
+                  className="w-full flex flex-col items-center bg-white rounded-xl shadow-lg overflow-hidden border border-line/30"
                   style={{ maxWidth: "760px" }}
                 >
+                  {/* Page number label */}
+                  <div className="w-full flex items-center justify-between px-3 py-1.5 bg-card border-b border-line/30">
+                    <span className="text-[10px] font-semibold text-muted">Page {idx + 1} of {numPages}</span>
+                    <span className="text-[10px] text-muted font-mono truncate max-w-[160px]">{filename}</span>
+                  </div>
                   <canvas
                     ref={(el) => (canvasRefs.current[idx] = el)}
                     className="block w-full max-w-full"
@@ -255,9 +269,24 @@ export function PdfPreviewModal({ isOpen, onClose, pdfBlob, title = "PDF Preview
             </div>
           )}
         </div>
+
+        {/* Footer with page count and download hint */}
+        {numPages > 0 && !renderError && (
+          <div className="shrink-0 border-t border-line px-4 py-2 flex items-center justify-between bg-card">
+            <span className="text-[11px] text-muted">
+              {numPages} page{numPages !== 1 ? "s" : ""} • RenoPay Statement
+            </span>
+            <button
+              onClick={handleDownload}
+              disabled={!pdfBlob}
+              className="text-[11px] font-semibold text-accent hover:underline disabled:opacity-40"
+            >
+              Save to device ↓
+            </button>
+          </div>
+        )}
       </div>
     </div>,
     document.body
   );
 }
-

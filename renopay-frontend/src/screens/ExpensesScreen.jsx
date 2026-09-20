@@ -78,7 +78,7 @@ export function ExpensesScreen({ onBack }) {
 
   const setThisMonthPreset = () => {
     const now = new Date();
-    const start = new Date(now.getFullYear(), now.month || now.getMonth(), 1).toISOString().split("T")[0];
+    const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split("T")[0];
     const end = new Date().toISOString().split("T")[0];
     setStartDate(start);
     setEndDate(end);
@@ -136,7 +136,7 @@ export function ExpensesScreen({ onBack }) {
           </button>
           <div>
             <h2 className="text-[20px] font-extrabold text-textLight leading-none">Expense Tracker</h2>
-            <p className="text-[11px] text-muted mt-0.5">Budgeting & Certified PDF Statements</p>
+            <p className="text-[11px] text-muted mt-0.5">Budgeting &amp; Certified PDF Statements</p>
           </div>
         </div>
 
@@ -145,7 +145,7 @@ export function ExpensesScreen({ onBack }) {
           <button
             onClick={handleViewPdf}
             disabled={pdfLoading || loading}
-            className="btn px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-[#211A16] border border-accent/40 text-accent hover:bg-accent/10 transition-all flex items-center gap-1 shadow-sm disabled:opacity-50"
+            className="btn px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-card border border-accent/60 text-accent hover:bg-accent/10 transition-all flex items-center gap-1 shadow-sm disabled:opacity-50"
             title="View 2-Page Visual Statement PDF"
           >
             {pdfLoading ? (
@@ -170,7 +170,7 @@ export function ExpensesScreen({ onBack }) {
         {err && (
           <div className="p-3 rounded-xl bg-danger/15 border border-danger/30 text-danger text-xs font-medium flex justify-between items-center animate-fadeUp">
             <span>⚠️ {err}</span>
-            <button onClick={() => setErr("")} className="text-white text-xs ml-2 cursor-pointer">✕</button>
+            <button onClick={() => setErr("")} className="text-danger text-xs ml-2 cursor-pointer">✕</button>
           </div>
         )}
 
@@ -198,7 +198,7 @@ export function ExpensesScreen({ onBack }) {
 
         {/* Custom Calendar Date Range Picker */}
         {period === "custom" && (
-          <Card className="p-4 border-accent/30 bg-card dark:bg-gradient-to-b dark:from-[#1F1916] dark:to-[#141110] animate-fadeUp">
+          <Card className="p-4 border-accent/30 animate-fadeUp">
             <div className="flex items-center justify-between mb-3">
               <p className="text-xs font-bold text-textLight flex items-center gap-1.5">
                 <span>📅</span> Select Custom Date Range
@@ -235,25 +235,25 @@ export function ExpensesScreen({ onBack }) {
               <span className="text-[10px] text-muted self-center mr-1">Quick:</span>
               <button
                 onClick={() => setPreset(7)}
-                className="px-2 py-1 rounded-md text-[10px] bg-card border border-line/60 text-textLight hover:border-accent"
+                className="px-2 py-1 rounded-md text-[10px] bg-bg border border-line/60 text-textLight hover:border-accent"
               >
                 Last 7D
               </button>
               <button
                 onClick={() => setPreset(30)}
-                className="px-2 py-1 rounded-md text-[10px] bg-card border border-line/60 text-textLight hover:border-accent"
+                className="px-2 py-1 rounded-md text-[10px] bg-bg border border-line/60 text-textLight hover:border-accent"
               >
                 Last 30D
               </button>
               <button
                 onClick={setThisMonthPreset}
-                className="px-2 py-1 rounded-md text-[10px] bg-card border border-line/60 text-textLight hover:border-accent"
+                className="px-2 py-1 rounded-md text-[10px] bg-bg border border-line/60 text-textLight hover:border-accent"
               >
                 This Month
               </button>
               <button
                 onClick={() => { setStartDate(thirtyDaysAgoStr); setEndDate(todayStr); }}
-                className="px-2 py-1 rounded-md text-[10px] bg-card border border-line/60 text-muted hover:text-white"
+                className="px-2 py-1 rounded-md text-[10px] bg-bg border border-line/60 text-muted hover:text-textLight"
               >
                 Reset
               </button>
@@ -273,22 +273,32 @@ export function ExpensesScreen({ onBack }) {
           <>
             {/* Top Stat Cards */}
             <div className="grid grid-cols-2 gap-3">
-              <Card className="p-4 border-danger/[.25] bg-card dark:bg-gradient-to-br dark:from-[#201515] dark:to-[#151210]">
-                <p className="text-muted text-[10px] tracking-wide font-semibold uppercase">Total Spent</p>
-                <p className="font-mono text-2xl font-black text-danger mt-1.5">{fmt(data.total_spent)}</p>
-                <p className="text-[10px] text-muted mt-1">Outflow</p>
-              </Card>
-              <Card className="p-4 border-teal/[.25] bg-card dark:bg-gradient-to-br dark:from-[#12201c] dark:to-[#151210]">
-                <p className="text-muted text-[10px] tracking-wide font-semibold uppercase">Total Inflow</p>
-                <p className="font-mono text-2xl font-black text-teal mt-1.5">{fmt(data.total_income)}</p>
-                <p className="text-[10px] mt-1" style={{ color: data.net >= 0 ? "#22C55E" : "#ef4444" }}>
-                  Net: {data.net >= 0 ? "+" : ""}{fmt(data.net)}
-                </p>
-              </Card>
+              {/* Total Spent Card */}
+              <div className="rounded-2xl border border-danger/25 bg-card p-4 overflow-hidden relative">
+                {/* subtle tinted bg overlay for both themes */}
+                <div className="absolute inset-0 bg-danger/[.05] rounded-2xl pointer-events-none" />
+                <div className="relative z-10">
+                  <p className="text-muted text-[10px] tracking-wide font-semibold uppercase">Total Spent</p>
+                  <p className="font-mono text-2xl font-black text-danger mt-1.5">{fmt(data.total_spent)}</p>
+                  <p className="text-[10px] text-muted mt-1">Outflow</p>
+                </div>
+              </div>
+
+              {/* Total Inflow Card */}
+              <div className="rounded-2xl border border-teal/25 bg-card p-4 overflow-hidden relative">
+                <div className="absolute inset-0 bg-teal/[.05] rounded-2xl pointer-events-none" />
+                <div className="relative z-10">
+                  <p className="text-muted text-[10px] tracking-wide font-semibold uppercase">Total Inflow</p>
+                  <p className="font-mono text-2xl font-black text-teal mt-1.5">{fmt(data.total_income)}</p>
+                  <p className="text-[10px] mt-1" style={{ color: data.net >= 0 ? "#22C55E" : "#ef4444" }}>
+                    Net: {data.net >= 0 ? "+" : ""}{fmt(data.net)}
+                  </p>
+                </div>
+              </div>
             </div>
 
             {/* Monthly Budget Card with Gauge */}
-            <Card className="p-[18px] border-line/60 bg-card dark:bg-gradient-to-b dark:from-[#1c1815] dark:to-[#141210]">
+            <Card className="p-[18px] border-line/60">
               <div className="flex justify-between items-center mb-2.5">
                 <div>
                   <p className="text-[13px] font-bold text-textLight">Monthly Budget Adherence</p>
@@ -298,7 +308,7 @@ export function ExpensesScreen({ onBack }) {
                   <span
                     className="font-mono text-xs font-bold px-2 py-0.5 rounded-full"
                     style={{
-                      background: bpct > 85 ? "#ff3d6022" : bpct > 65 ? "#FFA00022" : "#22C55E22",
+                      background: bpct > 85 ? "rgba(255,61,96,0.15)" : bpct > 65 ? "rgba(255,160,0,0.15)" : "rgba(34,197,94,0.15)",
                       color: bpct > 85 ? "#ff3d60" : bpct > 65 ? "#FFA000" : "#22C55E",
                     }}
                   >
@@ -349,7 +359,7 @@ export function ExpensesScreen({ onBack }) {
                     const icon = CATEGORY_ICONS[c.category] || "📦";
                     const color = CATEGORY_COLORS[c.category] || "#6B7280";
                     return (
-                      <div key={c.category} className="p-2.5 rounded-xl bg-bg/40 border border-line/30">
+                      <div key={c.category} className="p-2.5 rounded-xl bg-bg/60 border border-line/30">
                         <div className="flex justify-between items-center mb-1.5">
                           <span className="text-[13px] font-semibold text-textLight flex items-center gap-1.5">
                             <span className="text-sm">{icon}</span>
@@ -364,7 +374,7 @@ export function ExpensesScreen({ onBack }) {
                             </span>
                           </div>
                         </div>
-                        <div className="bg-bg rounded-full h-1.5 overflow-hidden">
+                        <div className="bg-bg rounded-full h-1.5 overflow-hidden border border-line/20">
                           <div
                             className="h-full rounded-full transition-all duration-500"
                             style={{ width: `${Math.max(3, c.percent)}%`, backgroundColor: color }}
@@ -378,14 +388,14 @@ export function ExpensesScreen({ onBack }) {
             </Card>
 
             {/* Bottom Statement Download CTA Card */}
-            <Card className="p-4 border-accent/30 bg-card dark:bg-gradient-to-r dark:from-[#211A16] dark:to-[#171311] flex items-center justify-between">
+            <Card className="p-4 border-accent/30 flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-accent/20 border border-accent/40 flex items-center justify-center text-lg">
+                <div className="w-10 h-10 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center text-lg">
                   📄
                 </div>
                 <div>
                   <p className="text-xs font-bold text-textLight">EXPENSE REPORT</p>
-                  <p className="text-[10px] text-muted">FULL MONTH REPORT</p>
+                  <p className="text-[10px] text-muted">FULL PERIOD STATEMENT</p>
                 </div>
               </div>
               <button
