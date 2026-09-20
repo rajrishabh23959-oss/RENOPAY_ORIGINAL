@@ -744,7 +744,6 @@ export function ProfileScreen({ onBack, onLoggedOut }) {
 
         {[
           { l: "Phone", v: profile.phone_number },
-          { l: "UPI Lite Balance", v: fmt(acc.upi_lite_balance) },
           { l: "Digital Gold", v: fmt(acc.digital_gold) },
         ].map((r) => (
           <Card key={r.l} className="p-4 mb-2.5 flex justify-between items-center">
