@@ -64,18 +64,18 @@ export function PINPad({
             className="w-[13px] h-[13px] rounded-full border-2 transition-all"
             style={{
               background: i < pin.length ? accent : "transparent",
-              borderColor: i < pin.length ? accent : "#5C564F",
+              borderColor: i < pin.length ? accent : "rgb(var(--color-line))",
               boxShadow: i < pin.length ? `0 0 8px ${accent}66` : "none",
             }}
           />
         ))}
       </div>
-      <div className="grid grid-cols-3 gap-2.5 max-w-[270px] mx-auto">
+      <div className="grid grid-cols-3 gap-2.5 max-w-[270px] mx-auto select-none">
         {order.map((d) => (
           <button
             key={d}
             type="button"
-            className="btn py-[15px] rounded-[13px] bg-surf border border-line text-textLight text-xl font-mono font-bold hover:bg-[#1a1714] active:bg-accent/20 transition-colors cursor-pointer"
+            className="btn py-[14px] rounded-[14px] bg-surf border border-line text-textLight text-2xl font-mono font-bold hover:bg-bg hover:border-accent/40 active:bg-accent/20 active:scale-95 focus:outline-none transition-all duration-150 cursor-pointer shadow-xs"
             onClick={() => add(String(d))}
             aria-label={`Digit ${d}`}
           >
@@ -86,7 +86,7 @@ export function PINPad({
         {/* 0 ke left me: Cross symbol ✕ for delete/backspace */}
         <button
           type="button"
-          className="btn py-[15px] rounded-[13px] bg-surf border border-line text-warn hover:text-white text-lg font-bold hover:bg-[#1a1714] active:bg-accent/20 transition-colors flex items-center justify-center disabled:opacity-40 cursor-pointer"
+          className="btn py-[14px] rounded-[14px] bg-surf border border-line text-warn hover:bg-bg hover:border-warn/40 active:bg-warn/15 active:scale-95 focus:outline-none text-lg font-bold transition-all duration-150 flex items-center justify-center disabled:opacity-40 cursor-pointer shadow-xs"
           onClick={del}
           disabled={pin.length === 0}
           aria-label="Delete digit"
@@ -97,7 +97,7 @@ export function PINPad({
         {/* 0 in center */}
         <button
           type="button"
-          className="btn py-[15px] rounded-[13px] bg-surf border border-line text-textLight text-xl font-mono font-bold hover:bg-[#1a1714] active:bg-accent/20 transition-colors cursor-pointer"
+          className="btn py-[14px] rounded-[14px] bg-surf border border-line text-textLight text-2xl font-mono font-bold hover:bg-bg hover:border-accent/40 active:bg-accent/20 active:scale-95 focus:outline-none transition-all duration-150 cursor-pointer shadow-xs"
           onClick={() => add("0")}
           aria-label="Digit 0"
         >
@@ -107,7 +107,7 @@ export function PINPad({
         {/* 0 ke right me: Check or Pay button */}
         <button
           type="button"
-          className={`btn py-[15px] rounded-[13px] border text-xs font-extrabold uppercase tracking-wider transition-all flex items-center justify-center ${
+          className={`btn py-[14px] rounded-[14px] border text-xs font-extrabold uppercase tracking-wider transition-all flex items-center justify-center ${
             pin.length === 6
               ? "bg-accent border-accent text-white shadow-accentGlow hover:brightness-110 active:scale-95 cursor-pointer animate-pulse"
               : "bg-surf border-line text-muted/40 cursor-not-allowed"
