@@ -1,0 +1,7 @@
+# Ignore Android native code & assets on Vercel web/API deployments
+andriod/
+
+# Ignore tests, documentation, and docker configs
+README.md
+docker-compose.yml
+renopay-backend/tests/
