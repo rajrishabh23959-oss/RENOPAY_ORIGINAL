@@ -3,6 +3,7 @@ import { GoalAPI } from "../lib/api";
 import { Btn, Badge, Card } from "../components/ui";
 import { PINPad } from "../components/PINPad";
 import { fmt } from "../lib/format";
+import { useTheme } from "../context/ThemeContext";
 
 /* ── Confetti Celebration ─────────────────────────────────────────────────── */
 function MilestoneCelebration({ milestone, onDone }) {
@@ -68,7 +69,7 @@ function buildPath(pts) {
   return d;
 }
 
-function TreasureMapSVG({ progress }) {
+function TreasureMapSVG({ progress, isNightMode = true }) {
   // progress: 0.0 to 1.0
   const filled = Math.max(0, Math.min(1, progress));
   // Interpolate avatar position between two waypoints
@@ -82,12 +83,17 @@ function TreasureMapSVG({ progress }) {
   const SVG_W = 440;
   const SVG_H = 180;
 
+  const bgColor = isNightMode ? "#0A0908" : "#F8FAFC";
+  const unreachedStroke = isNightMode ? "#2A2320" : "#CBD5E1";
+  const unreachedFill = isNightMode ? "#2A232033" : "#E2E8F066";
+  const avatarBg = isNightMode ? "#151210" : "#FFFFFF";
+
   return (
     <svg viewBox={`0 0 ${SVG_W} ${SVG_H}`} className="w-full" style={{ maxHeight: 160 }}>
-      {/* Background — dark */}
-      <rect width={SVG_W} height={SVG_H} rx="12" fill="#0A0908" />
+      {/* Background */}
+      <rect width={SVG_W} height={SVG_H} rx="12" fill={bgColor} />
       {/* Dashed trail – unfilled */}
-      <path d={fullPath} fill="none" stroke="#2A2320" strokeWidth="3" strokeDasharray="8 6" />
+      <path d={fullPath} fill="none" stroke={unreachedStroke} strokeWidth="3" strokeDasharray="8 6" />
       {/* Filled trail */}
       <path
         d={fullPath}
@@ -105,12 +111,12 @@ function TreasureMapSVG({ progress }) {
         return (
           <g key={i}>
             <circle cx={pt.x} cy={pt.y} r={16}
-              fill={reached ? "#FF6A1A33" : "#2A232033"}
-              stroke={reached ? "#FF6A1A" : "#2A2320"}
+              fill={reached ? "#FF6A1A26" : unreachedFill}
+              stroke={reached ? "#FF6A1A" : unreachedStroke}
               strokeWidth="1.5"
             />
             <text x={pt.x} y={pt.y + 5} textAnchor="middle" fontSize="14"
-              style={{ filter: reached ? "none" : "grayscale(100%) opacity(0.4)" }}>
+              style={{ filter: reached ? "none" : "grayscale(100%) opacity(0.5)" }}>
               {pt.item}
             </text>
           </g>
@@ -118,7 +124,7 @@ function TreasureMapSVG({ progress }) {
       })}
       {/* Avatar */}
       <g style={{ transition: "transform 1.2s cubic-bezier(.4,0,.2,1)", transform: `translate(${avatarX}px, ${avatarY}px)` }}>
-        <circle cx={0} cy={-22} r={12} fill="#151210" stroke="#FF6A1A" strokeWidth="2" />
+        <circle cx={0} cy={-22} r={12} fill={avatarBg} stroke="#FF6A1A" strokeWidth="2" />
         <text x={0} y={-17} textAnchor="middle" fontSize="13">🧭</text>
         <circle cx={0} cy={-22} r={16} fill="transparent" stroke="#FF6A1A"
           strokeWidth="1.5" opacity="0.5"
@@ -131,6 +137,7 @@ function TreasureMapSVG({ progress }) {
 
 /* ── Treasure Map Card ────────────────────────────────────────────────────── */
 function TreasureMap({ goal, onAddSavings, onWithdrawSavings }) {
+  const { isNightMode } = useTheme();
   const pct = Math.min(100, (goal.saved / goal.target) * 100);
   const [adding, setAdding] = useState(false);
   const [addAmt, setAddAmt] = useState("");
@@ -216,12 +223,12 @@ function TreasureMap({ goal, onAddSavings, onWithdrawSavings }) {
 
       {/* Confirmation Step 1: ARE YOU SURE WITHDRAW THIS MONEY */}
       {withdrawStep === "confirm1" && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[999] p-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[999] p-4">
           <Card className="p-6 max-w-[340px] w-full border-line text-center animate-fade-in shadow-2xl">
             <div className="w-12 h-12 rounded-full bg-warn/15 text-warn text-2xl mx-auto mb-3 flex items-center justify-center">
               ⚠️
             </div>
-            <h3 className="text-base font-extrabold text-white mb-2 leading-tight">
+            <h3 className="text-base font-extrabold text-textLight mb-2 leading-tight">
               ARE YOU SURE WITHDRAW THIS MONEY
             </h3>
             <p className="text-muted text-xs mb-5">
@@ -249,7 +256,7 @@ function TreasureMap({ goal, onAddSavings, onWithdrawSavings }) {
 
       {/* Confirmation Step 2: You will not be able to achieve your goal ___ */}
       {withdrawStep === "confirm2" && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-[999] p-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[999] p-4">
           <Card className="p-6 max-w-[340px] w-full border-warn/30 text-center animate-fade-in shadow-2xl">
             <div className="text-4xl mx-auto mb-3">
               {goal.icon || "🎯"}
@@ -282,7 +289,7 @@ function TreasureMap({ goal, onAddSavings, onWithdrawSavings }) {
 
       {/* Confirmation Step 3: Enter UPI PIN with Withdraw button */}
       {withdrawStep === "pin" && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[999] p-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[999] p-4">
           <Card className="p-6 max-w-[340px] w-full border-accent/[.33] shadow-2xl animate-fade-in">
             <p className="text-center text-textLight font-bold text-sm mb-1">Enter UPI PIN to Withdraw</p>
             <p className="text-center text-accent font-mono font-bold text-lg mb-4">{fmt(goal.saved)}</p>
@@ -296,7 +303,7 @@ function TreasureMap({ goal, onAddSavings, onWithdrawSavings }) {
               actionType="withdraw"
             />
             <button
-              className="btn w-full mt-4 text-muted hover:text-white text-xs py-2 transition-colors cursor-pointer"
+              className="btn w-full mt-4 text-muted hover:text-textLight text-xs py-2 transition-colors cursor-pointer"
               onClick={() => { setWithdrawStep(null); setWithdrawErr(""); }}
               disabled={withdrawing}
             >
@@ -308,12 +315,12 @@ function TreasureMap({ goal, onAddSavings, onWithdrawSavings }) {
 
       {/* Confirmation Step 4: Success Modal */}
       {withdrawStep === "success" && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[999] p-4">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-[999] p-4">
           <Card className="p-6 max-w-[340px] w-full border-teal/40 text-center shadow-2xl animate-fade-in">
             <div className="w-12 h-12 rounded-full bg-teal/20 text-teal text-2xl mx-auto mb-3 flex items-center justify-center">
               ✓
             </div>
-            <h3 className="text-base font-extrabold text-white mb-1">Withdrawal Successful!</h3>
+            <h3 className="text-base font-extrabold text-textLight mb-1">Withdrawal Successful!</h3>
             <p className="text-muted text-xs mb-4">
               <span className="text-teal font-bold font-mono">{fmt(withdrawnAmount)}</span> has been credited back to your account balance.
             </p>
@@ -327,14 +334,14 @@ function TreasureMap({ goal, onAddSavings, onWithdrawSavings }) {
         </div>
       )}
 
-      <Card className="p-[18px] border-accent/[.27] overflow-hidden mb-4">
+      <Card className="p-[18px] border-accent/[.27] overflow-hidden mb-4 shadow-sm">
         {/* PIN Modal */}
         {showPin && (
-          <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-[999] p-6">
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[999] p-6">
             <Card className="p-6 max-w-[320px] w-full border-accent/[.33]">
               <p className="text-center text-muted text-xs mb-4">Enter your UPI PIN to save {fmt(Number(addAmt))}</p>
               <PINPad onComplete={confirmPin} label="6-digit PIN" accent="#FF6A1A" />
-              <button className="btn w-full mt-4 text-muted text-xs" onClick={() => setShowPin(false)}>Cancel</button>
+              <button className="btn w-full mt-4 text-muted hover:text-textLight text-xs" onClick={() => setShowPin(false)}>Cancel</button>
             </Card>
           </div>
         )}
@@ -352,8 +359,8 @@ function TreasureMap({ goal, onAddSavings, onWithdrawSavings }) {
         </div>
 
         {/* SVG Treasure Map */}
-        <div className="mb-3 rounded-xl overflow-hidden border border-line" style={{ background: "#0A0908" }}>
-          <TreasureMapSVG progress={pct / 100} />
+        <div className="mb-3 rounded-xl overflow-hidden border border-line bg-bg shadow-inner">
+          <TreasureMapSVG progress={pct / 100} isNightMode={isNightMode} />
         </div>
 
         {/* Progress bar */}
@@ -376,7 +383,7 @@ function TreasureMap({ goal, onAddSavings, onWithdrawSavings }) {
         )}
 
         {/* Auto-save toggle */}
-        <div className="bg-bg rounded-xl p-3 mb-3 flex items-center gap-3">
+        <div className="bg-bg rounded-xl p-3 mb-3 flex items-center gap-3 border border-line/50">
           <div className="flex-1">
             <p className="text-textLight text-xs font-semibold">Daily Auto-Save</p>
             <input
@@ -384,12 +391,12 @@ function TreasureMap({ goal, onAddSavings, onWithdrawSavings }) {
               placeholder="Amount (₹/day)"
               value={autoAmt}
               onChange={(e) => setAutoAmt(e.target.value)}
-              className="mt-1 text-xs py-1.5 px-2.5 rounded-lg"
+              className="mt-1 text-xs py-1.5 px-2.5 rounded-lg bg-surf border border-line text-textLight"
             />
           </div>
           <button
-            className="btn relative w-12 h-6 rounded-full transition-colors duration-300 shrink-0"
-            style={{ background: autoEnabled ? "#FF6A1A" : "#5C564F44" }}
+            className="btn relative w-12 h-6 rounded-full transition-colors duration-300 shrink-0 cursor-pointer"
+            style={{ background: autoEnabled ? "#FF6A1A" : isNightMode ? "#2A2320" : "#CBD5E1" }}
             onClick={handleAutoToggle}
             disabled={togglingAuto}
           >
@@ -404,7 +411,7 @@ function TreasureMap({ goal, onAddSavings, onWithdrawSavings }) {
         {adding ? (
           <div>
             <div className="flex gap-2 items-center mb-2">
-              <span className="text-accent text-xl">₹</span>
+              <span className="text-accent text-xl font-bold">₹</span>
               <input type="number" placeholder="Amount to save" value={addAmt}
                 onChange={(e) => setAddAmt(e.target.value)} className="flex-1 text-base font-semibold" />
             </div>
@@ -424,7 +431,7 @@ function TreasureMap({ goal, onAddSavings, onWithdrawSavings }) {
             type="button"
             className={`btn w-full mt-2.5 py-2.5 px-4 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${pct >= 100
                 ? "bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg hover:brightness-110 active:scale-98"
-                : "bg-surf border border-line text-muted hover:text-white active:scale-98"
+                : "bg-surf border border-line text-muted hover:text-textLight active:scale-98 shadow-xs"
               }`}
             onClick={() => { setWithdrawStep("confirm1"); setWithdrawErr(""); }}
           >
@@ -473,11 +480,23 @@ export function SavingsScreen({ onBack, onNavigate }) {
 
   return (
     <div className="min-h-screen bg-bg pb-[100px]">
-      <div className="pt-[50px] pb-[18px] px-[22px] flex items-center gap-3">
-        <button className="btn bg-card border border-line text-textLight rounded-xl px-3.5 py-2.5 text-base" onClick={onBack}>←</button>
-        <h2 className="text-[22px] font-extrabold text-textLight">Savings Goals 🗺️</h2>
+      <div className="pt-[50px] pb-[18px] px-[22px] flex items-center justify-between gap-2">
+        <div className="flex items-center gap-3 min-w-0">
+          <button
+            className="btn bg-card border border-line text-textLight rounded-xl w-10 h-10 flex items-center justify-center text-base shadow-sm hover:border-accent/40 active:scale-95 transition-all shrink-0 cursor-pointer"
+            onClick={onBack}
+          >
+            ←
+          </button>
+          <h2 className="text-xl font-extrabold text-textLight tracking-tight whitespace-nowrap">
+            Savings Goals 🗺️
+          </h2>
+        </div>
         {onNavigate && (
-          <button className="btn ml-auto text-accent text-xs font-semibold" onClick={() => onNavigate("vaults")}>
+          <button
+            className="btn text-accent text-xs font-bold px-2.5 py-1.5 rounded-lg bg-accent/10 hover:bg-accent/20 transition-all shrink-0 cursor-pointer"
+            onClick={() => onNavigate("vaults")}
+          >
             Shared Vaults 🏖️ →
           </button>
         )}
@@ -499,30 +518,83 @@ export function SavingsScreen({ onBack, onNavigate }) {
           </div>
         )}
         {showNew ? (
-          <Card className="p-[18px] mt-3 border-accent/[.27]">
-            <p className="font-bold text-accent text-sm mb-3.5">🗺️ New Savings Goal</p>
-            <div className="flex flex-wrap gap-2 mb-3">
+          <Card className="p-5 mt-3 border-accent/[.35] shadow-lg">
+            <p className="font-bold text-accent text-sm mb-3.5 flex items-center gap-1.5">
+              <span>🎯</span>
+              <span>New Savings Goal</span>
+            </p>
+
+            {/* Icon Picker */}
+            <label className="text-[11px] text-muted uppercase font-bold tracking-wider block mb-2">
+              Choose Goal Icon
+            </label>
+            <div className="grid grid-cols-5 gap-2 mb-4">
               {ICONS2.map((ic) => (
-                <button key={ic} className="btn p-2 rounded-[10px] text-lg"
-                  style={{ background: form.icon === ic ? "#FF6A1A22" : "#151210", border: `1px solid ${form.icon === ic ? "#FF6A1A" : "#2A2320"}` }}
-                  onClick={() => setForm((f) => ({ ...f, icon: ic }))}>
+                <button
+                  key={ic}
+                  type="button"
+                  className={`btn h-12 rounded-xl text-2xl flex items-center justify-center cursor-pointer transition-all active:scale-95 border ${
+                    form.icon === ic
+                      ? "bg-accent/20 border-accent text-accent shadow-sm scale-[1.03] ring-2 ring-accent/30"
+                      : "bg-surf border-line text-textLight hover:border-accent/40 shadow-xs"
+                  }`}
+                  onClick={() => setForm((f) => ({ ...f, icon: ic }))}
+                >
                   {ic}
                 </button>
               ))}
             </div>
-            <input placeholder="Goal name" value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} className="mb-2.5" />
-            <input type="number" placeholder="Target amount (₹)" value={form.target}
-              onChange={(e) => setForm((f) => ({ ...f, target: e.target.value }))} className="mb-2.5" />
-            {err && <p className="text-danger text-xs mb-2">{err}</p>}
-            <div className="flex gap-2">
-              <Btn variant="dark" className="flex-1" onClick={() => setShowNew(false)}>Cancel</Btn>
-              <Btn className="flex-1" onClick={addGoal}>Create Goal</Btn>
+
+            {/* Inputs */}
+            <div className="space-y-3 mb-4">
+              <div>
+                <label className="text-[11px] text-muted uppercase font-bold tracking-wider block mb-1">
+                  Goal Name
+                </label>
+                <input
+                  placeholder="e.g. New iPhone, Vacation, Bike"
+                  value={form.name}
+                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  className="bg-surf border border-line text-textLight placeholder:text-muted rounded-xl px-4 py-3 text-sm focus:border-accent w-full"
+                />
+              </div>
+
+              <div>
+                <label className="text-[11px] text-muted uppercase font-bold tracking-wider block mb-1">
+                  Target Amount (₹)
+                </label>
+                <input
+                  type="number"
+                  placeholder="e.g. 50000"
+                  value={form.target}
+                  onChange={(e) => setForm((f) => ({ ...f, target: e.target.value }))}
+                  className="bg-surf border border-line text-textLight placeholder:text-muted rounded-xl px-4 py-3 text-sm focus:border-accent w-full"
+                />
+              </div>
+            </div>
+
+            {err && <p className="text-danger text-xs mb-3 font-semibold">{err}</p>}
+
+            <div className="flex gap-2.5">
+              <button
+                type="button"
+                className="btn flex-1 py-3 rounded-xl font-bold text-sm bg-surf hover:bg-bg border border-line text-textLight active:scale-98 transition-all cursor-pointer"
+                onClick={() => setShowNew(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn flex-1 py-3 rounded-xl font-bold text-sm bg-accent text-white shadow-accentGlow hover:brightness-110 active:scale-98 transition-all cursor-pointer"
+                onClick={addGoal}
+              >
+                Create Goal
+              </button>
             </div>
           </Card>
         ) : (
           <button
-            className="btn w-full py-[13px] rounded-[14px] bg-transparent border-[1.5px] border-dashed border-accent/[.33] text-accent text-[13px] font-semibold mt-3"
+            className="btn w-full py-[13px] rounded-[14px] bg-transparent border-[1.5px] border-dashed border-accent/[.33] text-accent text-[13px] font-semibold mt-3 hover:bg-accent/5 active:scale-98 transition-all cursor-pointer"
             onClick={() => setShowNew(true)}>
             + New Savings Goal
           </button>
