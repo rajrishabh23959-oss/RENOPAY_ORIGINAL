@@ -744,7 +744,6 @@ export function ProfileScreen({ onBack, onLoggedOut }) {
 
         {[
           { l: "Phone", v: profile.phone_number },
-          { l: "Balance", v: fmt(acc.balance) },
           { l: "UPI Lite Balance", v: fmt(acc.upi_lite_balance) },
           { l: "Digital Gold", v: fmt(acc.digital_gold) },
         ].map((r) => (
