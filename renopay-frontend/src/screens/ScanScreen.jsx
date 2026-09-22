@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import jsQR from "jsqr";
 import { PaymentAPI } from "../lib/api";
 import { Btn, Badge, Card } from "../components/ui";
 import { scanVideoFrame, decodeQrFromImage } from "../lib/qrScanner";
@@ -182,18 +181,20 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
     streamRef.current = null;
   };
 
-  const handleDetectedUpi = async (parsed) => {
-    stopCamera();
-    let finalName = parsed.name || parsed.vpa;
-    let finalApp = parsed.app || "UPI";
+  const lastScanTimeRef = useRef(0);
 
+  const handleDetectedUpi = (parsed) => {
+    stopCamera();
     try {
-      const res = await PaymentAPI.resolveVPA(parsed.vpa, parsed.name);
-      if (res?.name) finalName = res.name;
-      if (res?.app) finalApp = res.app;
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        navigator.vibrate(40);
+      }
     } catch {
-      // Graceful fallback: If backend resolve fails/offline, proceed with parsed QR metadata
+      /* ignore vibration unsupported */
     }
+
+    const finalName = parsed.name || parsed.vpa;
+    const finalApp = parsed.app || "UPI";
 
     setDetected(parsed.vpa);
     setDetectedName(finalName);
@@ -201,16 +202,15 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
     setDetectedAmount(parsed.amount);
     setErr("");
 
-    setTimeout(() => {
-      onSuccess?.({
-        vpa: parsed.vpa,
-        name: finalName,
-        amount: parsed.amount,
-        note: parsed.note,
-        category: parsed.category,
-        app: finalApp,
-      });
-    }, 700);
+    // Instant transition - zero artificial delay!
+    onSuccess?.({
+      vpa: parsed.vpa,
+      name: finalName,
+      amount: parsed.amount,
+      note: parsed.note,
+      category: parsed.category,
+      app: finalApp,
+    });
   };
 
   const scanFrame = async () => {
@@ -221,7 +221,10 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
       return;
     }
 
-    if (!isScanningRef.current) {
+    const now = performance.now();
+    // Throttle frame processing to every 50ms to keep UI 60fps and prevent CPU throttling
+    if (now - lastScanTimeRef.current >= 50 && !isScanningRef.current) {
+      lastScanTimeRef.current = now;
       isScanningRef.current = true;
       try {
         const rawCode = await scanVideoFrame(video, canvas);
@@ -232,6 +235,7 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
                             rawCode.match(/renopay:\/\/giftcard\/claim\?code=([^&\s]+)/i);
           if (giftMatch) {
             stopCamera();
+            try { navigator?.vibrate?.(40); } catch { /* ignore */ }
             const code = (giftMatch[1] || giftMatch[0]).toUpperCase();
             onSuccess?.({ type: "giftcard", code });
             isScanningRef.current = false;

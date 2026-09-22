@@ -82,7 +82,7 @@ describe('GiftCardScreen', () => {
       id: 1,
       card_code: 'RENO-GIFT-NQQP-S2WF',
       amount: 500,
-      recipient_name: 'Priya',
+      recipient_name: 'RISHABH',
       status: 'active',
       created_at: new Date().toISOString(),
     });

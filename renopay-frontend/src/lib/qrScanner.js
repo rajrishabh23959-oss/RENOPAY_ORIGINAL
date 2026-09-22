@@ -84,9 +84,9 @@ export async function scanVideoFrame(video, canvas) {
   const vh = video.videoHeight;
   if (!vw || !vh) return null;
 
-  // 2. High-performance center crop (where the viewfinder box is aimed)
-  // This solves high-density (Version 7+) QR codes failing on 1080p/4K camera frames
-  const cropSize = Math.min(Math.min(vw, vh), 640);
+  // 2. High-performance center crop (viewfinder target area)
+  // Optimal 440px square cuts pixel processing time by >50% while easily resolving dense QR codes
+  const cropSize = Math.min(Math.min(vw, vh), 440);
   const cropX = Math.floor((vw - cropSize) / 2);
   const cropY = Math.floor((vh - cropSize) / 2);
 
@@ -97,14 +97,15 @@ export async function scanVideoFrame(video, canvas) {
 
   try {
     const cropData = ctx.getImageData(0, 0, cropSize, cropSize);
-    const cropCode = jsQR(cropData.data, cropSize, cropSize, { inversionAttempts: "attemptBoth" });
+    // UPI QR codes are standard dark-on-light; "dontInvert" doubles speed on mobile CPU
+    const cropCode = jsQR(cropData.data, cropSize, cropSize, { inversionAttempts: "dontInvert" });
     if (cropCode?.data) return cropCode.data;
   } catch (e) {
     // Continue to full frame
   }
 
-  // 3. Fallback: Full downsampled frame (max 640px)
-  const maxDim = 640;
+  // 3. Fallback: Full downsampled frame (max 440px)
+  const maxDim = 440;
   let dw = vw;
   let dh = vh;
   if (vw > maxDim || vh > maxDim) {
@@ -118,7 +119,7 @@ export async function scanVideoFrame(video, canvas) {
   ctx.drawImage(video, 0, 0, dw, dh);
   try {
     const fullData = ctx.getImageData(0, 0, dw, dh);
-    const fullCode = jsQR(fullData.data, dw, dh, { inversionAttempts: "attemptBoth" });
+    const fullCode = jsQR(fullData.data, dw, dh, { inversionAttempts: "dontInvert" });
     if (fullCode?.data) return fullCode.data;
   } catch (e) {}
 

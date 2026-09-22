@@ -5,18 +5,54 @@ import { getDeviceFingerprint } from "../lib/format";
 export const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [profile, setProfile] = useState(null);   // ProfileOut from /accounts/me
-  const [loading, setLoading] = useState(true);
+  // Stale-While-Revalidate: Instant startup using cached profile
+  const [profile, setProfile] = useState(() => {
+    try {
+      const cached = localStorage.getItem("renopay_cached_profile");
+      const hasToken = !!localStorage.getItem("renopay_access_token");
+      if (hasToken && cached) {
+        return JSON.parse(cached);
+      }
+    } catch {
+      /* ignore storage read error */
+    }
+    return null;
+  });
+
+  // If token is missing, loading is false. If cached profile exists, loading is false (instant display!)
+  const [loading, setLoading] = useState(() => {
+    const hasToken = !!localStorage.getItem("renopay_access_token");
+    if (!hasToken) return false;
+    const hasCached = !!localStorage.getItem("renopay_cached_profile");
+    return !hasCached;
+  });
 
   const refreshProfile = useCallback(async () => {
     const hasToken = !!localStorage.getItem("renopay_access_token");
-    if (!hasToken) { setProfile(null); setLoading(false); return null; }
+    if (!hasToken) {
+      setProfile(null);
+      localStorage.removeItem("renopay_cached_profile");
+      setLoading(false);
+      return null;
+    }
     try {
       const p = await AccountAPI.me(getDeviceFingerprint());
-      setProfile(p);
+      if (p) {
+        setProfile(p);
+        try {
+          localStorage.setItem("renopay_cached_profile", JSON.stringify(p));
+        } catch {
+          /* ignore storage write error */
+        }
+      }
       return p;
-    } catch {
-      setProfile(null);
+    } catch (err) {
+      // If 401 Unauthorized, token is expired, clear cached profile
+      if (err?.response?.status === 401) {
+        setProfile(null);
+        localStorage.removeItem("renopay_cached_profile");
+      }
+      // If offline/network issue, retain cached profile so app remains accessible
       return null;
     } finally {
       setLoading(false);
@@ -42,6 +78,7 @@ export function AuthProvider({ children }) {
   const logout = useCallback(async () => {
     await AuthAPI.logout();
     setProfile(null);
+    localStorage.removeItem("renopay_cached_profile");
   }, []);
 
   const value = { profile, loading, login, logout, refreshProfile, register, completeRegistration };
