@@ -11,6 +11,8 @@ import { PdfPreviewModal } from "../components/PdfPreviewModal";
 import { parseUniversalUpiQr } from "./ScanScreen";
 import { downloadOrSharePdf } from "../lib/download";
 import { scanVideoFrame, decodeQrFromImage } from "../lib/qrScanner";
+import { PoweredByUpiBadge } from "../components/UpiBrandBadges";
+import { playUpiSonic } from "../lib/upiSonic";
 
 const CATS = [
   { id: "Food", icon: "🍔" }, { id: "Shopping", icon: "🛍️" }, { id: "Transport", icon: "🚗" },
@@ -137,6 +139,7 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
       const res = await PaymentAPI.sendMoney(payload);
       setResult({ success: true, ...res });
       setStep("result");
+      playUpiSonic(1); // 1-second UPI Sonic confirmation chime
       if (refreshProfile) {
         try {
           await refreshProfile();
@@ -404,7 +407,11 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
             </h2>
             {result.success ? (
               <>
-                <p className="text-muted mt-2">{fmt(result.amount)} sent to {resolvedName}</p>
+                <p className="text-muted mt-2">{fmt(result.amount)} sent to <strong className="text-textLight">{resolvedName}</strong></p>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-accent/10 border border-accent/20 mt-1.5">
+                  <span className="text-[10px] uppercase font-bold text-muted">UPI ID:</span>
+                  <span className="font-mono text-xs font-bold text-accent">{vpa}</span>
+                </div>
                 <p className="font-mono text-muted text-[11px] mt-1">TXN: {result.txn_ref}</p>
                 {result.new_balance !== undefined && (
                   <p className="text-accent font-semibold text-sm mt-1.5">
@@ -460,6 +467,9 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
         filename={`Receipt_${result?.txn_ref || "transaction"}.pdf`}
         loading={viewingReceipt}
       />
+
+      {/* NPCI Mandated "Powered by UPI" Bottom Anchor */}
+      <PoweredByUpiBadge isBottomAnchor={true} />
     </div>
   );
 }

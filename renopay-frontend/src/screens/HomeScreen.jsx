@@ -6,6 +6,8 @@ import { CashBalanceCard } from "../components/CashBalanceCard";
 import { HeartbeatGauge } from "../components/HeartbeatGauge";
 import { Badge, TrustBadge, Card } from "../components/ui";
 import { fmt, ago } from "../lib/format";
+import { BhimUpiLogo } from "../components/UpiBrandBadges";
+import { UpiSafetyModal } from "../components/UpiSafetyModal";
 
 import iconPay from "../assets/actions/pay.png";
 import iconRequests from "../assets/actions/requests.png";
@@ -118,11 +120,20 @@ export function HomeScreen({ onNavigate }) {
   return (
     <div className="min-h-screen bg-bg pb-[100px]">
       {/* Header with glow */}
-      <div className="px-[22px] pt-[50px] pb-[18px] relative glow-hero">
-        <div className="flex justify-between items-center relative z-10">
+      <div className="px-[22px] pt-[45px] pb-[16px] relative glow-hero">
+        <div className="flex justify-between items-start relative z-10">
           <div>
+            <div className="flex items-center gap-2 mb-2">
+              <BhimUpiLogo className="scale-95 origin-left" />
+            </div>
             <p className="text-muted text-[11px] tracking-[2px] font-semibold uppercase">Good Day,</p>
             <h2 className="text-[26px] font-extrabold mt-0.5 text-textLight">{profile.full_name.split(" ")[0]} 👋</h2>
+            <div className="flex items-center gap-1.5 mt-1.5">
+              <span className="text-[11px] font-bold text-muted uppercase tracking-wider">UPI ID:</span>
+              <span className="text-[12px] font-mono font-bold text-accent bg-accent/10 px-2 py-0.5 rounded-md border border-accent/20">
+                {profile.account?.vpa || `${profile.phone}@renopay`}
+              </span>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -293,6 +304,9 @@ export function HomeScreen({ onNavigate }) {
           ))}
         </div>
       </div>
+
+      {/* NPCI Mandatory First-Time Safety Advisory Modal */}
+      <UpiSafetyModal />
     </div>
   );
 }

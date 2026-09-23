@@ -31,6 +31,7 @@ from app.services.ai.providers import (
 from app.services.ai.rate_limiter import get_user_rate_limit_status
 from app.services.ai.rag_engine import retrieve_relevant_docs, format_rag_context
 from app.services.ai.prompts import build_system_prompt, get_founder_response, get_feature_response
+from app.services.ai.sanitizer import pii_sanitizer
 
 router = APIRouter()
 
@@ -63,11 +64,15 @@ async def query_ai_assistant(
     Combines RAG documentation retrieval, multilingual prompting,
     BYO or default Groq LLM inference, and session logging.
     """
+    # 0. Sanitize incoming query (PII Redaction & Privacy-Preserving Layer)
+    sanitization = pii_sanitizer.sanitize(payload.query_text)
+    sanitized_query = sanitization.sanitized_text
+
     # 1. Determine language preference
     lang = (payload.language or getattr(user, "language_code", "en") or "en").lower().strip()
 
-    # 2. Retrieve relevant app documentation
-    docs = retrieve_relevant_docs(payload.query_text, payload.screen_context)
+    # 2. Retrieve relevant app documentation using sanitized text
+    docs = retrieve_relevant_docs(sanitized_query, payload.screen_context)
     rag_context = format_rag_context(docs)
 
     # 3. Build system prompt with context & language
@@ -78,7 +83,7 @@ async def query_ai_assistant(
         user_name=user.full_name,
     )
 
-    # 4. Resolve or create chat session
+    # 4. Resolve or create chat session (Zero-log PII in session title)
     session = None
     if payload.session_id:
         result = await db.execute(
@@ -91,7 +96,7 @@ async def query_ai_assistant(
     if not session:
         session = AIChatSession(
             user_id=user.id,
-            title=payload.query_text[:60].strip() or "Chat",
+            title=sanitized_query[:60].strip() or "Chat",
         )
         db.add(session)
         await db.flush()
@@ -104,12 +109,12 @@ async def query_ai_assistant(
         ]
 
     # Check for direct feature inquiry across any language (Founder, Day/Night Theme, Gift Cards)
-    feature_text = get_feature_response(payload.query_text, lang)
+    feature_text = get_feature_response(sanitized_query, lang)
     if feature_text:
         user_msg = AIChatMessage(
             session_id=session.id,
             role="user",
-            content=payload.query_text,
+            content=sanitized_query,
             screen_context=payload.screen_context,
             language=lang,
         )
@@ -136,8 +141,8 @@ async def query_ai_assistant(
             screen_context=payload.screen_context,
         )
 
-    # 5. Append current user query
-    messages_for_llm = recent_messages + [{"role": "user", "content": payload.query_text}]
+    # 5. Append sanitized user query (Zero PII sent to LLM provider)
+    messages_for_llm = recent_messages + [{"role": "user", "content": sanitized_query}]
 
     # 6. Resolve LLM provider (BYO or default Groq with rate limiter)
     provider, provider_name, model_name, is_byo = await get_llm_provider_for_user(db, user.id)
@@ -151,11 +156,11 @@ async def query_ai_assistant(
             detail=f"AI Provider error: {str(e)}",
         )
 
-    # 8. Record user and assistant messages in session
+    # 8. Record user and assistant messages in session (Zero-Log Raw PII in DB)
     user_msg = AIChatMessage(
         session_id=session.id,
         role="user",
-        content=payload.query_text,
+        content=sanitized_query,
         screen_context=payload.screen_context,
         language=lang,
     )

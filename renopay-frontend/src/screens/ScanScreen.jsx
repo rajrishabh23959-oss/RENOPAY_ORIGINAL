@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { PaymentAPI } from "../lib/api";
 import { Btn, Badge, Card } from "../components/ui";
 import { scanVideoFrame, decodeQrFromImage } from "../lib/qrScanner";
+import { BhimUpiLogo, PoweredByUpiBadge } from "../components/UpiBrandBadges";
 
 // Universal UPI QR Parser: Handles Paytm, PhonePe, Google Pay, BharatPe, BHIM, Bank QRs, bare VPAs & dynamic bills
 export function parseUniversalUpiQr(rawText) {
@@ -401,6 +402,18 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
           ))}
         </div>
 
+        {/* NPCI Mandated "Scan any UPI QR" Prominent Banner */}
+        <div className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl bg-card border border-accent/30 mb-4 shadow-md">
+          <div className="flex items-center gap-2.5">
+            <span className="text-xl">📷</span>
+            <div>
+              <h3 className="text-[13px] font-black text-textLight tracking-wide uppercase">Scan any UPI QR</h3>
+              <p className="text-[10px] text-muted">Supports Google Pay, PhonePe, Paytm & BHIM</p>
+            </div>
+          </div>
+          <BhimUpiLogo className="scale-85 origin-right" />
+        </div>
+
         {/* Live Camera Mode */}
         {mode === "camera" && (
           <div>
@@ -546,6 +559,9 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
           </div>
         )}
       </div>
+
+      {/* NPCI Mandated "Powered by UPI" Bottom Anchor */}
+      <PoweredByUpiBadge isBottomAnchor={true} />
     </div>
   );
 }
