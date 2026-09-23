@@ -442,50 +442,71 @@ public class MainActivity extends BridgeActivity {
         }
 
         final String finalFilename = filename;
-        final String finalMimeType = mimeType;
+        final String finalMimeType = mimeType.split(";")[0].trim();
+        final String rawBase64Input = base64Data;
 
         new Thread(() -> {
             try {
-                byte[] fileBytes = Base64.decode(base64Data, Base64.DEFAULT);
+                String cleanBase64 = rawBase64Input;
+                if (cleanBase64.contains(",")) {
+                    cleanBase64 = cleanBase64.substring(cleanBase64.indexOf(",") + 1);
+                }
+                cleanBase64 = cleanBase64.replaceAll("\\s+", "");
+                byte[] fileBytes = Base64.decode(cleanBase64, Base64.DEFAULT);
 
-                // Save directly to Phone Downloads / RenoPay folder via MediaStore (Android 10+)
+                boolean mediaStoreSuccess = false;
+
+                // Save directly to Phone Downloads via MediaStore (Android 10+)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    ContentValues values = new ContentValues();
-                    values.put(MediaStore.MediaColumns.DISPLAY_NAME, finalFilename);
-                    values.put(MediaStore.MediaColumns.MIME_TYPE, finalMimeType);
-                    values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/RenoPay");
-                    values.put(MediaStore.MediaColumns.IS_PENDING, 1);
+                    try {
+                        ContentValues values = new ContentValues();
+                        values.put(MediaStore.MediaColumns.DISPLAY_NAME, finalFilename);
+                        values.put(MediaStore.MediaColumns.MIME_TYPE, finalMimeType);
+                        values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS + "/RenoPay");
+                        values.put(MediaStore.MediaColumns.IS_PENDING, 1);
 
-                    ContentResolver resolver = getContentResolver();
-                    Uri collection = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
-                    Uri itemUri = resolver.insert(collection, values);
-
-                    if (itemUri != null) {
-                        try (OutputStream os = resolver.openOutputStream(itemUri)) {
-                            if (os != null) {
-                                os.write(fileBytes);
-                                os.flush();
-                            }
+                        ContentResolver resolver = getContentResolver();
+                        Uri collection = MediaStore.Downloads.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY);
+                        Uri itemUri = null;
+                        try {
+                            itemUri = resolver.insert(collection, values);
+                        } catch (Exception ex) {
+                            // Some devices reject custom subdirectories; fallback to root Downloads
+                            values.put(MediaStore.MediaColumns.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+                            itemUri = resolver.insert(collection, values);
                         }
-                        values.clear();
-                        values.put(MediaStore.MediaColumns.IS_PENDING, 0);
-                        resolver.update(itemUri, values, null, null);
+
+                        if (itemUri != null) {
+                            try (OutputStream os = resolver.openOutputStream(itemUri)) {
+                                if (os != null) {
+                                    os.write(fileBytes);
+                                    os.flush();
+                                }
+                            }
+                            values.clear();
+                            values.put(MediaStore.MediaColumns.IS_PENDING, 0);
+                            resolver.update(itemUri, values, null, null);
+                            mediaStoreSuccess = true;
+                        }
+                    } catch (Exception msEx) {
+                        Log.w("RenoPay", "MediaStore download failed, using file fallback: " + msEx.getMessage());
                     }
-                } else {
-                    // Legacy storage for Android 9 and lower
-                    File publicDownloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-                    File renoPayDir = new File(publicDownloads, "RenoPay");
-                    if (!renoPayDir.exists()) {
-                        renoPayDir.mkdirs();
-                    }
-                    File legacyFile = new File(renoPayDir, finalFilename);
-                    try (FileOutputStream fos = new FileOutputStream(legacyFile)) {
-                        fos.write(fileBytes);
-                        fos.flush();
-                    }
-                    sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(legacyFile)));
                 }
 
+                if (!mediaStoreSuccess) {
+                    // Public Downloads folder fallback
+                    File publicDownloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                    if (publicDownloads != null && (publicDownloads.exists() || publicDownloads.mkdirs())) {
+                        File targetFile = new File(publicDownloads, finalFilename);
+                        try (FileOutputStream fos = new FileOutputStream(targetFile)) {
+                            fos.write(fileBytes);
+                            fos.flush();
+                        }
+                        sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.fromFile(targetFile)));
+                    }
+                }
+
+                // Also keep local copy for internal app sharing / preview
                 File appDownloads = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
                 if (appDownloads != null && !appDownloads.exists()) {
                     appDownloads.mkdirs();

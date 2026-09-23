@@ -1228,7 +1228,7 @@ body {
 <html>
 <head>
 <meta charset="utf-8">
-<title>RenoPay &mdash; Expense & Financial Statement</title>
+<title>RenoPay - Expense and Financial Statement</title>
 <style>
 {{ css }}
 @page {
@@ -1247,7 +1247,7 @@ body {
     padding: 0;
 }
 .card-metric {
-    border: 1px solid #e2e8f0;
+    border: 1px solid #cbd5e1;
     background-color: #f8fafc;
     padding: 8px 10px;
     text-align: left;
@@ -1260,18 +1260,9 @@ body {
     margin-bottom: 3px;
 }
 .metric-value {
-    font-size: 15px;
+    font-size: 14px;
     font-weight: bold;
     font-family: Courier, monospace;
-}
-.bar-container {
-    background-color: #e2e8f0;
-    height: 10px;
-    width: 100%;
-    position: relative;
-}
-.bar-fill {
-    height: 10px;
 }
 .pill {
     padding: 2px 6px;
@@ -1289,9 +1280,9 @@ body {
         <tr>
             <td width="58%" valign="top">
                 <div class="logo-title">Reno<span class="logo-accent">Pay</span> <span style="font-size: 14px; font-weight: bold; color: #64748b;">Analytics</span></div>
-                <div class="logo-sub">Smart Expense Tracker & Financial Intelligence</div>
+                <div class="logo-sub">Smart Expense Tracker &amp; Financial Statement</div>
                 <div style="margin-top: 4px; font-size: 9.5px; color: #334155;">
-                    <strong>Account Holder:</strong> {{ user_name }} &bull; <span style="font-family: Courier, monospace; color: #0284c7;">{{ vpa }}</span>
+                    <strong>Account Holder:</strong> {{ user_name }} | <span style="font-family: Courier, monospace; color: #0284c7;">{{ vpa }}</span>
                 </div>
             </td>
             <td width="42%" align="right" valign="top" class="meta-box">
@@ -1341,88 +1332,75 @@ body {
         </tr>
     </table>
 
-    <!-- Budget Gauge Section -->
-    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; border: 1px solid #e2e8f0; margin-bottom: 12px; padding: 8px 10px;">
+    <!-- Budget Adherence Card -->
+    <table width="100%" cellpadding="8" cellspacing="0" style="background-color: #f8fafc; border: 1px solid #cbd5e1; margin-bottom: 12px;">
         <tr>
-            <td>
-                <table width="100%" cellpadding="0" cellspacing="0">
-                    <tr>
-                        <td style="font-size: 10.5px; font-weight: bold; color: #1e293b;">
-                            Monthly Budget Adherence Gauge
-                        </td>
-                        <td align="right" style="font-size: 10px; font-weight: bold; color: {{ '#dc2626' if budget_used_percent > 85 else '#d97706' if budget_used_percent > 65 else '#16a34a' }};">
-                            Rs. {{ total_spent_fmt }} / Rs. {{ budget_fmt }} ({{ budget_used_percent }}%)
-                        </td>
-                    </tr>
-                </table>
-                <div class="bar-container" style="margin-top: 6px;">
-                    <div class="bar-fill" style="width: {{ budget_bar_width }}%; background-color: {{ '#dc2626' if budget_used_percent > 85 else '#d97706' if budget_used_percent > 65 else '#16a34a' }};"></div>
+            <td width="50%">
+                <div style="font-size: 11px; font-weight: bold; color: #1e293b;">Monthly Budget Adherence</div>
+                <div style="font-size: 9px; color: #64748b; margin-top: 2px;">
+                    Utilized: <strong>Rs. {{ total_spent_fmt }}</strong> of Rs. {{ budget_fmt }}
                 </div>
-                <div style="font-size: 8.5px; color: #64748b; margin-top: 4px;">
-                    Status: <strong>{{ budget_status_text }}</strong> &bull; Remaining: Rs. {{ budget_remaining_fmt }}
+            </td>
+            <td width="50%" align="right">
+                <span class="pill" style="font-size: 9.5px; background-color: {{ '#fee2e2' if budget_used_percent > 85 else '#fef3c7' if budget_used_percent > 65 else '#dcfce7' }}; color: {{ '#dc2626' if budget_used_percent > 85 else '#d97706' if budget_used_percent > 65 else '#16a34a' }};">
+                    {{ budget_status_text }} ({{ budget_used_percent }}% Used)
+                </span>
+                <div style="font-size: 9px; color: #64748b; margin-top: 3px;">
+                    Remaining: <strong>Rs. {{ budget_remaining_fmt }}</strong>
                 </div>
             </td>
         </tr>
     </table>
 
-    <!-- Visual Category Breakdown Chart -->
+    <!-- Category Breakdown Table -->
     <div class="sub-section-title" style="margin-top: 4px; margin-bottom: 6px;">
-        Spending Breakdown by Category (Visual Graph)
+        Spending Breakdown by Category
     </div>
 
-    <table width="100%" cellpadding="0" cellspacing="0" class="report-table" style="margin-bottom: 10px;">
+    <table width="100%" cellpadding="6" cellspacing="0" class="report-table" style="margin-bottom: 10px;">
         <thead>
             <tr>
-                <th width="22%">Category</th>
-                <th width="44%">Visual Distribution Graph</th>
-                <th width="12%" align="center">Txns</th>
-                <th width="22%" align="right">Amount (Rs.)</th>
+                <th width="32%">Category</th>
+                <th width="20%" align="center">Transactions</th>
+                <th width="22%" align="center">Share of Spending</th>
+                <th width="26%" align="right">Amount (Rs.)</th>
             </tr>
         </thead>
         <tbody>
             {% for cat in by_category %}
             <tr class="{{ 'even' if loop.index is even else 'odd' }}">
-                <td style="font-weight: bold;">
-                    <span style="display: inline-block; width: 8px; height: 8px; background-color: {{ cat.color }}; margin-right: 4px;"></span>
+                <td style="font-weight: bold; font-size: 10px;">
+                    <span style="display: inline-block; width: 8px; height: 8px; background-color: {{ cat.color }}; margin-right: 5px;"></span>
                     {{ cat.category }}
                 </td>
-                <td style="padding: 4px 6px;">
-                    <table width="100%" cellpadding="0" cellspacing="0">
-                        <tr>
-                            <td width="80%">
-                                <div class="bar-container">
-                                    <div class="bar-fill" style="width: {{ cat.percent_clamped }}%; background-color: {{ cat.color }};"></div>
-                                </div>
-                            </td>
-                            <td width="20%" align="right" style="font-size: 9px; font-weight: bold; color: #475569; padding-left: 4px;">
-                                {{ cat.percent }}%
-                            </td>
-                        </tr>
-                    </table>
+                <td align="center" style="font-size: 9.5px; color: #475569;">
+                    {{ cat.count }} txns
                 </td>
-                <td align="center" style="font-size: 9px; color: #64748b;">{{ cat.count }}</td>
-                <td align="right" style="font-weight: bold; font-family: Courier, monospace; color: #0f172a;">
+                <td align="center" style="font-size: 9.5px; font-weight: bold; color: #334155;">
+                    {{ cat.percent }}%
+                </td>
+                <td align="right" style="font-weight: bold; font-family: Courier, monospace; font-size: 10px; color: #0f172a; white-space: nowrap;">
                     Rs. {{ cat.amount_fmt }}
                 </td>
             </tr>
             {% endfor %}
             {% if not by_category %}
             <tr>
-                <td colspan="4" align="center" style="padding: 16px; color: #94a3b8; font-style: italic;">
+                <td colspan="4" align="center" style="padding: 14px; color: #94a3b8; font-style: italic;">
                     No categorized expenses during this period.
                 </td>
             </tr>
             {% endif %}
             <tr class="total-row">
                 <td colspan="2" style="font-weight: bold; color: #162a45;">Total Outflow</td>
-                <td align="center" style="font-weight: bold; color: #162a45;">{{ debit_count }}</td>
-                <td align="right" style="font-family: Courier, monospace; font-weight: bold; color: #dc2626;">Rs. {{ total_spent_fmt }}</td>
+                <td align="center" style="font-weight: bold; color: #162a45;">100.0%</td>
+                <td align="right" style="font-family: Courier, monospace; font-weight: bold; color: #dc2626; white-space: nowrap;">Rs. {{ total_spent_fmt }}</td>
             </tr>
         </tbody>
     </table>
 
     <!-- Highlights Box -->
-    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #fff7ed; border: 1px solid #fed7aa; padding: 7px 10px; margin-top: 2px;">
+    <table width="100%" cellpadding="6" cellspacing="0" style="background-color: #fff7ed; border: 1px solid #fed7aa; margin-top: 2px;">
         <tr>
             <td width="33%" style="font-size: 9px; color: #9a3412;">
                 <strong>Top Category:</strong> {{ top_category or 'N/A' }}
@@ -1436,22 +1414,24 @@ body {
         </tr>
     </table>
 
-    <div class="footer-text" style="margin-top: 10px;">
-        Page 1 of 2 &bull; Visual Analytics & Summary &bull; Turn over for Page 2 itemized transaction records
+    <div class="footer-text" style="margin-top: 12px; font-size: 8.5px; color: #94a3b8; text-align: center;">
+        Page 1 | Visual Analytics &amp; Summary | Turn over for Itemized Transaction Ledger
     </div>
 </div>
 
+<pdf:nextpage />
+
 <!-- ================= PAGE 2: ITEMIZED TRANSACTIONS TABLE ================= -->
-<div style="page-break-before: always;" class="page-wrapper">
+<div class="page-wrapper">
     <!-- Header -->
     <table class="header-table" cellpadding="0" cellspacing="0" style="margin-bottom: 6px;">
         <tr>
             <td width="60%" valign="top">
                 <div class="logo-title">Reno<span class="logo-accent">Pay</span> <span style="font-size: 14px; font-weight: bold; color: #64748b;">Statement</span></div>
-                <div class="logo-sub">Itemized Ledger & Transaction Destination Records</div>
+                <div class="logo-sub">Itemized Ledger &amp; Transaction Destination Records</div>
             </td>
             <td width="40%" align="right" valign="top" class="meta-box">
-                <div style="font-size: 11.5px; font-weight: bold; color: #162a45;">PAGE 2 &mdash; ITEMIZED DETAILS</div>
+                <div style="font-size: 11.5px; font-weight: bold; color: #162a45;">ITEMIZED DETAILS</div>
                 <div style="color: #e06a10; font-size: 9.5px; font-weight: bold;">{{ period_label }}</div>
             </td>
         </tr>
@@ -1460,55 +1440,55 @@ body {
     <div class="accent-line-orange" style="margin-bottom: 12px;"></div>
 
     <div class="sub-section-title" style="margin-top: 4px; margin-bottom: 6px;">
-        Itemized Transactions & Where Spent
+        Itemized Transactions &amp; Destination Records
     </div>
 
-    <table width="100%" cellpadding="0" cellspacing="0" class="report-table">
+    <table width="100%" cellpadding="5" cellspacing="0" class="report-table">
         <thead>
             <tr>
-                <th width="5%" align="center">#</th>
-                <th width="21%">Date & Time (IST)</th>
-                <th width="15%">Category</th>
-                <th width="24%">Where Spent / To</th>
-                <th width="21%">Purpose / Remarks</th>
-                <th width="14%" align="right">Amount (Rs.)</th>
+                <th width="4%" align="center">#</th>
+                <th width="21%">Date &amp; Time (IST)</th>
+                <th width="14%">Category</th>
+                <th width="23%">Where Spent / To</th>
+                <th width="20%">Purpose / Remarks</th>
+                <th width="18%" align="right">Amount (Rs.)</th>
             </tr>
         </thead>
         <tbody>
             {% for t in txns %}
             <tr class="{{ 'even' if loop.index is even else 'odd' }}">
                 <td align="center" style="color: #64748b; font-size: 8.5px;">{{ loop.index }}</td>
-                <td style="font-size: 9px;">{{ t.date_ist }}</td>
+                <td style="font-size: 8.5px; white-space: nowrap;">{{ t.date_ist }}</td>
                 <td>
                     <span class="pill" style="background-color: {{ t.cat_color_bg }}; color: {{ t.cat_color_text }};">
                         {{ t.category }}
                     </span>
                 </td>
-                <td style="font-family: Courier, monospace; font-size: 8.5px; word-break: break-all; color: #0284c7;">
+                <td style="font-family: Courier, monospace; font-size: 8.5px; color: #0284c7;">
                     {{ t.counterparty_vpa }}
                 </td>
-                <td style="font-size: 9px; color: #334155;">{{ t.description }}</td>
-                <td align="right" style="font-weight: bold; font-family: Courier, monospace; color: {{ '#dc2626' if t.is_debit else '#16a34a' }};">
-                    {{ '-' if t.is_debit else '+' }}Rs. {{ t.amount_fmt }}
+                <td style="font-size: 8.5px; color: #334155;">{{ t.description }}</td>
+                <td align="right" style="font-weight: bold; font-family: Courier, monospace; font-size: 9.5px; white-space: nowrap; color: {{ '#dc2626' if t.is_debit else '#16a34a' }};">
+                    {{ '-' if t.is_debit else '+' }} Rs. {{ t.amount_fmt }}
                 </td>
             </tr>
             {% endfor %}
             {% if not txns %}
             <tr>
-                <td colspan="6" align="center" style="padding: 24px; color: #94a3b8; font-style: italic;">
+                <td colspan="6" align="center" style="padding: 20px; color: #94a3b8; font-style: italic;">
                     No transactions recorded during this selected period.
                 </td>
             </tr>
             {% endif %}
             <tr class="total-row">
                 <td colspan="5" align="right" style="font-weight: bold; color: #162a45;">Total Debits (Spent)</td>
-                <td align="right" style="font-family: Courier, monospace; font-weight: bold; color: #dc2626;">Rs. {{ total_spent_fmt }}</td>
+                <td align="right" style="font-family: Courier, monospace; font-weight: bold; color: #dc2626; white-space: nowrap;">Rs. {{ total_spent_fmt }}</td>
             </tr>
         </tbody>
     </table>
 
-    <div class="footer-text" style="margin-top: 16px;">
-        Page 2 of 2 &bull; Certified RenoPay Digital Banking Engine &bull; Generated on {{ generated_at }} &bull; All times in Indian Standard Time (IST)
+    <div class="footer-text" style="margin-top: 14px; font-size: 8.5px; color: #94a3b8; text-align: center;">
+        Certified RenoPay Digital Banking Engine | Generated on {{ generated_at }} | All times in Indian Standard Time (IST)
     </div>
 </div>
 

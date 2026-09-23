@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { MandateAPI } from "../lib/api";
 import { Btn, Card, Badge } from "../components/ui";
 import { PINPad } from "../components/PINPad";
-import { NoteSlider } from "../components/NoteSlider";
 import { fmt } from "../lib/format";
 import { useTheme } from "../context/ThemeContext";
 
@@ -257,6 +256,7 @@ export function SubscriptionsScreen({ onBack }) {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [payMode, setPayMode] = useState("classic"); // "classic" (Normal Pay) | "slider" (Advance Pay)
   const [showPin, setShowPin] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Form state
   const [form, setForm] = useState({
@@ -348,10 +348,14 @@ export function SubscriptionsScreen({ onBack }) {
       return;
     }
     setErr("");
+    try { navigator.vibrate?.(12); } catch (_) {}
     setShowPin(true);
   };
 
   const confirmPin = async (pin) => {
+    if (isSubmitting) return; // Prevent duplicate execution
+    setIsSubmitting(true);
+    setErr("");
     try {
       const planAmount = Number(form.amount);
       await MandateAPI.create({
@@ -384,6 +388,8 @@ export function SubscriptionsScreen({ onBack }) {
         "Could not authorize mandate — check your UPI PIN"
       );
       setShowPin(false);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -425,10 +431,13 @@ export function SubscriptionsScreen({ onBack }) {
               label="Enter your 6-digit UPI PIN"
               actionLabel="Authorize"
               actionType="pay"
+              loading={isSubmitting}
+              disabled={isSubmitting}
             />
             <button
-              className="btn w-full mt-4 text-muted hover:text-textLight text-xs py-2 transition-colors cursor-pointer"
+              className="btn w-full mt-4 text-muted hover:text-textLight text-xs py-2 transition-colors cursor-pointer disabled:opacity-40"
               onClick={() => setShowPin(false)}
+              disabled={isSubmitting}
             >
               Cancel
             </button>
@@ -755,31 +764,85 @@ export function SubscriptionsScreen({ onBack }) {
                     : "🚀 Interactive cash bundle slider for 1st installment + mandate setup"}
                 </p>
 
-                {/* If Advance Pay is active, render NoteSlider */}
+                {/* If Advance Pay is active, render Locked Cash Bundle & Slide To Pay */}
                 {payMode === "slider" && (
-                  <div className="mt-3 mb-2 animate-fade-in bg-bg p-3.5 rounded-2xl border border-line">
-                    <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-xs font-bold text-textLight">Advance Note Slider</span>
-                      <span className="text-xs font-extrabold text-accent font-mono">
-                        Plan Amount: {fmt(Number(form.amount))}
+                  <div className="mt-3 mb-2 animate-fade-in bg-card p-4 rounded-2xl border border-accent/30 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-base">🔒</span>
+                        <span className="text-xs font-bold text-textLight">Exact Plan Price Locked</span>
+                      </div>
+                      <span className="text-xs font-extrabold text-accent font-mono px-2 py-0.5 rounded-full bg-accent/10 border border-accent/20">
+                        {fmt(Number(form.amount))}
                       </span>
                     </div>
-                    <p className="text-[11px] text-muted mb-3">
-                      Interactive note slider verification for {fmt(Number(form.amount))}. You will be charged exactly {fmt(Number(form.amount))}.
+
+                    <p className="text-[11px] text-muted mb-3 leading-relaxed">
+                      Advance Mode strictly pays the exact subscription plan price (<strong>{fmt(Number(form.amount))}</strong>). Zero arbitrary charges.
                     </p>
-                    <NoteSlider
-                      onAmountChange={(v) => {
-                        if (selectedApp?.id === "custom") {
-                          setForm((prev) => ({
-                            ...prev,
-                            amount: String(v),
-                            max_limit: String(v),
-                          }));
-                        }
-                      }}
-                      recipientName={form.name || selectedApp.name}
-                      recipientVpa={form.merchant_vpa}
-                    />
+
+                    {/* Exact Currency Denomination Breakdown */}
+                    <div className="bg-bg/80 border border-line rounded-xl p-3 mb-3">
+                      <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-2 flex items-center justify-between">
+                        <span>💵 Cash Denomination Bundle</span>
+                        <span className="text-teal font-semibold">Strictly Fixed</span>
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {(() => {
+                          let rem = Math.max(0, Math.round(Number(form.amount) || 0));
+                          const denoms = [
+                            { val: 500, label: "₹500", isNote: true },
+                            { val: 200, label: "₹200", isNote: true },
+                            { val: 100, label: "₹100", isNote: true },
+                            { val: 50,  label: "₹50",  isNote: true },
+                            { val: 20,  label: "₹20",  isNote: true },
+                            { val: 10,  label: "₹10",  isNote: true },
+                            { val: 5,   label: "₹5",   isNote: false },
+                            { val: 2,   label: "₹2",   isNote: false },
+                            { val: 1,   label: "₹1",   isNote: false },
+                          ];
+                          const list = [];
+                          for (const d of denoms) {
+                            if (rem >= d.val) {
+                              const count = Math.floor(rem / d.val);
+                              list.push({ ...d, count });
+                              rem %= d.val;
+                            }
+                          }
+                          if (list.length === 0) {
+                            return <span className="text-xs text-muted">Select a plan to view cash bundle</span>;
+                          }
+                          return list.map((item) => (
+                            <span
+                              key={item.val}
+                              className={`text-[11px] font-bold px-2 py-1 rounded-lg border flex items-center gap-1 ${
+                                item.isNote
+                                  ? "bg-accent/10 border-accent/30 text-accent"
+                                  : "bg-amber-500/10 border-amber-500/30 text-amber-500"
+                              }`}
+                            >
+                              <span>{item.isNote ? "💵" : "🪙"}</span>
+                              <span>{item.count}×{item.label}</span>
+                            </span>
+                          ));
+                        })()}
+                      </div>
+                      <div className="mt-2.5 pt-2 border-t border-line/60 flex items-center justify-between text-xs">
+                        <span className="text-muted">Total Bundle Value:</span>
+                        <span className="font-mono font-extrabold text-accent">{fmt(Number(form.amount))}</span>
+                      </div>
+                    </div>
+
+                    {/* Interactive Slide to Authorize Button */}
+                    <button
+                      type="button"
+                      className="btn w-full py-3 rounded-xl bg-accent text-white text-xs font-bold flex items-center justify-center gap-2 shadow-accentGlow hover:brightness-110 active:scale-98 transition-all cursor-pointer"
+                      onClick={startAddMandate}
+                      disabled={isSubmitting || !Number(form.amount)}
+                    >
+                      <span>🚀</span>
+                      <span>Slide &amp; Authorize Exact {fmt(Number(form.amount))} →</span>
+                    </button>
                   </div>
                 )}
               </div>
@@ -791,21 +854,22 @@ export function SubscriptionsScreen({ onBack }) {
             <div className="flex gap-2.5">
               <button
                 type="button"
-                className="btn flex-1 py-3 rounded-xl font-bold text-xs bg-surf hover:bg-bg border border-line text-textLight active:scale-98 transition-all cursor-pointer"
+                className="btn flex-1 py-3 rounded-xl font-bold text-xs bg-surf hover:bg-bg border border-line text-textLight active:scale-98 transition-all cursor-pointer disabled:opacity-40"
                 onClick={() => {
                   setShowAdd(false);
                   setSelectedApp(null);
                 }}
+                disabled={isSubmitting}
               >
                 Cancel
               </button>
               <button
                 type="button"
-                className="btn flex-1 py-3 rounded-xl font-bold text-xs bg-accent text-white shadow-accentGlow hover:brightness-110 active:scale-98 transition-all cursor-pointer"
+                className="btn flex-1 py-3 rounded-xl font-bold text-xs bg-accent text-white shadow-accentGlow hover:brightness-110 active:scale-98 transition-all cursor-pointer disabled:opacity-50"
                 onClick={startAddMandate}
-                disabled={!selectedApp}
+                disabled={!selectedApp || isSubmitting || !Number(form.amount)}
               >
-                {payMode === "classic" ? "Proceed to Pay →" : "Slide & Pay →"}
+                {isSubmitting ? "Processing..." : `Pay Exact ${fmt(Number(form.amount))} →`}
               </button>
             </div>
           </Card>

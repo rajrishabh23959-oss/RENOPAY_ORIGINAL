@@ -40,7 +40,23 @@ async def create_mandate(
     # 2. Strict exact plan amount (paise)
     amount_paise = rupees_to_paise(payload.amount)
 
+    # 2b. Deduplication Guard: If an identical mandate for this merchant & amount was created in the last 20 seconds,
+    # return the existing one immediately to completely prevent double debiting!
+    recent_cutoff = datetime.now(timezone.utc) - timedelta(seconds=20)
+    existing_mandate_res = await db.execute(
+        select(Mandate).where(
+            Mandate.user_id == user.id,
+            Mandate.merchant_vpa == payload.merchant_vpa,
+            Mandate.amount_paise == amount_paise,
+            Mandate.created_at >= recent_cutoff,
+        )
+    )
+    existing_mandate = existing_mandate_res.scalar_one_or_none()
+    if existing_mandate:
+        return MandateOut.from_model(existing_mandate)
+
     # 3. Process the exact payment for the selected subscription plan immediately
+
     # Debits ONLY the exact plan amount (skip_round_up=True ensures zero extra deductions)
     try:
         await payment_engine.send_money(

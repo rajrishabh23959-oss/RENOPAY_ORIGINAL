@@ -7,6 +7,8 @@ export function PINPad({
   shuffled = false,
   actionType = "pay", // "pay" | "check"
   actionLabel,
+  loading = false,
+  disabled = false,
 }) {
   const [pin, setPin] = useState("");
   const baseOrder = [1, 2, 3, 4, 5, 6, 7, 8, 9];
@@ -18,24 +20,32 @@ export function PINPad({
   }, [shuffled]);
 
   const add = (d) => {
+    if (loading || disabled) return;
     if (pin.length >= 6) return;
+    try { navigator.vibrate?.(10); } catch (_) {}
     setPin((prev) => prev + d);
   };
 
-  const del = () => setPin((p) => p.slice(0, -1));
+  const del = () => {
+    if (loading || disabled) return;
+    try { navigator.vibrate?.(10); } catch (_) {}
+    setPin((p) => p.slice(0, -1));
+  };
 
   const resolvedAction = actionLabel || (actionType === "check" ? "Check" : actionType === "withdraw" ? "Withdraw" : "Pay");
 
   const handleAction = () => {
+    if (loading || disabled) return;
     if (pin.length === 6 && onComplete) {
       const pinToSubmit = pin;
-      setPin("");
+      try { navigator.vibrate?.(15); } catch (_) {}
       onComplete(pinToSubmit);
     }
   };
 
   // Keyboard shortcut listener
   useEffect(() => {
+    if (loading || disabled) return;
     const handleKeyDown = (e) => {
       if (e.target?.tagName === "INPUT" || e.target?.tagName === "TEXTAREA") return;
       if (e.key >= "0" && e.key <= "9") {
@@ -51,7 +61,7 @@ export function PINPad({
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [pin]);
+  }, [pin, loading, disabled]);
 
   return (
     <div className="text-center">
@@ -70,13 +80,14 @@ export function PINPad({
           />
         ))}
       </div>
-      <div className="grid grid-cols-3 gap-2.5 max-w-[270px] mx-auto select-none">
+      <div className={`grid grid-cols-3 gap-2.5 max-w-[270px] mx-auto select-none ${loading ? "opacity-60 pointer-events-none" : ""}`}>
         {order.map((d) => (
           <button
             key={d}
             type="button"
-            className="btn py-[14px] rounded-[14px] bg-surf border border-line text-textLight text-2xl font-mono font-bold hover:bg-bg hover:border-accent/40 active:bg-accent/20 active:scale-95 focus:outline-none transition-all duration-150 cursor-pointer shadow-xs"
+            className="btn py-[14px] rounded-[14px] bg-surf border border-line text-textLight text-2xl font-mono font-bold hover:bg-bg hover:border-accent/40 active:bg-accent/20 active:scale-95 focus:outline-none transition-all duration-150 cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={() => add(String(d))}
+            disabled={loading || disabled}
             aria-label={`Digit ${d}`}
           >
             {d}
@@ -88,7 +99,7 @@ export function PINPad({
           type="button"
           className="btn py-[14px] rounded-[14px] bg-surf border border-line text-warn hover:bg-bg hover:border-warn/40 active:bg-warn/15 active:scale-95 focus:outline-none text-lg font-bold transition-all duration-150 flex items-center justify-center disabled:opacity-40 cursor-pointer shadow-xs"
           onClick={del}
-          disabled={pin.length === 0}
+          disabled={pin.length === 0 || loading || disabled}
           aria-label="Delete digit"
         >
           ✕
@@ -97,8 +108,9 @@ export function PINPad({
         {/* 0 in center */}
         <button
           type="button"
-          className="btn py-[14px] rounded-[14px] bg-surf border border-line text-textLight text-2xl font-mono font-bold hover:bg-bg hover:border-accent/40 active:bg-accent/20 active:scale-95 focus:outline-none transition-all duration-150 cursor-pointer shadow-xs"
+          className="btn py-[14px] rounded-[14px] bg-surf border border-line text-textLight text-2xl font-mono font-bold hover:bg-bg hover:border-accent/40 active:bg-accent/20 active:scale-95 focus:outline-none transition-all duration-150 cursor-pointer shadow-xs disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={() => add("0")}
+          disabled={loading || disabled}
           aria-label="Digit 0"
         >
           0
@@ -107,16 +119,25 @@ export function PINPad({
         {/* 0 ke right me: Check or Pay button */}
         <button
           type="button"
-          className={`btn py-[14px] rounded-[14px] border text-xs font-extrabold uppercase tracking-wider transition-all flex items-center justify-center ${
-            pin.length === 6
+          className={`btn py-[14px] rounded-[14px] border text-xs font-extrabold uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${
+            loading
+              ? "bg-accent/80 border-accent text-white cursor-wait"
+              : pin.length === 6
               ? "bg-accent border-accent text-white shadow-accentGlow hover:brightness-110 active:scale-95 cursor-pointer animate-pulse"
               : "bg-surf border-line text-muted/40 cursor-not-allowed"
           }`}
           onClick={handleAction}
-          disabled={pin.length !== 6}
+          disabled={pin.length !== 6 || loading || disabled}
           aria-label={resolvedAction}
         >
-          {resolvedAction}
+          {loading ? (
+            <>
+              <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin inline-block"></span>
+              <span>...</span>
+            </>
+          ) : (
+            resolvedAction
+          )}
         </button>
       </div>
     </div>
