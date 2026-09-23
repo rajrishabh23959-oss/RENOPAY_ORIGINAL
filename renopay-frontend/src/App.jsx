@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import { Nav } from "./components/Nav";
 import { AIAssistant } from "./components/AIAssistant";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 // Immediate core screens loaded synchronously
 import { LoginScreen } from "./screens/LoginScreen";
@@ -191,10 +192,12 @@ function AppShell() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <AppShell />
-      </AuthProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <AuthProvider>
+          <AppShell />
+        </AuthProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }

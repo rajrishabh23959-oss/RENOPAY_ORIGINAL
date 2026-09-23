@@ -16,8 +16,16 @@ export function useRenoSocket(onEvent) {
     const token = localStorage.getItem("renopay_access_token");
     if (!token) return;
 
+    const isNativeApp =
+      typeof window !== "undefined" &&
+      (window.Capacitor?.isNativePlatform?.() ||
+        window.location.protocol === "capacitor:" ||
+        window.location.protocol === "file:" ||
+        (window.location.hostname === "localhost" && !window.location.port));
+
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = import.meta.env.VITE_WS_URL || `${protocol}//${window.location.host}/ws`;
+    const defaultHost = isNativeApp ? "renopay-original.vercel.app" : window.location.host;
+    const wsUrl = import.meta.env.VITE_WS_URL || `${isNativeApp ? "wss:" : protocol}//${defaultHost}/ws`;
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
@@ -40,7 +48,13 @@ export function useRenoSocket(onEvent) {
 
   useEffect(() => {
     connect();
+    const handleOnline = () => {
+      retryDelay.current = 1000;
+      connect();
+    };
+    window.addEventListener("online", handleOnline);
     return () => {
+      window.removeEventListener("online", handleOnline);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
       wsRef.current?.close();
     };

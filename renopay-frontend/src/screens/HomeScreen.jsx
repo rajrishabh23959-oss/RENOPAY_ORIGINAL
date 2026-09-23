@@ -83,9 +83,9 @@ export function HomeScreen({ onNavigate }) {
 
   useEffect(() => {
     if (profile) {
-      setBalance(profile.account.balance);
-      setDenominations(profile.account.cash_denominations);
-      setDigitalGold(profile.account.digital_gold);
+      setBalance(profile?.account?.balance ?? 0);
+      setDenominations(profile?.account?.cash_denominations ?? null);
+      setDigitalGold(profile?.account?.digital_gold ?? 0);
       loadAll();
     }
   }, [profile, loadAll]);

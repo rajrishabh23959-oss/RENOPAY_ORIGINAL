@@ -141,13 +141,18 @@ async def global_exception_handler(request, exc):
         return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
     tb = traceback.format_exc()
     print("UNHANDLED EXCEPTION ON", request.url.path, ":", tb)
+    if settings.DEBUG:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "detail": str(exc),
+                "type": type(exc).__name__,
+                "traceback": tb.splitlines()[-8:],
+            },
+        )
     return JSONResponse(
         status_code=500,
-        content={
-            "detail": str(exc),
-            "type": type(exc).__name__,
-            "traceback": tb.splitlines()[-8:],
-        },
+        content={"detail": "Internal server error. Please try again later."},
     )
 
 
@@ -206,7 +211,7 @@ async def user_delete_photo_alias(
 async def health():
     db_status = "unconfigured"
     db_err = None
-    if "localhost" not in settings.DATABASE_URL:
+    if settings.DATABASE_URL:
         try:
             from app.db.session import engine
             from sqlalchemy import text
@@ -217,11 +222,21 @@ async def health():
             db_status = "error"
             db_err = str(e)
     else:
-        db_status = "missing_DATABASE_URL_in_vercel"
+        db_status = "missing_DATABASE_URL"
+
+    if db_status == "error":
+        return JSONResponse(
+            status_code=503,
+            content={
+                "status": "unhealthy",
+                "version": "1.0.0",
+                "database": db_status,
+                "database_error": db_err if settings.DEBUG else "Database connection failed",
+            },
+        )
 
     return {
         "status": "ok",
         "version": "1.0.0",
         "database": db_status,
-        "database_error": db_err,
     }

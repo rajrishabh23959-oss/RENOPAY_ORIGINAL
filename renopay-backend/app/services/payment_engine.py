@@ -111,14 +111,37 @@ async def send_money(
     if idempotency_key:
         from app.models.transaction import IdempotencyKey
         from sqlalchemy.exc import IntegrityError
-        
+
         # Attempt to insert immediately to reserve it and block concurrent duplicates
         db.add(IdempotencyKey(key=idempotency_key, user_id=sender_user_id, txn_group_id=txn_group_id))
         try:
             await db.flush()
         except IntegrityError:
             await db.rollback()
-            raise PaymentError("idempotency_conflict", "Transaction already processed")
+            # Idempotency replay: check if transaction was already completed
+            existing_key_res = await db.execute(select(IdempotencyKey).where(IdempotencyKey.key == idempotency_key))
+            existing_key = existing_key_res.scalar_one_or_none()
+            if existing_key:
+                existing_txn_res = await db.execute(
+                    select(Transaction).where(
+                        Transaction.txn_group_id == existing_key.txn_group_id,
+                        Transaction.type == TxnType.DEBIT,
+                    )
+                )
+                existing_txn = existing_txn_res.scalar_one_or_none()
+                if existing_txn:
+                    acc_res = await db.execute(select(Account).where(Account.user_id == sender_user_id))
+                    acc = acc_res.scalar_one_or_none()
+                    return PaymentResult(
+                        txn_group_id=existing_key.txn_group_id,
+                        txn_ref=existing_txn.txn_ref,
+                        amount_paise=existing_txn.amount_paise,
+                        round_up_paise=existing_txn.round_up_paise,
+                        sender_new_balance_paise=acc.current_balance_paise if acc else 0,
+                        trust_score=existing_txn.trust_score,
+                        risk_level="low",
+                    )
+            raise PaymentError("idempotency_conflict", "Transaction is already being processed. Please check history.")
 
     if not skip_pin_check and not use_upi_lite:
         try:

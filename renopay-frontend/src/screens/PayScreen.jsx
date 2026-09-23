@@ -148,6 +148,15 @@ export function PayScreen({ onBack, onNavigate, prefillVpa, prefillAmount, prefi
         }
       }
     } catch (e2) {
+      if (!e2.response) {
+        setResult({
+          success: false,
+          error: "Connection interrupted. If money was debited, your bank will update within a few minutes. Please check your transaction history before retrying.",
+          isNetworkError: true,
+        });
+        setStep("result");
+        return;
+      }
       const detail = e2.response?.data?.detail;
       const code = detail?.code;
       if (code === "pin_not_set") {

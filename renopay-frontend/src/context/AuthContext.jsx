@@ -59,7 +59,17 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  useEffect(() => { refreshProfile(); }, [refreshProfile]);
+  useEffect(() => {
+    refreshProfile();
+    const handleRevoked = () => {
+      setProfile(null);
+      try {
+        localStorage.removeItem("renopay_cached_profile");
+      } catch {}
+    };
+    window.addEventListener("renopay:auth-revoked", handleRevoked);
+    return () => window.removeEventListener("renopay:auth-revoked", handleRevoked);
+  }, [refreshProfile]);
 
   const login = useCallback(async (phone, pin) => {
     await AuthAPI.login(phone, pin, getDeviceFingerprint(), navigator.userAgent.slice(0, 60));

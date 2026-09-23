@@ -23,8 +23,11 @@ export function AddMoneyScreen({ onBack }) {
   const [selBank, setSelBank] = useState(null);
   const [result, setResult] = useState(null);
   const [err, setErr] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const submit = async () => {
+    if (submitting) return;
+    setSubmitting(true);
     setStep("processing");
     try {
       const res = await PaymentAPI.addMoney(Number(amount), selBank.name);
@@ -39,6 +42,8 @@ export function AddMoneyScreen({ onBack }) {
       }
     } catch {
       setStep("failed");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -89,7 +94,7 @@ export function AddMoneyScreen({ onBack }) {
               </div>
             ))}
             <div className="mt-3.5 flex flex-col gap-2.5">
-              <Btn onClick={submit} disabled={!selBank}>Pay {fmt(Number(amount))} →</Btn>
+              <Btn onClick={submit} disabled={!selBank || submitting}>{submitting ? "Processing..." : `Pay ${fmt(Number(amount))} →`}</Btn>
               <Btn variant="ghost" onClick={() => setStep("amount")}>← Change Amount</Btn>
             </div>
           </div>

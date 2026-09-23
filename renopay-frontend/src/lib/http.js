@@ -11,23 +11,54 @@ const BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
   (isNativeApp ? "https://renopay-original.vercel.app/api" : "/api");
 
-export const http = axios.create({ baseURL: BASE_URL });
+export const http = axios.create({ baseURL: BASE_URL, timeout: 15000 });
+
+// Safe storage access to prevent crashes in private browsing or quota limits
+const memoryStorage = {};
+
+function safeGet(key) {
+  try {
+    return localStorage.getItem(key) ?? memoryStorage[key] ?? null;
+  } catch {
+    return memoryStorage[key] ?? null;
+  }
+}
+
+function safeSet(key, val) {
+  try {
+    localStorage.setItem(key, val);
+  } catch {
+    memoryStorage[key] = val;
+  }
+}
+
+function safeRemove(key) {
+  try {
+    localStorage.removeItem(key);
+  } catch {}
+  delete memoryStorage[key];
+}
 
 function getTokens() {
   return {
-    access: localStorage.getItem("renopay_access_token"),
-    refresh: localStorage.getItem("renopay_refresh_token"),
+    access: safeGet("renopay_access_token"),
+    refresh: safeGet("renopay_refresh_token"),
   };
 }
 
 export function setTokens({ access_token, refresh_token }) {
-  localStorage.setItem("renopay_access_token", access_token);
-  localStorage.setItem("renopay_refresh_token", refresh_token);
+  safeSet("renopay_access_token", access_token);
+  safeSet("renopay_refresh_token", refresh_token);
 }
 
 export function clearTokens() {
-  localStorage.removeItem("renopay_access_token");
-  localStorage.removeItem("renopay_refresh_token");
+  safeRemove("renopay_access_token");
+  safeRemove("renopay_refresh_token");
+  if (typeof window !== "undefined") {
+    try {
+      window.dispatchEvent(new CustomEvent("renopay:auth-revoked"));
+    } catch {}
+  }
 }
 
 http.interceptors.request.use((config) => {

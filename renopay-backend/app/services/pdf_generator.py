@@ -2063,11 +2063,8 @@ async def generate_pdf(template_name: ReportType, data: dict) -> io.BytesIO:
                 return buf
         except Exception:
             pass
-
-    # Graceful fallback: return the raw HTML as bytes
-    buf = io.BytesIO(html_str.encode("utf-8"))
-    buf.seek(0)
-    return buf
+    # If both engines failed, raise a clear exception rather than returning HTML masquerading as PDF
+    raise RuntimeError("PDF rendering engines unavailable or failed to render document.")
 
 
 def build_balance_sheet_data(transactions: list, period: str) -> dict:

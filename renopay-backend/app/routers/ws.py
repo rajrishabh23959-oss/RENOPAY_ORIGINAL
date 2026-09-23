@@ -1,9 +1,7 @@
 import json
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app.core.security import decode_access_token
-from app.db.session import get_db
 from app.ws.manager import manager
 
 router = APIRouter()
@@ -12,7 +10,6 @@ router = APIRouter()
 @router.websocket("/ws")
 async def websocket_endpoint(
     websocket: WebSocket,
-    db: AsyncSession = Depends(get_db)
 ):
     await websocket.accept()
     try:

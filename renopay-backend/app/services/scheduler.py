@@ -26,44 +26,71 @@ _FREQUENCY_DAYS = {"monthly": 30, "quarterly": 90, "yearly": 365}
 
 
 async def run_due_mandates():
-    async with AsyncSessionLocal() as db:
-        now = datetime.now(timezone.utc)
-        result = await db.execute(
-            select(Mandate).where(Mandate.status == MandateStatus.ACTIVE, Mandate.next_payment_at <= now)
-        )
-        due = result.scalars().all()
-        if not due:
+    from sqlalchemy import text
+    async with AsyncSessionLocal() as lock_db:
+        try:
+            lock_res = await lock_db.execute(text("SELECT pg_try_advisory_lock(847291)"))
+            has_lock = lock_res.scalar()
+        except Exception:
+            # Fallback if DB doesn't support pg advisory lock (e.g. SQLite in test)
+            has_lock = True
+
+        if not has_lock:
+            logger.info("Another scheduler instance holds advisory lock, skipping run_due_mandates.")
             return
 
-        for mandate in due:
-            acc_result = await db.execute(select(Account).where(Account.user_id == mandate.user_id))
-            account = acc_result.scalar_one_or_none()
-            if account is None:
-                continue
+        try:
+            now = datetime.now(timezone.utc)
+            result = await lock_db.execute(
+                select(Mandate.id).where(Mandate.status == MandateStatus.ACTIVE, Mandate.next_payment_at <= now)
+            )
+            due_ids = result.scalars().all()
+            if not due_ids:
+                return
+
+            for mandate_id in due_ids:
+                async with AsyncSessionLocal() as mandate_db:
+                    try:
+                        m_res = await mandate_db.execute(select(Mandate).where(Mandate.id == mandate_id))
+                        mandate = m_res.scalar_one_or_none()
+                        if not mandate:
+                            continue
+
+                        acc_result = await mandate_db.execute(select(Account).where(Account.user_id == mandate.user_id))
+                        account = acc_result.scalar_one_or_none()
+                        if account is None:
+                            continue
+
+                        try:
+                            category = TxnCategory(mandate.category)
+                        except ValueError:
+                            category = TxnCategory.BILLS
+
+                        freq = mandate.frequency.value if hasattr(mandate.frequency, "value") else mandate.frequency
+                        mandate.next_payment_at = now + timedelta(days=_FREQUENCY_DAYS.get(freq, 30))
+
+                        await payment_engine.send_money(
+                            mandate_db,
+                            sender_user_id=mandate.user_id,
+                            receiver_vpa=mandate.merchant_vpa,
+                            amount_paise=mandate.amount_paise,
+                            description=f"AutoPay: {mandate.name}",
+                            category=category,
+                            skip_fraud_check=True,
+                            skip_pin_check=True,
+                        )
+                        logger.info(f"Mandate {mandate.id} ({mandate.name}) auto-paid successfully")
+                    except PaymentError as e:
+                        await mandate_db.rollback()
+                        logger.warning(f"Mandate {mandate_id} auto-pay failed: {e.message}")
+                    except Exception as exc:
+                        await mandate_db.rollback()
+                        logger.error(f"Unexpected error processing mandate {mandate_id}: {exc}")
+        finally:
             try:
-                category = TxnCategory(mandate.category)
-            except ValueError:
-                category = TxnCategory.BILLS
-            try:
-                old_next = mandate.next_payment_at
-                freq = mandate.frequency.value if hasattr(mandate.frequency, "value") else mandate.frequency
-                mandate.next_payment_at = now + timedelta(days=_FREQUENCY_DAYS.get(freq, 30))
-                
-                await payment_engine.send_money(
-                    db, sender_user_id=mandate.user_id, receiver_vpa=mandate.merchant_vpa,
-                    amount_paise=mandate.amount_paise, description=f"AutoPay: {mandate.name}",
-                    category=category,
-                    skip_fraud_check=True,  # mandates are pre-authorized; user isn't present to re-auth
-                    skip_pin_check=True,    # same reasoning — no human present to type a PIN
-                )
-                logger.info(f"Mandate {mandate.id} ({mandate.name}) auto-paid successfully")
-            except PaymentError as e:
-                # Insufficient balance etc — leave next_payment_at as-is so
-                # it retries on the next scheduler tick, but log it so it's
-                # visible (in production: push a low-balance notification).
-                mandate.next_payment_at = old_next
-                await db.rollback()
-                logger.warning(f"Mandate {mandate.id} ({mandate.name}) auto-pay failed: {e.message}")
+                await lock_db.execute(text("SELECT pg_advisory_unlock(847291)"))
+            except Exception:
+                pass
 
 
 async def run_auto_saves():

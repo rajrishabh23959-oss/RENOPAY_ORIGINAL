@@ -64,7 +64,15 @@ async def create_gift_card(
             detail="Gift card amount must be greater than zero.",
         )
 
-    if account.current_balance_paise < amount_paise:
+    acc_res = await db.execute(select(Account).where(Account.id == account.id).with_for_update())
+    locked_account = acc_res.scalar_one_or_none()
+    if locked_account is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Account not found.",
+        )
+
+    if locked_account.current_balance_paise < amount_paise:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Insufficient wallet balance to create this gift card.",
@@ -80,7 +88,7 @@ async def create_gift_card(
         card_code = _generate_card_code()
 
     # 4. Deduct balance from creator
-    account.current_balance_paise -= amount_paise
+    locked_account.current_balance_paise -= amount_paise
 
     # 5. Record debit transaction
     creation_txn_ref = generate_txn_ref()
