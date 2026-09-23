@@ -5,7 +5,7 @@ import { Badge, TrustBadge, Card } from "../components/ui";
 import { fmt, ago } from "../lib/format";
 import { PdfPreviewModal } from "../components/PdfPreviewModal";
 import { downloadOrSharePdf } from "../lib/download";
-import { PoweredByUpiBadge } from "../components/UpiBrandBadges";
+import { PoweredByUpiBadge, upiLogo } from "../components/UpiBrandBadges";
 
 export function HistoryScreen({ onBack }) {
   const [txns, setTxns] = useState([]);
@@ -132,9 +132,10 @@ export function HistoryScreen({ onBack }) {
                 <div className="text-right shrink-0 flex flex-col items-end gap-1">
                   {/* NPCI "Powered by UPI" Top-Right Badge */}
                   {isUpi && (
-                    <span className="text-[8px] uppercase tracking-wider font-extrabold px-1.5 py-0.5 rounded bg-accent/10 text-accent border border-accent/20">
-                      Powered by UPI
-                    </span>
+                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white/95 border border-line/60 shadow-xs">
+                      <span className="text-[7.5px] uppercase tracking-wider font-black text-[#555]">POWERED BY</span>
+                      <img src={upiLogo} alt="UPI" className="h-2.5 w-auto object-contain" />
+                    </div>
                   )}
                   <p className="font-mono font-bold text-[13px]" style={{ color: t.type === "credit" ? "#22C55E" : "#ff3d60" }}>
                     {t.type === "credit" ? "+" : "-"}{fmt(t.amount)}

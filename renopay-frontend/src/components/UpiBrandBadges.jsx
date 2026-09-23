@@ -1,31 +1,43 @@
 import React from "react";
+import bhimLogo from "../assets/bhim-logo-transparent.png";
+import upiLogo from "../assets/upi-logo-transparent.png";
+
+export { bhimLogo, upiLogo };
 
 /**
- * Official high-resolution vector BHIM UPI badge.
- * Compliant with NPCI branding guidelines.
+ * Official Real BHIM UPI Logo Badge.
+ * Uses the authentic NPCI high-res assets provided by the user.
  */
-export function BhimUpiLogo({ className = "h-6", dark = true }) {
+export function BhimUpiLogo({ className = "" }) {
   return (
-    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-card/80 border border-line backdrop-blur-md shadow-sm select-none ${className}`}>
-      {/* NPCI angled arrows icon */}
-      <svg width="22" height="18" viewBox="0 0 28 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-        {/* Green forward arrow */}
-        <path d="M12.5 2L18.5 11L12.5 20H6.5L12.5 11L6.5 2H12.5Z" fill="#22C55E" />
-        {/* Orange forward arrow */}
-        <path d="M19.5 2L25.5 11L19.5 20H13.5L19.5 11L13.5 2H19.5Z" fill="#FF6A1A" />
-      </svg>
-      <div className="flex flex-col leading-none">
-        <div className="flex items-center gap-0.5">
-          <span className="text-[11px] font-black tracking-wider text-textLight">BHIM</span>
-          <span className="text-[11px] font-black tracking-wider text-accent">UPI</span>
-        </div>
-      </div>
+    <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-white/95 border border-line/60 shadow-sm select-none ${className}`}>
+      <img src={bhimLogo} alt="BHIM - Bharat Interface for Money" className="h-4.5 w-auto object-contain" style={{ maxHeight: "20px" }} />
+      <span className="w-[1px] h-3.5 bg-gray-300" />
+      <img src={upiLogo} alt="UPI - Unified Payments Interface" className="h-4 w-auto object-contain" style={{ maxHeight: "17px" }} />
     </div>
   );
 }
 
 /**
- * Anchored or inline "Powered by UPI" compliance emblem.
+ * Official Real BHIM Logo standalone.
+ */
+export function BhimLogo({ className = "h-5 w-auto" }) {
+  return (
+    <img src={bhimLogo} alt="BHIM" className={`object-contain ${className}`} />
+  );
+}
+
+/**
+ * Official Real UPI Logo standalone.
+ */
+export function UpiLogo({ className = "h-5 w-auto" }) {
+  return (
+    <img src={upiLogo} alt="UPI" className={`object-contain ${className}`} />
+  );
+}
+
+/**
+ * Anchored or inline "Powered by UPI" compliance emblem using the authentic UPI logo.
  */
 export function PoweredByUpiBadge({ className = "", isBottomAnchor = false }) {
   const baseClasses = isBottomAnchor
@@ -34,13 +46,9 @@ export function PoweredByUpiBadge({ className = "", isBottomAnchor = false }) {
 
   return (
     <div className={`${baseClasses} ${className}`}>
-      <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-card/90 border border-line/80 shadow-md backdrop-blur-md">
-        <span className="text-[9px] uppercase tracking-[1.5px] font-bold text-muted">Powered by</span>
-        <svg width="18" height="14" viewBox="0 0 28 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12.5 2L18.5 11L12.5 20H6.5L12.5 11L6.5 2H12.5Z" fill="#22C55E" />
-          <path d="M19.5 2L25.5 11L19.5 20H13.5L19.5 11L13.5 2H19.5Z" fill="#FF6A1A" />
-        </svg>
-        <span className="text-[10px] font-black text-textLight tracking-wider">UPI</span>
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/95 border border-line/80 shadow-lg backdrop-blur-md">
+        <span className="text-[9px] uppercase tracking-[1.5px] font-black text-[#444]">POWERED BY</span>
+        <img src={upiLogo} alt="UPI - Unified Payments Interface" className="h-3.5 w-auto object-contain" style={{ maxHeight: "16px" }} />
       </div>
     </div>
   );
