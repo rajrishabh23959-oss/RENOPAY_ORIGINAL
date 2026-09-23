@@ -289,78 +289,99 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, cameraRetry]);
 
-  const processImageFile = async (file) => {
-    if (!file) return;
+  useEffect(() => {
+    window.__onNativeGalleryImage = (dataUrl) => {
+      if (dataUrl) {
+        processDataUrl(dataUrl);
+      }
+    };
+    return () => {
+      delete window.__onNativeGalleryImage;
+    };
+  }, []);
+
+  const triggerGallery = (e) => {
+    if (typeof window !== "undefined" && window.AndroidGallery && window.AndroidGallery.openGallery) {
+      e?.preventDefault?.();
+      e?.stopPropagation?.();
+      window.AndroidGallery.openGallery();
+      return true;
+    }
+    return false;
+  };
+
+  const processDataUrl = async (dataUrl, file = null) => {
+    if (!dataUrl) return;
     setProcessingImage(true);
     setErr("");
     setMode("upload");
+    setUploadPreview(dataUrl);
 
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const dataUrl = e.target?.result;
-      if (!dataUrl) {
-        setProcessingImage(false);
-        setErr("Could not read this image file.");
-        return;
+    try {
+      let decodedCode = null;
+
+      // Path A: Modern hardware-accelerated decode with automatic EXIF orientation
+      if (file && typeof createImageBitmap !== "undefined") {
+        try {
+          const bitmap = await createImageBitmap(file);
+          decodedCode = await decodeQrFromImage(bitmap);
+          try { bitmap.close?.(); } catch {}
+        } catch {}
       }
-      setUploadPreview(dataUrl);
 
-      try {
-        let decodedCode = null;
+      // Path B: Fallback to standard Image
+      if (!decodedCode) {
+        const img = new Image();
+        await new Promise((resolve, reject) => {
+          img.onload = () => resolve();
+          img.onerror = () => reject(new Error("Image load error"));
+          img.src = dataUrl;
+        });
+        decodedCode = await decodeQrFromImage(img);
+      }
 
-        // Path A: Modern hardware-accelerated decode with automatic EXIF orientation
-        if (typeof createImageBitmap !== "undefined") {
-          try {
-            const bitmap = await createImageBitmap(file);
-            decodedCode = await decodeQrFromImage(bitmap);
-            try { bitmap.close?.(); } catch {}
-          } catch {}
+      setProcessingImage(false);
+
+      if (decodedCode) {
+        const giftMatch = decodedCode.match(/RENO-GIFT-[A-Z0-9]{4}-[A-Z0-9]{4}/i) ||
+                          decodedCode.match(/[?&]claimCode=([^&\s]+)/i) ||
+                          decodedCode.match(/renopay:\/\/giftcard\/claim\?code=([^&\s]+)/i);
+        if (giftMatch) {
+          const code = (giftMatch[1] || giftMatch[0]).toUpperCase();
+          onSuccess?.({ type: "giftcard", code });
+          return;
         }
 
-        // Path B: Fallback to standard Image if ImageBitmap is unavailable or found nothing
-        if (!decodedCode) {
-          const img = new Image();
-          await new Promise((resolve, reject) => {
-            img.onload = () => resolve();
-            img.onerror = () => reject(new Error("Image load error"));
-            img.src = dataUrl;
-          });
-          decodedCode = await decodeQrFromImage(img);
-        }
-
-        setProcessingImage(false);
-
-        if (decodedCode) {
-          const giftMatch = decodedCode.match(/RENO-GIFT-[A-Z0-9]{4}-[A-Z0-9]{4}/i) ||
-                            decodedCode.match(/[?&]claimCode=([^&\s]+)/i) ||
-                            decodedCode.match(/renopay:\/\/giftcard\/claim\?code=([^&\s]+)/i);
-          if (giftMatch) {
-            const code = (giftMatch[1] || giftMatch[0]).toUpperCase();
-            onSuccess?.({ type: "giftcard", code });
-            return;
-          }
-
-          const parsed = parseUniversalUpiQr(decodedCode);
-          if (parsed) {
-            handleDetectedUpi(parsed);
-            return;
-          } else {
-            setErr(`Scanned text: "${decodedCode.slice(0, 40)}..." is not a recognizable UPI QR code.`);
-          }
+        const parsed = parseUniversalUpiQr(decodedCode);
+        if (parsed) {
+          handleDetectedUpi(parsed);
+          return;
         } else {
-          setErr("No QR code detected in this photo. Please upload a clearer photo or screenshot of the QR code.");
+          setErr(`Scanned text: "${decodedCode.slice(0, 40)}..." is not a recognizable UPI QR code.`);
         }
-      } catch (err) {
-        setProcessingImage(false);
-        setErr("Failed to process QR code from photo. Please try another image.");
+      } else {
+        setErr("No QR code detected in this photo. Please upload a clearer photo or screenshot of the QR code.");
+      }
+    } catch (err) {
+      setProcessingImage(false);
+      setErr("Failed to process QR code from photo. Please try another image.");
+    }
+  };
+
+  const processImageFile = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result;
+      if (dataUrl) {
+        processDataUrl(dataUrl, file);
+      } else {
+        setErr("Could not read image file.");
       }
     };
-
     reader.onerror = () => {
-      setProcessingImage(false);
       setErr("Could not read image file from storage.");
     };
-
     reader.readAsDataURL(file);
   };
 
@@ -464,6 +485,11 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
                   accept="image/*"
                   className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-20"
                   onChange={handleImageUpload}
+                  onClick={(e) => {
+                    if (triggerGallery(e)) {
+                      e.preventDefault();
+                    }
+                  }}
                 />
                 <span>🖼️</span>
                 <span>Gallery</span>
@@ -494,6 +520,11 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
                         accept="image/*"
                         className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-20"
                         onChange={handleImageUpload}
+                        onClick={(e) => {
+                          if (triggerGallery(e)) {
+                            e.preventDefault();
+                          }
+                        }}
                       />
                       <span>🖼️ Open Gallery</span>
                     </label>
@@ -509,6 +540,11 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
                       accept="image/*"
                       className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-20"
                       onChange={handleImageUpload}
+                      onClick={(e) => {
+                        if (triggerGallery(e)) {
+                          e.preventDefault();
+                        }
+                      }}
                     />
                     <span>🖼️ Upload from Gallery</span>
                   </label>
@@ -539,6 +575,11 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
                   accept="image/*"
                   className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-20"
                   onChange={handleImageUpload}
+                  onClick={(e) => {
+                    if (triggerGallery(e)) {
+                      e.preventDefault();
+                    }
+                  }}
                 />
                 <span>🖼️</span> Upload from Gallery
               </label>
@@ -566,7 +607,11 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
                   accept="image/*"
                   className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-30"
                   onChange={handleImageUpload}
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={(e) => {
+                    if (triggerGallery(e)) {
+                      e.preventDefault();
+                    }
+                  }}
                 />
 
                 {uploadPreview ? (

@@ -45,6 +45,7 @@ public class MainActivity extends BridgeActivity {
     private static final int PERMISSION_REQUEST_CODE = 1001;
     private static final int SPEECH_REQUEST_CODE = 1002;
     private static final int FILE_CHOOSER_REQUEST_CODE = 1003;
+    private static final int GALLERY_PICK_REQUEST_CODE = 1004;
     private ValueCallback<Uri[]> mFilePathCallback;
 
     private TextToSpeech textToSpeech;
@@ -125,15 +126,16 @@ public class MainActivity extends BridgeActivity {
                             }
                             mFilePathCallback = filePathCallback;
                             try {
-                                Intent intent = fileChooserParams.createIntent();
-                                startActivityForResult(intent, FILE_CHOOSER_REQUEST_CODE);
+                                Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                                intent.setType("image/*");
+                                startActivityForResult(Intent.createChooser(intent, "Select QR Code Image"), FILE_CHOOSER_REQUEST_CODE);
                                 return true;
                             } catch (Exception e) {
                                 try {
                                     Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
                                     intent.addCategory(Intent.CATEGORY_OPENABLE);
                                     intent.setType("image/*");
-                                    startActivityForResult(Intent.createChooser(intent, "Select QR Image"), FILE_CHOOSER_REQUEST_CODE);
+                                    startActivityForResult(Intent.createChooser(intent, "Select QR Code Image"), FILE_CHOOSER_REQUEST_CODE);
                                     return true;
                                 } catch (Exception ex) {
                                     if (mFilePathCallback != null) {
@@ -379,6 +381,41 @@ public class MainActivity extends BridgeActivity {
                 mFilePathCallback.onReceiveValue(results);
                 mFilePathCallback = null;
             }
+        } else if (requestCode == GALLERY_PICK_REQUEST_CODE) {
+            if (resultCode == RESULT_OK && data != null) {
+                Uri imageUri = data.getData();
+                if (imageUri != null) {
+                    new Thread(() -> {
+                        try {
+                            java.io.InputStream inputStream = getContentResolver().openInputStream(imageUri);
+                            if (inputStream != null) {
+                                java.io.ByteArrayOutputStream buffer = new java.io.ByteArrayOutputStream();
+                                int nRead;
+                                byte[] chunk = new byte[16384];
+                                while ((nRead = inputStream.read(chunk, 0, chunk.length)) != -1) {
+                                    buffer.write(chunk, 0, nRead);
+                                }
+                                buffer.flush();
+                                byte[] imageBytes = buffer.toByteArray();
+                                inputStream.close();
+                                String base64 = Base64.encodeToString(imageBytes, Base64.NO_WRAP);
+                                String mimeType = getContentResolver().getType(imageUri);
+                                if (mimeType == null) mimeType = "image/jpeg";
+                                final String dataUrl = "data:" + mimeType + ";base64," + base64;
+                                runOnUiThread(() -> {
+                                    if (getBridge() != null && getBridge().getWebView() != null) {
+                                        getBridge().getWebView().evaluateJavascript(
+                                            "window.__onNativeGalleryImage && window.__onNativeGalleryImage('" + dataUrl + "');", null
+                                        );
+                                    }
+                                });
+                            }
+                        } catch (Exception e) {
+                            runOnUiThread(() -> Toast.makeText(this, "Could not load selected photo", Toast.LENGTH_SHORT).show());
+                        }
+                    }).start();
+                }
+            }
         }
     }
 
@@ -497,6 +534,7 @@ public class MainActivity extends BridgeActivity {
                         wv.addJavascriptInterface(new AndroidDownloaderInterface(MainActivity.this), "AndroidDownloader");
                         wv.addJavascriptInterface(new AndroidTTSInterface(MainActivity.this), "AndroidTTS");
                         wv.addJavascriptInterface(new AndroidSTTInterface(MainActivity.this), "AndroidSTT");
+                        wv.addJavascriptInterface(new AndroidGalleryInterface(MainActivity.this), "AndroidGallery");
 
                         // Inject Capacitor Plugin shim if window.AndroidTTS is not yet set
                         wv.evaluateJavascript(
@@ -601,6 +639,38 @@ public class MainActivity extends BridgeActivity {
         @JavascriptInterface
         public void stopListening() {
             activity.runOnUiThread(activity::stopSpeech);
+        }
+    }
+
+    public void openNativeGallery() {
+        runOnUiThread(() -> {
+            try {
+                Intent intent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                intent.setType("image/*");
+                startActivityForResult(Intent.createChooser(intent, "Select QR Code Image"), GALLERY_PICK_REQUEST_CODE);
+            } catch (Exception e) {
+                try {
+                    Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                    intent.setType("image/*");
+                    startActivityForResult(Intent.createChooser(intent, "Select QR Code Image"), GALLERY_PICK_REQUEST_CODE);
+                } catch (Exception ex) {
+                    Toast.makeText(this, "Could not open gallery: " + ex.getMessage(), Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+    }
+
+    public static class AndroidGalleryInterface {
+        private final MainActivity activity;
+
+        public AndroidGalleryInterface(MainActivity activity) {
+            this.activity = activity;
+        }
+
+        @JavascriptInterface
+        public void openGallery() {
+            activity.openNativeGallery();
         }
     }
 
