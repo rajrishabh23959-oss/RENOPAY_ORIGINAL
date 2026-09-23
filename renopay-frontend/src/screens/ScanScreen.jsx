@@ -385,12 +385,12 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
           ].map(([v, l]) => (
             <button
               key={v}
-              className="btn flex-1 py-2.5 rounded-[10px] text-xs font-semibold transition-all"
-              style={{
-                background: mode === v ? "#FF6A1A" : "#151210",
-                color: mode === v ? "#fff" : "#8C827A",
-                border: `1px solid ${mode === v ? "#FF6A1A" : "#2A2320"}`,
-              }}
+              type="button"
+              className={`btn flex-1 py-2.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+                mode === v
+                  ? "bg-accent text-white border-accent shadow-md scale-[1.01]"
+                  : "bg-card border-line text-muted hover:text-textLight hover:bg-surf"
+              }`}
               onClick={() => {
                 stopCamera();
                 setMode(v);
