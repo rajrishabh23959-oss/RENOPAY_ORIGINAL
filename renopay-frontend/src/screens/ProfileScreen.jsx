@@ -7,7 +7,7 @@ import { getDeviceFingerprint, getDeviceLabel, fmt } from "../lib/format";
 import { Btn, Badge, Card } from "../components/ui";
 import { PINPad } from "../components/PINPad";
 import { downloadOrShareFile } from "../lib/download";
-import iconAccount from "../assets/actions/account.png";
+import iconAccount from "../assets/actions/account.webp";
 
 export function ProfileScreen({ onBack, onLoggedOut }) {
   const { profile, logout, refreshProfile } = useAuth();

@@ -2,19 +2,19 @@ import { useState, useMemo } from "react";
 import "./cashBalanceCard.css";
 import { fmt } from "../lib/format";
 import { UpiPinModal } from "./UpiPinModal";
-import iconNormalView from "../assets/actions/normal_view.png";
-import iconAdvView from "../assets/actions/adv_view.png";
+import iconNormalView from "../assets/actions/normal_view.webp";
+import iconAdvView from "../assets/actions/adv_view.webp";
 
 // Real currency photograph assets
-import note500Img from "../assets/currency/note_500.png";
-import note200Img from "../assets/currency/note_200.png";
-import note100Img from "../assets/currency/note_100.png";
-import note50Img from "../assets/currency/note_50.png";
-import note20Img from "../assets/currency/note_20.png";
-import note10Img from "../assets/currency/note_10.png";
-import note5Img from "../assets/currency/note_5.png";
-import coin2Img from "../assets/currency/coin_2.png";
-import coin1Img from "../assets/currency/coin_1.png";
+import note500Img from "../assets/currency/note_500.webp";
+import note200Img from "../assets/currency/note_200.webp";
+import note100Img from "../assets/currency/note_100.webp";
+import note50Img from "../assets/currency/note_50.webp";
+import note20Img from "../assets/currency/note_20.webp";
+import note10Img from "../assets/currency/note_10.webp";
+import note5Img from "../assets/currency/note_5.webp";
+import coin2Img from "../assets/currency/coin_2.webp";
+import coin1Img from "../assets/currency/coin_1.webp";
 
 const NOTE_SPECS = [
   { value: 500, label: "₹ 500", img: note500Img },

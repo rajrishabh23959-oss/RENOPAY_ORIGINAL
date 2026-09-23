@@ -10,6 +10,9 @@ from app.routers import gold, voice, ledger, accounting, ai, travel, financial_s
 from app.services.scheduler import start_scheduler
 
 
+_db_initialized = False
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     try:
@@ -22,74 +25,75 @@ async def lifespan(app: FastAPI):
         from app.core.money import generate_virtual_acc_no
         from sqlalchemy import select, text
 
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-            try:
-                await conn.execute(text("ALTER TABLE scratch_cards ADD COLUMN IF NOT EXISTS is_withdrawn BOOLEAN DEFAULT FALSE;"))
-            except Exception as e:
-                print(f"Could not alter scratch_cards table: {e}")
-            try:
-                await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS language_code VARCHAR(10) DEFAULT 'en';"))
-            except Exception as e:
-                print(f"Could not alter users table for language_code: {e}")
-            try:
-                await conn.execute(text("ALTER TABLE users ALTER COLUMN avatar_url TYPE TEXT;"))
-            except Exception as e:
-                print(f"Could not alter users table for avatar_url TYPE TEXT: {e}")
-            try:
-                await conn.execute(text("ALTER TABLE gift_cards ADD COLUMN IF NOT EXISTS payment_mode VARCHAR(20) DEFAULT 'normal';"))
-            except Exception as e:
-                print(f"Could not alter gift_cards table for payment_mode: {e}")
+        global _db_initialized
+        if not _db_initialized:
+            async with engine.connect() as conn:
+                check = await conn.execute(text("SELECT 1 FROM information_schema.tables WHERE table_name = 'users' LIMIT 1;"))
+                tables_exist = check.scalar() is not None
 
+            if not tables_exist:
+                async with engine.begin() as conn:
+                    await conn.run_sync(Base.metadata.create_all)
+                    try:
+                        await conn.execute(text("ALTER TABLE scratch_cards ADD COLUMN IF NOT EXISTS is_withdrawn BOOLEAN DEFAULT FALSE;"))
+                    except Exception as e:
+                        print(f"Could not alter scratch_cards table: {e}")
+                    try:
+                        await conn.execute(text("ALTER TABLE users ADD COLUMN IF NOT EXISTS language_code VARCHAR(10) DEFAULT 'en';"))
+                    except Exception as e:
+                        print(f"Could not alter users table for language_code: {e}")
+                    try:
+                        await conn.execute(text("ALTER TABLE users ALTER COLUMN avatar_url TYPE TEXT;"))
+                    except Exception as e:
+                        print(f"Could not alter users table for avatar_url TYPE TEXT: {e}")
+                    try:
+                        await conn.execute(text("ALTER TABLE gift_cards ADD COLUMN IF NOT EXISTS payment_mode VARCHAR(20) DEFAULT 'normal';"))
+                    except Exception as e:
+                        print(f"Could not alter gift_cards table for payment_mode: {e}")
 
-        async with AsyncSessionLocal() as session:
-            res = await session.execute(select(User).where(User.phone_number == "9876543210"))
-            existing_user = res.scalar_one_or_none()
-            if existing_user:
-                acc_res = await session.execute(select(Account).where(Account.user_id == existing_user.id))
-                acc = acc_res.scalar_one_or_none()
-                if acc and acc.vpa != "rishabhraj@renopay":
-                    acc.vpa = "rishabhraj@renopay"
-                    await session.commit()
-            else:
-                user = User(
-                    full_name="Rishab Raj",
-                    phone_number="9876543210",
-                    email="rishab@example.com",
-                    pin_hash=hash_pin("123456"),
-                    kyc_status=KYCStatus.VERIFIED,
-                )
-                session.add(user)
-                await session.flush()
-                account = Account(
-                    user_id=user.id,
-                    virtual_acc_no=generate_virtual_acc_no(),
-                    vpa="rishabhraj@renopay",
-                    current_balance_paise=5000000,
-                    upi_lite_balance_paise=100000,
-                    digital_gold_paise=250000,
-                )
-                session.add(account)
+                async with AsyncSessionLocal() as session:
+                    res = await session.execute(select(User).where(User.phone_number == "9876543210"))
+                    existing_user = res.scalar_one_or_none()
+                    if not existing_user:
+                        user = User(
+                            full_name="Rishab Raj",
+                            phone_number="9876543210",
+                            email="rishab@example.com",
+                            pin_hash=hash_pin("123456"),
+                            kyc_status=KYCStatus.VERIFIED,
+                        )
+                        session.add(user)
+                        await session.flush()
+                        account = Account(
+                            user_id=user.id,
+                            virtual_acc_no=generate_virtual_acc_no(),
+                            vpa="rishabhraj@renopay",
+                            current_balance_paise=5000000,
+                            upi_lite_balance_paise=100000,
+                            digital_gold_paise=250000,
+                        )
+                        session.add(account)
 
-                user2 = User(
-                    full_name="Alex Morgan",
-                    phone_number="9876543211",
-                    email="alex@example.com",
-                    pin_hash=hash_pin("123456"),
-                    kyc_status=KYCStatus.VERIFIED,
-                )
-                session.add(user2)
-                await session.flush()
-                account2 = Account(
-                    user_id=user2.id,
-                    virtual_acc_no=generate_virtual_acc_no(),
-                    vpa="alex@renopay",
-                    current_balance_paise=2500000,
-                    upi_lite_balance_paise=50000,
-                    digital_gold_paise=50000,
-                )
-                session.add(account2)
-                await session.commit()
+                        user2 = User(
+                            full_name="Alex Morgan",
+                            phone_number="9876543211",
+                            email="alex@example.com",
+                            pin_hash=hash_pin("123456"),
+                            kyc_status=KYCStatus.VERIFIED,
+                        )
+                        session.add(user2)
+                        await session.flush()
+                        account2 = Account(
+                            user_id=user2.id,
+                            virtual_acc_no=generate_virtual_acc_no(),
+                            vpa="alex@renopay",
+                            current_balance_paise=2500000,
+                            upi_lite_balance_paise=50000,
+                            digital_gold_paise=50000,
+                        )
+                        session.add(account2)
+                        await session.commit()
+            _db_initialized = True
     except Exception as e:
         print(f"Warning during database initialization: {e}")
 

@@ -17,3 +17,7 @@ yarn-error.log*
 # Editor / OS
 .DS_Store
 Thumbs.db
+
+# Local asset backups
+src/assets/*_backup_original/
+

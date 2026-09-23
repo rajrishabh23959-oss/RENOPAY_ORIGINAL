@@ -9,23 +9,23 @@ import { fmt, ago } from "../lib/format";
 import { BhimUpiLogo } from "../components/UpiBrandBadges";
 import { UpiSafetyModal } from "../components/UpiSafetyModal";
 
-import iconPay from "../assets/actions/pay.png";
-import iconRequests from "../assets/actions/requests.png";
-import iconSplit from "../assets/actions/split.png";
-import iconSubs from "../assets/actions/subscriptions.png";
-import iconSavings from "../assets/actions/savings.png";
-import iconAddMoney from "../assets/actions/addmoney.png";
-import iconExpenses from "../assets/actions/expenses.png";
-import iconRewards from "../assets/actions/rewards.png";
-import iconUpilite from "../assets/actions/upilite.png";
-import iconGold from "../assets/actions/gold.png";
-import iconLedger from "../assets/actions/ledger.png";
-import iconTravel from "../assets/actions/travel.png";
-import iconLoans from "../assets/actions/loans.png";
-import iconRecharge from "../assets/actions/recharge.png";
-import iconInvest from "../assets/actions/invest.png";
-import iconVaults from "../assets/actions/vaults.png";
-import iconAccount from "../assets/actions/account.png";
+import iconPay from "../assets/actions/pay.webp";
+import iconRequests from "../assets/actions/requests.webp";
+import iconSplit from "../assets/actions/split.webp";
+import iconSubs from "../assets/actions/subscriptions.webp";
+import iconSavings from "../assets/actions/savings.webp";
+import iconAddMoney from "../assets/actions/addmoney.webp";
+import iconExpenses from "../assets/actions/expenses.webp";
+import iconRewards from "../assets/actions/rewards.webp";
+import iconUpilite from "../assets/actions/upilite.webp";
+import iconGold from "../assets/actions/gold.webp";
+import iconLedger from "../assets/actions/ledger.webp";
+import iconTravel from "../assets/actions/travel.webp";
+import iconLoans from "../assets/actions/loans.webp";
+import iconRecharge from "../assets/actions/recharge.webp";
+import iconInvest from "../assets/actions/invest.webp";
+import iconVaults from "../assets/actions/vaults.webp";
+import iconAccount from "../assets/actions/account.webp";
 
 const QUICK_ACTIONS = [
   { icon: iconPay, l: "Pay", s: "pay" },
@@ -56,29 +56,57 @@ export function HomeScreen({ onNavigate }) {
   const [balance, setBalance] = useState(profile?.account?.balance ?? 0);
   const [denominations, setDenominations] = useState(profile?.account?.cash_denominations ?? null);
   const [digitalGold, setDigitalGold] = useState(profile?.account?.digital_gold ?? 0);
-  const [recent, setRecent] = useState([]);
+  const [recent, setRecent] = useState(() => {
+    try {
+      const cached = localStorage.getItem("renopay_cached_recent_txns");
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
   const [prediction, setPrediction] = useState(null);
   const [pendingRequests, setPendingRequests] = useState(0);
   const [unscratched, setUnscratched] = useState(0);
   const [expenses, setExpenses] = useState(null);
-  const [loading, setLoading] = useState(true);
   const [goldPotPct, setGoldPotPct] = useState(0);
 
   const loadAll = useCallback(() => {
-    Promise.allSettled([
-      PaymentAPI.getTransactions(3, 0),
-      AnalyticsAPI.budgetPrediction(),
-      RequestAPI.inbox(),
-      RewardAPI.listScratchCards(),
-      AnalyticsAPI.expenses("month"),
-    ]).then((results) => {
-      const [txns, pred, inbox, cards, expSummary] = results.map(r => r.status === 'fulfilled' ? r.value : null);
-      if (txns) setRecent(txns);
-      if (pred) setPrediction(pred);
-      if (inbox) setPendingRequests(inbox.filter((r) => r.status === "pending").length);
-      if (cards) setUnscratched(cards.filter((c) => !c.scratched).length);
-      if (expSummary) setExpenses(expSummary);
-    }).finally(() => setLoading(false));
+    // 1. Fetch transactions immediately & cache for instant next render
+    PaymentAPI.getTransactions(3, 0)
+      .then((txns) => {
+        if (txns) {
+          setRecent(txns);
+          try {
+            localStorage.setItem("renopay_cached_recent_txns", JSON.stringify(txns));
+          } catch {}
+        }
+      })
+      .catch(() => {});
+
+    // 2. Fetch pending requests & scratch cards
+    RequestAPI.inbox()
+      .then((inbox) => {
+        if (inbox) setPendingRequests(inbox.filter((r) => r.status === "pending").length);
+      })
+      .catch(() => {});
+
+    RewardAPI.listScratchCards()
+      .then((cards) => {
+        if (cards) setUnscratched(cards.filter((c) => !c.scratched).length);
+      })
+      .catch(() => {});
+
+    // 3. Defer non-critical analytics by 300ms to allow smooth UI interactive response
+    const timer = setTimeout(() => {
+      AnalyticsAPI.budgetPrediction()
+        .then((pred) => { if (pred) setPrediction(pred); })
+        .catch(() => {});
+      AnalyticsAPI.expenses("month")
+        .then((expSummary) => { if (expSummary) setExpenses(expSummary); })
+        .catch(() => {});
+    }, 300);
+
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -104,7 +132,7 @@ export function HomeScreen({ onNavigate }) {
     }
   });
 
-  if (loading || !profile) {
+  if (!profile) {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
         <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-accent"></div>

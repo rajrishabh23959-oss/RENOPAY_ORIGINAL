@@ -1,9 +1,9 @@
 import React from "react";
-import iconTravel from "../assets/actions/travel.png";
-import iconRecharge from "../assets/actions/recharge.png";
-import iconInvest from "../assets/actions/invests.png";
+import iconTravel from "../assets/actions/travel.webp";
+import iconRecharge from "../assets/actions/recharge.webp";
+import iconInvest from "../assets/actions/invests.webp";
 
-import iconLoans from "../assets/actions/loans.png";
+import iconLoans from "../assets/actions/loans.webp";
 
 export function TravelActionIcon({ className = "w-[38px] h-[38px]" }) {
   return (

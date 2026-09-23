@@ -2,16 +2,16 @@ import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import "./noteSlider.css";
 
 // Original currency photograph assets provided by user
-import note500Img from "../assets/currency/note_500.png";
-import note200Img from "../assets/currency/note_200.png";
-import note100Img from "../assets/currency/note_100.png";
-import note50Img from "../assets/currency/note_50.png";
-import note20Img from "../assets/currency/note_20.png";
-import note10Img from "../assets/currency/note_10.png";
+import note500Img from "../assets/currency/note_500.webp";
+import note200Img from "../assets/currency/note_200.webp";
+import note100Img from "../assets/currency/note_100.webp";
+import note50Img from "../assets/currency/note_50.webp";
+import note20Img from "../assets/currency/note_20.webp";
+import note10Img from "../assets/currency/note_10.webp";
 
-import coin5Img from "../assets/currency/coin_5.png";
-import coin2Img from "../assets/currency/coin_2.png";
-import coin1Img from "../assets/currency/coin_1.png";
+import coin5Img from "../assets/currency/coin_5.webp";
+import coin2Img from "../assets/currency/coin_2.webp";
+import coin1Img from "../assets/currency/coin_1.webp";
 
 /* ──────────────────────────────────────────────────
    Currency Denominations using original photographs

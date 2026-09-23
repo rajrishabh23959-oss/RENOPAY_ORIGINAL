@@ -8,10 +8,10 @@ import { ErrorBoundary } from "./components/ErrorBoundary";
 // Immediate core screens loaded synchronously
 import { LoginScreen } from "./screens/LoginScreen";
 import { HomeScreen } from "./screens/HomeScreen";
-import { PayScreen } from "./screens/PayScreen";
-import { ScanScreen } from "./screens/ScanScreen";
 
 // Lazy-loaded on-demand secondary screens (fast startup!)
+const PayScreen = lazy(() => import("./screens/PayScreen").then(m => ({ default: m.PayScreen })));
+const ScanScreen = lazy(() => import("./screens/ScanScreen").then(m => ({ default: m.ScanScreen })));
 const ProfileScreen = lazy(() => import("./screens/ProfileScreen").then(m => ({ default: m.ProfileScreen })));
 const HistoryScreen = lazy(() => import("./screens/HistoryScreen").then(m => ({ default: m.HistoryScreen })));
 const AddMoneyScreen = lazy(() => import("./screens/AddMoneyScreen").then(m => ({ default: m.AddMoneyScreen })));
