@@ -19,6 +19,7 @@ import android.speech.tts.UtteranceProgressListener;
 import android.util.Base64;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
+import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebView;
 import android.widget.Toast;
@@ -43,6 +44,8 @@ import java.util.Locale;
 public class MainActivity extends BridgeActivity {
     private static final int PERMISSION_REQUEST_CODE = 1001;
     private static final int SPEECH_REQUEST_CODE = 1002;
+    private static final int FILE_CHOOSER_REQUEST_CODE = 1003;
+    private ValueCallback<Uri[]> mFilePathCallback;
 
     private TextToSpeech textToSpeech;
     private boolean isTtsInitialized = false;
@@ -98,7 +101,7 @@ public class MainActivity extends BridgeActivity {
                 if (getBridge() != null && getBridge().getWebView() != null) {
                     WebView wv = getBridge().getWebView();
                     // Ensure microphone and camera permissions requested inside WebView on Android 10+ are granted
-                    WebChromeClient existingClient = wv.getWebChromeClient();
+                    final WebChromeClient existingClient = wv.getWebChromeClient();
                     wv.setWebChromeClient(new WebChromeClient() {
                         @Override
                         public void onPermissionRequest(final PermissionRequest request) {
@@ -106,9 +109,40 @@ public class MainActivity extends BridgeActivity {
                                 try {
                                     request.grant(request.getResources());
                                 } catch (Exception e) {
-                                    super.onPermissionRequest(request);
+                                    if (existingClient != null) {
+                                        existingClient.onPermissionRequest(request);
+                                    } else {
+                                        super.onPermissionRequest(request);
+                                    }
                                 }
                             });
+                        }
+
+                        @Override
+                        public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
+                            if (mFilePathCallback != null) {
+                                mFilePathCallback.onReceiveValue(null);
+                            }
+                            mFilePathCallback = filePathCallback;
+                            try {
+                                Intent intent = fileChooserParams.createIntent();
+                                startActivityForResult(intent, FILE_CHOOSER_REQUEST_CODE);
+                                return true;
+                            } catch (Exception e) {
+                                try {
+                                    Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+                                    intent.addCategory(Intent.CATEGORY_OPENABLE);
+                                    intent.setType("image/*");
+                                    startActivityForResult(Intent.createChooser(intent, "Select QR Image"), FILE_CHOOSER_REQUEST_CODE);
+                                    return true;
+                                } catch (Exception ex) {
+                                    if (mFilePathCallback != null) {
+                                        mFilePathCallback.onReceiveValue(null);
+                                        mFilePathCallback = null;
+                                    }
+                                    return false;
+                                }
+                            }
                         }
                     });
                 }
@@ -327,6 +361,23 @@ public class MainActivity extends BridgeActivity {
             } else {
                 // Cancelled or no speech detected: notify frontend so isListening resets cleanly
                 notifySpeechResult("");
+            }
+        } else if (requestCode == FILE_CHOOSER_REQUEST_CODE) {
+            if (mFilePathCallback != null) {
+                Uri[] results = null;
+                if (resultCode == RESULT_OK && data != null) {
+                    if (data.getClipData() != null) {
+                        int count = data.getClipData().getItemCount();
+                        results = new Uri[count];
+                        for (int i = 0; i < count; i++) {
+                            results[i] = data.getClipData().getItemAt(i).getUri();
+                        }
+                    } else if (data.getData() != null) {
+                        results = new Uri[]{data.getData()};
+                    }
+                }
+                mFilePathCallback.onReceiveValue(results);
+                mFilePathCallback = null;
             }
         }
     }

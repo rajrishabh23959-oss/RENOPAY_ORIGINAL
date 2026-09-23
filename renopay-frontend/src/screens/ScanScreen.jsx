@@ -299,15 +299,8 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, cameraRetry]);
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files?.[0];
+  const processImageFile = (file) => {
     if (!file) return;
-
-    // Reset value immediately so selecting the same file again triggers onChange
-    try {
-      e.target.value = "";
-    } catch {}
-
     setProcessingImage(true);
     setErr("");
     setMode("upload");
@@ -351,6 +344,46 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
       setErr("Could not read this image file.");
     };
     img.src = objectUrl;
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      e.target.value = "";
+    } catch {}
+    processImageFile(file);
+  };
+
+  const handlePasteFromClipboard = async () => {
+    setErr("");
+    try {
+      if (navigator.clipboard?.read) {
+        const items = await navigator.clipboard.read();
+        for (const item of items) {
+          const imageType = item.types.find((t) => t.startsWith("image/"));
+          if (imageType) {
+            const blob = await item.getType(imageType);
+            const file = new File([blob], "clipboard_qr.png", { type: imageType });
+            processImageFile(file);
+            return;
+          }
+        }
+      }
+      if (navigator.clipboard?.readText) {
+        const text = await navigator.clipboard.readText();
+        if (text && text.trim()) {
+          const parsed = parseUniversalUpiQr(text.trim());
+          if (parsed) {
+            handleDetectedUpi(parsed);
+            return;
+          }
+        }
+      }
+      setErr("No image or UPI QR link in clipboard. Copy an image or screenshot first.");
+    } catch (e) {
+      setErr("Clipboard permission not granted. Use the file selection buttons below.");
+    }
   };
 
   const submitManual = async () => {
@@ -539,10 +572,27 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
         {mode === "upload" && (
           <div>
             <Card className="p-6 text-center border-accent/[.25]">
+              {/* Option A: Quick 1-Tap Clipboard Paste (Ideal for phone screenshots) */}
+              <button
+                type="button"
+                onClick={handlePasteFromClipboard}
+                className="w-full py-3 px-4 rounded-xl bg-accent text-white font-bold text-xs flex items-center justify-center gap-2 hover:bg-accent/90 active:scale-95 transition-all shadow-md mb-4 cursor-pointer"
+              >
+                <span>📋</span>
+                <span>Paste QR Screenshot from Clipboard</span>
+              </button>
+
+              <div className="flex items-center gap-3 my-3">
+                <div className="h-px bg-line flex-1" />
+                <span className="text-[10px] text-muted uppercase font-bold tracking-wider">or upload file</span>
+                <div className="h-px bg-line flex-1" />
+              </div>
+
+              {/* Option B: Direct Drag/Drop & Gallery Box */}
               <label className="relative overflow-hidden cursor-pointer border-2 border-dashed border-accent/40 hover:border-accent rounded-2xl p-6 transition-all bg-card/40 flex flex-col items-center justify-center block">
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/png, image/jpeg, image/jpg, image/webp, image/*"
                   className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-20"
                   onChange={handleImageUpload}
                 />
@@ -566,10 +616,21 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
                 <p className="text-muted text-xs mb-3">
                   Upload Paytm, PhonePe, GPay, BharatPe or any UPI QR image
                 </p>
-                <div className="px-4 py-2 rounded-xl bg-accent text-white font-bold text-xs transition shadow-md flex items-center gap-2 pointer-events-none">
+                <div className="px-4 py-2 rounded-xl bg-surf border border-line text-textLight font-bold text-xs transition shadow-sm flex items-center gap-2 pointer-events-none">
                   <span>📁</span> Open Photo Gallery
                 </div>
               </label>
+
+              {/* Option C: Native Browser/Android File Button fallback */}
+              <div className="mt-4 pt-3 border-t border-line/60 text-left">
+                <p className="text-[11px] text-muted mb-1.5 font-bold">Choose directly from phone files:</p>
+                <input
+                  type="file"
+                  accept="image/png, image/jpeg, image/jpg, image/webp, image/*"
+                  onChange={handleImageUpload}
+                  className="w-full text-xs text-textLight file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border file:border-accent/40 file:text-xs file:font-bold file:bg-accent file:text-white file:cursor-pointer cursor-pointer bg-surf p-1.5 rounded-xl border border-line"
+                />
+              </div>
 
               {detected && (
                 <div className="mt-4 p-3 rounded-xl bg-teal/10 border border-teal/30">
