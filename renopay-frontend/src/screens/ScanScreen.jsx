@@ -156,16 +156,6 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
   useEffect(() => {
     if (initialMode && ["camera", "upload", "manual"].includes(initialMode)) {
       setMode(initialMode);
-      if (initialMode === "upload") {
-        const timer = setTimeout(() => {
-          try {
-            fileInputRef.current?.click();
-          } catch {
-            // Browser might require direct user gesture, user can still click upload box
-          }
-        }, 120);
-        return () => clearTimeout(timer);
-      }
     }
   }, [initialMode]);
 
@@ -299,51 +289,79 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, cameraRetry]);
 
-  const processImageFile = (file) => {
+  const processImageFile = async (file) => {
     if (!file) return;
     setProcessingImage(true);
     setErr("");
     setMode("upload");
 
-    const objectUrl = URL.createObjectURL(file);
-    setUploadPreview(objectUrl);
-
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.onload = async () => {
-      try {
-        const rawCode = await decodeQrFromImage(img);
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      const dataUrl = e.target?.result;
+      if (!dataUrl) {
         setProcessingImage(false);
-        if (rawCode) {
-          const giftMatch = rawCode.match(/RENO-GIFT-[A-Z0-9]{4}-[A-Z0-9]{4}/i) ||
-                            rawCode.match(/[?&]claimCode=([^&\s]+)/i) ||
-                            rawCode.match(/renopay:\/\/giftcard\/claim\?code=([^&\s]+)/i);
+        setErr("Could not read this image file.");
+        return;
+      }
+      setUploadPreview(dataUrl);
+
+      try {
+        let decodedCode = null;
+
+        // Path A: Modern hardware-accelerated decode with automatic EXIF orientation
+        if (typeof createImageBitmap !== "undefined") {
+          try {
+            const bitmap = await createImageBitmap(file);
+            decodedCode = await decodeQrFromImage(bitmap);
+            try { bitmap.close?.(); } catch {}
+          } catch {}
+        }
+
+        // Path B: Fallback to standard Image if ImageBitmap is unavailable or found nothing
+        if (!decodedCode) {
+          const img = new Image();
+          await new Promise((resolve, reject) => {
+            img.onload = () => resolve();
+            img.onerror = () => reject(new Error("Image load error"));
+            img.src = dataUrl;
+          });
+          decodedCode = await decodeQrFromImage(img);
+        }
+
+        setProcessingImage(false);
+
+        if (decodedCode) {
+          const giftMatch = decodedCode.match(/RENO-GIFT-[A-Z0-9]{4}-[A-Z0-9]{4}/i) ||
+                            decodedCode.match(/[?&]claimCode=([^&\s]+)/i) ||
+                            decodedCode.match(/renopay:\/\/giftcard\/claim\?code=([^&\s]+)/i);
           if (giftMatch) {
             const code = (giftMatch[1] || giftMatch[0]).toUpperCase();
             onSuccess?.({ type: "giftcard", code });
             return;
           }
 
-          const parsed = parseUniversalUpiQr(rawCode);
+          const parsed = parseUniversalUpiQr(decodedCode);
           if (parsed) {
             handleDetectedUpi(parsed);
             return;
           } else {
-            setErr(`Scanned text: "${rawCode.slice(0, 40)}..." is not a recognizable UPI QR code.`);
+            setErr(`Scanned text: "${decodedCode.slice(0, 40)}..." is not a recognizable UPI QR code.`);
           }
         } else {
-          setErr("No QR code detected in this image. Please upload a clearer QR code image.");
+          setErr("No QR code detected in this photo. Please upload a clearer photo or screenshot of the QR code.");
         }
       } catch (err) {
         setProcessingImage(false);
-        setErr("Failed to process QR code from image.");
+        setErr("Failed to process QR code from photo. Please try another image.");
       }
     };
-    img.onerror = () => {
+
+    reader.onerror = () => {
       setProcessingImage(false);
-      setErr("Could not read this image file.");
+      setErr("Could not read image file from storage.");
     };
-    img.src = objectUrl;
+
+    reader.readAsDataURL(file);
   };
 
   const handleImageUpload = (e) => {
@@ -353,37 +371,6 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
       e.target.value = "";
     } catch {}
     processImageFile(file);
-  };
-
-  const handlePasteFromClipboard = async () => {
-    setErr("");
-    try {
-      if (navigator.clipboard?.read) {
-        const items = await navigator.clipboard.read();
-        for (const item of items) {
-          const imageType = item.types.find((t) => t.startsWith("image/"));
-          if (imageType) {
-            const blob = await item.getType(imageType);
-            const file = new File([blob], "clipboard_qr.png", { type: imageType });
-            processImageFile(file);
-            return;
-          }
-        }
-      }
-      if (navigator.clipboard?.readText) {
-        const text = await navigator.clipboard.readText();
-        if (text && text.trim()) {
-          const parsed = parseUniversalUpiQr(text.trim());
-          if (parsed) {
-            handleDetectedUpi(parsed);
-            return;
-          }
-        }
-      }
-      setErr("No image or UPI QR link in clipboard. Copy an image or screenshot first.");
-    } catch (e) {
-      setErr("Clipboard permission not granted. Use the file selection buttons below.");
-    }
   };
 
   const submitManual = async () => {
@@ -452,11 +439,11 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
           <UpiBadge className="scale-85 origin-right" />
         </div>
 
-        {/* Universal Hidden File Input for Gallery QR Upload (Always in DOM) */}
+        {/* Universal Hidden File Input for Gallery QR Upload (Single Canonical Input) */}
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/png, image/jpeg, image/jpg, image/webp, image/*"
+          accept="image/*"
           className="hidden"
           onChange={handleImageUpload}
         />
@@ -479,17 +466,15 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
                 />
               </div>
 
-              {/* Floating Gallery button inside viewfinder (Quick access like Google Pay & PhonePe) */}
-              <label className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/75 hover:bg-black/90 active:scale-95 text-white text-[11px] font-bold border border-white/20 backdrop-blur-md shadow-lg transition-transform cursor-pointer overflow-hidden">
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-20"
-                  onChange={handleImageUpload}
-                />
+              {/* Floating Gallery button inside viewfinder */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/75 hover:bg-black/90 active:scale-95 text-white text-[11px] font-bold border border-white/20 backdrop-blur-md shadow-lg transition-transform cursor-pointer"
+              >
                 <span>🖼️</span>
                 <span>Gallery</span>
-              </label>
+              </button>
 
               {cameraStatus === "starting" && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/60">
@@ -510,30 +495,26 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
                     >
                       🔄 Grant & Retry Camera
                     </button>
-                    <label className="relative overflow-hidden inline-flex items-center px-4 py-2 rounded-xl bg-card border border-line text-textLight font-bold text-xs cursor-pointer active:scale-95">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-20"
-                        onChange={handleImageUpload}
-                      />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-card border border-line text-textLight font-bold text-xs cursor-pointer active:scale-95"
+                    >
                       <span>🖼️ Open Gallery</span>
-                    </label>
+                    </button>
                   </div>
                 </div>
               )}
               {cameraStatus === "unsupported" && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/85 p-6 text-center">
                   <p className="text-warn text-sm mb-3">Camera access is not supported in this browser context (requires HTTPS / localhost).</p>
-                  <label className="relative overflow-hidden inline-flex items-center px-4 py-2 rounded-xl bg-card border border-line text-textLight font-bold text-xs cursor-pointer active:scale-95">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-20"
-                      onChange={handleImageUpload}
-                    />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-card border border-line text-textLight font-bold text-xs cursor-pointer active:scale-95"
+                  >
                     <span>🖼️ Upload from Gallery</span>
-                  </label>
+                  </button>
                 </div>
               )}
               {detected && (
@@ -555,15 +536,13 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
 
             <div className="flex items-center justify-between px-1">
               <p className="text-muted text-[11px]">Point camera at any UPI QR</p>
-              <label className="relative overflow-hidden flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-card border border-accent/40 hover:border-accent text-textLight font-bold text-xs transition-all shadow-sm active:scale-95 cursor-pointer">
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-20"
-                  onChange={handleImageUpload}
-                />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-card border border-accent/40 hover:border-accent text-textLight font-bold text-xs transition-all shadow-sm active:scale-95 cursor-pointer"
+              >
                 <span>🖼️</span> Upload from Gallery
-              </label>
+              </button>
             </div>
           </div>
         )}
@@ -572,36 +551,28 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
         {mode === "upload" && (
           <div>
             <Card className="p-6 text-center border-accent/[.25]">
-              {/* Option A: Quick 1-Tap Clipboard Paste (Ideal for phone screenshots) */}
-              <button
-                type="button"
-                onClick={handlePasteFromClipboard}
-                className="w-full py-3 px-4 rounded-xl bg-accent text-white font-bold text-xs flex items-center justify-center gap-2 hover:bg-accent/90 active:scale-95 transition-all shadow-md mb-4 cursor-pointer"
+              {/* Only the Clean Central Dashed Card */}
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => fileInputRef.current?.click()}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") fileInputRef.current?.click(); }}
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const file = e.dataTransfer?.files?.[0];
+                  if (file) processImageFile(file);
+                }}
+                className="cursor-pointer border-2 border-dashed border-accent/40 hover:border-accent active:scale-[0.99] rounded-2xl p-6 transition-all bg-card/40 hover:bg-card/70 flex flex-col items-center justify-center select-none"
               >
-                <span>📋</span>
-                <span>Paste QR Screenshot from Clipboard</span>
-              </button>
-
-              <div className="flex items-center gap-3 my-3">
-                <div className="h-px bg-line flex-1" />
-                <span className="text-[10px] text-muted uppercase font-bold tracking-wider">or upload file</span>
-                <div className="h-px bg-line flex-1" />
-              </div>
-
-              {/* Option B: Direct Drag/Drop & Gallery Box */}
-              <label className="relative overflow-hidden cursor-pointer border-2 border-dashed border-accent/40 hover:border-accent rounded-2xl p-6 transition-all bg-card/40 flex flex-col items-center justify-center block">
-                <input
-                  type="file"
-                  accept="image/png, image/jpeg, image/jpg, image/webp, image/*"
-                  className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-20"
-                  onChange={handleImageUpload}
-                />
                 {uploadPreview ? (
                   <div className="relative mb-3">
-                    <img src={uploadPreview} alt="QR Preview" className="max-h-48 rounded-xl object-contain shadow-lg border border-line" />
+                    <img src={uploadPreview} alt="QR Preview" className="max-h-52 rounded-xl object-contain shadow-lg border border-line" />
                     {processingImage && (
-                      <div className="absolute inset-0 bg-black/60 rounded-xl flex items-center justify-center">
-                        <span className="text-xs text-textLight font-semibold">Scanning QR...</span>
+                      <div className="absolute inset-0 bg-black/60 rounded-xl flex items-center justify-center backdrop-blur-xs">
+                        <div className="flex items-center gap-2 text-white font-bold text-xs bg-black/75 px-3.5 py-1.5 rounded-full border border-white/20">
+                          <span className="animate-spin">⏳</span> Scanning QR...
+                        </div>
                       </div>
                     )}
                   </div>
@@ -610,26 +581,17 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
                     🖼️
                   </div>
                 )}
+
                 <p className="text-sm font-bold text-textLight mb-1">
-                  {uploadPreview ? "Choose Another Image" : "Select or Drop QR Code Image"}
+                  {uploadPreview ? "Tap to Change Image" : "Select or Drop QR Code Image"}
                 </p>
-                <p className="text-muted text-xs mb-3">
+                <p className="text-muted text-xs mb-3 text-center max-w-[260px]">
                   Upload Paytm, PhonePe, GPay, BharatPe or any UPI QR image
                 </p>
-                <div className="px-4 py-2 rounded-xl bg-surf border border-line text-textLight font-bold text-xs transition shadow-sm flex items-center gap-2 pointer-events-none">
-                  <span>📁</span> Open Photo Gallery
-                </div>
-              </label>
 
-              {/* Option C: Native Browser/Android File Button fallback */}
-              <div className="mt-4 pt-3 border-t border-line/60 text-left">
-                <p className="text-[11px] text-muted mb-1.5 font-bold">Choose directly from phone files:</p>
-                <input
-                  type="file"
-                  accept="image/png, image/jpeg, image/jpg, image/webp, image/*"
-                  onChange={handleImageUpload}
-                  className="w-full text-xs text-textLight file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border file:border-accent/40 file:text-xs file:font-bold file:bg-accent file:text-white file:cursor-pointer cursor-pointer bg-surf p-1.5 rounded-xl border border-line"
-                />
+                <div className="px-5 py-2.5 rounded-xl bg-accent text-white font-bold text-xs shadow-md shadow-accent/25 flex items-center gap-2 transition hover:bg-accent/90">
+                  <span>📁</span> {uploadPreview ? "Choose Another Photo" : "Open Photo Gallery"}
+                </div>
               </div>
 
               {detected && (
