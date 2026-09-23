@@ -303,49 +303,54 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // Reset value immediately so selecting the same file again triggers onChange
+    try {
+      e.target.value = "";
+    } catch {}
+
     setProcessingImage(true);
     setErr("");
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const img = new Image();
-      img.onload = async () => {
-        setUploadPreview(event.target.result);
-        try {
-          const rawCode = await decodeQrFromImage(img);
-          setProcessingImage(false);
-          if (rawCode) {
-            const giftMatch = rawCode.match(/RENO-GIFT-[A-Z0-9]{4}-[A-Z0-9]{4}/i) ||
-                              rawCode.match(/[?&]claimCode=([^&\s]+)/i) ||
-                              rawCode.match(/renopay:\/\/giftcard\/claim\?code=([^&\s]+)/i);
-            if (giftMatch) {
-              const code = (giftMatch[1] || giftMatch[0]).toUpperCase();
-              onSuccess?.({ type: "giftcard", code });
-              return;
-            }
+    setMode("upload");
 
-            const parsed = parseUniversalUpiQr(rawCode);
-            if (parsed) {
-              handleDetectedUpi(parsed);
-              return;
-            } else {
-              setErr(`Scanned text: "${rawCode.slice(0, 40)}..." is not a recognizable UPI QR code.`);
-            }
-          } else {
+    const objectUrl = URL.createObjectURL(file);
+    setUploadPreview(objectUrl);
 
-            setErr("No QR code detected in this image. Please upload a clearer QR code image.");
-          }
-        } catch (err) {
-          setProcessingImage(false);
-          setErr("Failed to process QR code from image.");
-        }
-      };
-      img.onerror = () => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = async () => {
+      try {
+        const rawCode = await decodeQrFromImage(img);
         setProcessingImage(false);
-        setErr("Could not read this image file.");
-      };
-      img.src = event.target.result;
+        if (rawCode) {
+          const giftMatch = rawCode.match(/RENO-GIFT-[A-Z0-9]{4}-[A-Z0-9]{4}/i) ||
+                            rawCode.match(/[?&]claimCode=([^&\s]+)/i) ||
+                            rawCode.match(/renopay:\/\/giftcard\/claim\?code=([^&\s]+)/i);
+          if (giftMatch) {
+            const code = (giftMatch[1] || giftMatch[0]).toUpperCase();
+            onSuccess?.({ type: "giftcard", code });
+            return;
+          }
+
+          const parsed = parseUniversalUpiQr(rawCode);
+          if (parsed) {
+            handleDetectedUpi(parsed);
+            return;
+          } else {
+            setErr(`Scanned text: "${rawCode.slice(0, 40)}..." is not a recognizable UPI QR code.`);
+          }
+        } else {
+          setErr("No QR code detected in this image. Please upload a clearer QR code image.");
+        }
+      } catch (err) {
+        setProcessingImage(false);
+        setErr("Failed to process QR code from image.");
+      }
     };
-    reader.readAsDataURL(file);
+    img.onerror = () => {
+      setProcessingImage(false);
+      setErr("Could not read this image file.");
+    };
+    img.src = objectUrl;
   };
 
   const submitManual = async () => {
@@ -414,10 +419,19 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
           <UpiBadge className="scale-85 origin-right" />
         </div>
 
+        {/* Universal Hidden File Input for Gallery QR Upload (Always in DOM) */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/png, image/jpeg, image/jpg, image/webp, image/*"
+          className="hidden"
+          onChange={handleImageUpload}
+        />
+
         {/* Live Camera Mode */}
         {mode === "camera" && (
           <div>
-            <div className="relative rounded-[20px] overflow-hidden mb-4 bg-black border-2 transition-colors" style={{ borderColor: detected ? "#22C55E" : "#FF6A1A55", aspectRatio: "1/1" }}>
+            <div className="relative rounded-[20px] overflow-hidden mb-3 bg-black border-2 transition-colors" style={{ borderColor: detected ? "#22C55E" : "#FF6A1A55", aspectRatio: "1/1" }}>
               <video ref={videoRef} className="w-full h-full object-cover" playsInline muted />
               <canvas ref={canvasRef} className="hidden" />
 
@@ -432,6 +446,16 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
                 />
               </div>
 
+              {/* Floating Gallery button inside viewfinder (Quick access like Google Pay & PhonePe) */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/75 hover:bg-black/90 active:scale-95 text-white text-[11px] font-bold border border-white/20 backdrop-blur-md shadow-lg transition-transform cursor-pointer"
+              >
+                <span>🖼️</span>
+                <span>Gallery</span>
+              </button>
+
               {cameraStatus === "starting" && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/60">
                   <p className="text-muted text-sm">Starting camera…</p>
@@ -439,7 +463,7 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
               )}
               {cameraStatus === "denied" && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/85 p-6 text-center">
-                  <p className="text-warn text-sm mb-3">Camera access denied. Please grant camera permission in App Settings or tap retry below.</p>
+                  <p className="text-warn text-sm mb-3">Camera access denied. Please grant camera permission in App Settings or upload from gallery.</p>
                   <div className="flex flex-wrap gap-2 justify-center">
                     <button
                       type="button"
@@ -451,14 +475,14 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
                     >
                       🔄 Grant & Retry Camera
                     </button>
-                    <Btn variant="dark" onClick={() => setMode("upload")}>Switch to Upload QR</Btn>
+                    <Btn variant="dark" onClick={() => fileInputRef.current?.click()}>🖼️ Open Gallery</Btn>
                   </div>
                 </div>
               )}
               {cameraStatus === "unsupported" && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/85 p-6 text-center">
                   <p className="text-warn text-sm mb-3">Camera access is not supported in this browser context (requires HTTPS / localhost).</p>
-                  <Btn variant="dark" onClick={() => setMode("upload")}>Upload QR Image</Btn>
+                  <Btn variant="dark" onClick={() => fileInputRef.current?.click()}>🖼️ Upload from Gallery</Btn>
                 </div>
               )}
               {detected && (
@@ -477,7 +501,17 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
                 </div>
               )}
             </div>
-            <p className="text-muted text-xs text-center">Point your camera at any UPI QR code (Paytm, PhonePe, GPay, etc.)</p>
+
+            <div className="flex items-center justify-between px-1">
+              <p className="text-muted text-[11px]">Point camera at any UPI QR</p>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-card border border-accent/40 hover:border-accent text-textLight font-bold text-xs transition-all shadow-sm active:scale-95 cursor-pointer"
+              >
+                <span>🖼️</span> Upload from Gallery
+              </button>
+            </div>
           </div>
         )}
 
@@ -485,13 +519,6 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
         {mode === "upload" && (
           <div>
             <Card className="p-6 text-center border-accent/[.25]">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handleImageUpload}
-              />
               <div
                 onClick={() => fileInputRef.current?.click()}
                 className="cursor-pointer border-2 border-dashed border-accent/40 hover:border-accent rounded-2xl p-6 transition-all bg-card/40 flex flex-col items-center justify-center"
@@ -513,9 +540,19 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
                 <p className="text-sm font-bold text-textLight mb-1">
                   {uploadPreview ? "Choose Another Image" : "Select or Drop QR Code Image"}
                 </p>
-                <p className="text-muted text-xs">
+                <p className="text-muted text-xs mb-3">
                   Upload Paytm, PhonePe, GPay, BharatPe or any UPI QR image
                 </p>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    fileInputRef.current?.click();
+                  }}
+                  className="px-4 py-2 rounded-xl bg-accent hover:bg-accent/90 active:scale-95 text-white font-bold text-xs transition shadow-md flex items-center gap-2 cursor-pointer"
+                >
+                  <span>📁</span> Open Photo Gallery
+                </button>
               </div>
 
               {detected && (
