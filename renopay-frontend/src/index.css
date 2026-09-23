@@ -4,21 +4,7 @@
 @tailwind components;
 @tailwind utilities;
 
-:root, [data-theme="dark"] {
-  --color-bg: 10, 9, 8;
-  --color-surf: 21, 18, 16;
-  --color-card: 21, 18, 16;
-  --color-line: 42, 35, 32;
-  --color-text: 154, 147, 140;
-  --color-textLight: 245, 243, 240;
-  --color-muted: 92, 86, 79;
-  --nav-pill-top: #1B1715;
-  --nav-pill-bottom: #110E0D;
-  --nav-pill-stroke: #2F2723;
-  --nav-inactive: #7D746C;
-}
-
-[data-theme="light"] {
+:root {
   --color-bg: 248, 250, 252;
   --color-surf: 255, 255, 255;
   --color-card: 255, 255, 255;
@@ -30,6 +16,34 @@
   --nav-pill-bottom: #F8FAFC;
   --nav-pill-stroke: #E2E8F0;
   --nav-inactive: #64748B;
+}
+
+[data-theme="light"], .light-theme {
+  --color-bg: 248, 250, 252;
+  --color-surf: 255, 255, 255;
+  --color-card: 255, 255, 255;
+  --color-line: 226, 232, 240;
+  --color-text: 51, 65, 85;
+  --color-textLight: 15, 23, 42;
+  --color-muted: 100, 116, 139;
+  --nav-pill-top: #FFFFFF;
+  --nav-pill-bottom: #F8FAFC;
+  --nav-pill-stroke: #E2E8F0;
+  --nav-inactive: #64748B;
+}
+
+[data-theme="dark"], .dark-theme {
+  --color-bg: 10, 9, 8;
+  --color-surf: 21, 18, 16;
+  --color-card: 21, 18, 16;
+  --color-line: 42, 35, 32;
+  --color-text: 154, 147, 140;
+  --color-textLight: 245, 243, 240;
+  --color-muted: 92, 86, 79;
+  --nav-pill-top: #1B1715;
+  --nav-pill-bottom: #110E0D;
+  --nav-pill-stroke: #2F2723;
+  --nav-inactive: #7D746C;
 }
 
 * {

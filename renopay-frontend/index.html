@@ -6,6 +6,21 @@
     <title>RenoPay</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <script>
+      (function() {
+        try {
+          var t = localStorage.getItem("renopay_theme") || "light";
+          document.documentElement.setAttribute("data-theme", t);
+          if (t === "light") {
+            document.documentElement.classList.add("light-theme");
+            document.documentElement.classList.remove("dark-theme");
+          } else {
+            document.documentElement.classList.add("dark-theme");
+            document.documentElement.classList.remove("light-theme");
+          }
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

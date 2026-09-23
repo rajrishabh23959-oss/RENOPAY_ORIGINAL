@@ -447,14 +447,16 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
               </div>
 
               {/* Floating Gallery button inside viewfinder (Quick access like Google Pay & PhonePe) */}
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/75 hover:bg-black/90 active:scale-95 text-white text-[11px] font-bold border border-white/20 backdrop-blur-md shadow-lg transition-transform cursor-pointer"
-              >
+              <label className="absolute bottom-3 right-3 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/75 hover:bg-black/90 active:scale-95 text-white text-[11px] font-bold border border-white/20 backdrop-blur-md shadow-lg transition-transform cursor-pointer overflow-hidden">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-20"
+                  onChange={handleImageUpload}
+                />
                 <span>🖼️</span>
                 <span>Gallery</span>
-              </button>
+              </label>
 
               {cameraStatus === "starting" && (
                 <div className="absolute inset-0 flex items-center justify-center bg-black/60">
@@ -475,14 +477,30 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
                     >
                       🔄 Grant & Retry Camera
                     </button>
-                    <Btn variant="dark" onClick={() => fileInputRef.current?.click()}>🖼️ Open Gallery</Btn>
+                    <label className="relative overflow-hidden inline-flex items-center px-4 py-2 rounded-xl bg-card border border-line text-textLight font-bold text-xs cursor-pointer active:scale-95">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-20"
+                        onChange={handleImageUpload}
+                      />
+                      <span>🖼️ Open Gallery</span>
+                    </label>
                   </div>
                 </div>
               )}
               {cameraStatus === "unsupported" && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/85 p-6 text-center">
                   <p className="text-warn text-sm mb-3">Camera access is not supported in this browser context (requires HTTPS / localhost).</p>
-                  <Btn variant="dark" onClick={() => fileInputRef.current?.click()}>🖼️ Upload from Gallery</Btn>
+                  <label className="relative overflow-hidden inline-flex items-center px-4 py-2 rounded-xl bg-card border border-line text-textLight font-bold text-xs cursor-pointer active:scale-95">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-20"
+                      onChange={handleImageUpload}
+                    />
+                    <span>🖼️ Upload from Gallery</span>
+                  </label>
                 </div>
               )}
               {detected && (
@@ -504,13 +522,15 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
 
             <div className="flex items-center justify-between px-1">
               <p className="text-muted text-[11px]">Point camera at any UPI QR</p>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-card border border-accent/40 hover:border-accent text-textLight font-bold text-xs transition-all shadow-sm active:scale-95 cursor-pointer"
-              >
+              <label className="relative overflow-hidden flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-card border border-accent/40 hover:border-accent text-textLight font-bold text-xs transition-all shadow-sm active:scale-95 cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-20"
+                  onChange={handleImageUpload}
+                />
                 <span>🖼️</span> Upload from Gallery
-              </button>
+              </label>
             </div>
           </div>
         )}
@@ -519,10 +539,13 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
         {mode === "upload" && (
           <div>
             <Card className="p-6 text-center border-accent/[.25]">
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="cursor-pointer border-2 border-dashed border-accent/40 hover:border-accent rounded-2xl p-6 transition-all bg-card/40 flex flex-col items-center justify-center"
-              >
+              <label className="relative overflow-hidden cursor-pointer border-2 border-dashed border-accent/40 hover:border-accent rounded-2xl p-6 transition-all bg-card/40 flex flex-col items-center justify-center block">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="opacity-0 absolute inset-0 w-full h-full cursor-pointer z-20"
+                  onChange={handleImageUpload}
+                />
                 {uploadPreview ? (
                   <div className="relative mb-3">
                     <img src={uploadPreview} alt="QR Preview" className="max-h-48 rounded-xl object-contain shadow-lg border border-line" />
@@ -543,17 +566,10 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
                 <p className="text-muted text-xs mb-3">
                   Upload Paytm, PhonePe, GPay, BharatPe or any UPI QR image
                 </p>
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    fileInputRef.current?.click();
-                  }}
-                  className="px-4 py-2 rounded-xl bg-accent hover:bg-accent/90 active:scale-95 text-white font-bold text-xs transition shadow-md flex items-center gap-2 cursor-pointer"
-                >
+                <div className="px-4 py-2 rounded-xl bg-accent text-white font-bold text-xs transition shadow-md flex items-center gap-2 pointer-events-none">
                   <span>📁</span> Open Photo Gallery
-                </button>
-              </div>
+                </div>
+              </label>
 
               {detected && (
                 <div className="mt-4 p-3 rounded-xl bg-teal/10 border border-teal/30">

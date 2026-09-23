@@ -318,7 +318,7 @@ export function GiftCardScreen({ onBack, initialClaimCode = "", onScanQr }) {
                     value={recipientName}
                     onChange={(e) => setRecipientName(e.target.value)}
                     maxLength={60}
-                    className="w-full text-sm font-semibold p-2.5 rounded-xl bg-surf border border-line text-white focus:border-accent focus:outline-none"
+                    className="w-full text-sm font-semibold p-2.5 rounded-xl bg-surf border border-line text-textLight placeholder:text-muted focus:border-accent focus:outline-none"
                   />
                 </Card>
 
@@ -367,7 +367,7 @@ export function GiftCardScreen({ onBack, initialClaimCode = "", onScanQr }) {
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     maxLength={100}
-                    className="w-full text-xs p-2.5 rounded-xl bg-surf border border-line text-white focus:border-accent focus:outline-none mb-2.5"
+                    className="w-full text-xs p-2.5 rounded-xl bg-surf border border-line text-textLight placeholder:text-muted focus:border-accent focus:outline-none mb-2.5"
                   />
                   <div className="flex gap-1.5 flex-wrap">
                     {GREETINGS.map((g) => (
@@ -572,7 +572,7 @@ export function GiftCardScreen({ onBack, initialClaimCode = "", onScanQr }) {
                   <div className="w-14 h-14 rounded-2xl bg-accent/10 border border-accent/30 flex items-center justify-center text-3xl mx-auto mb-3">
                     🎟️
                   </div>
-                  <h3 className="text-lg font-extrabold text-white">Claim Gift Card</h3>
+                  <h3 className="text-lg font-extrabold text-textLight">Claim Gift Card</h3>
                   <p className="text-muted text-xs mt-1">
                     Redeem your voucher code or scan voucher QR for instant wallet credit
                   </p>
@@ -593,7 +593,7 @@ export function GiftCardScreen({ onBack, initialClaimCode = "", onScanQr }) {
                       />
                       <button
                         type="button"
-                        className="absolute right-2 px-2.5 py-1 text-xs font-semibold rounded-lg bg-surf border border-line text-muted hover:text-white cursor-pointer"
+                        className="absolute right-2 px-2.5 py-1 text-xs font-semibold rounded-lg bg-surf border border-line text-muted hover:text-textLight cursor-pointer"
                         onClick={handlePasteCode}
                       >
                         Paste
@@ -630,7 +630,7 @@ export function GiftCardScreen({ onBack, initialClaimCode = "", onScanQr }) {
                 <div className="w-20 h-20 rounded-full bg-emerald-500/20 border-2 border-emerald-500 flex items-center justify-center text-4xl mx-auto mb-4 animate-bounce">
                   ✨
                 </div>
-                <h3 className="text-2xl font-extrabold text-white">Gift Card Claimed!</h3>
+                <h3 className="text-2xl font-extrabold text-textLight">Gift Card Claimed!</h3>
                 <p className="text-emerald-400 text-sm font-bold mt-1">
                   ₹{claimResult.amount} added to your account!
                 </p>
@@ -638,7 +638,7 @@ export function GiftCardScreen({ onBack, initialClaimCode = "", onScanQr }) {
                 <div className="my-5 p-4 rounded-xl bg-card border border-line text-left">
                   <div className="flex justify-between items-center text-xs py-1 border-b border-line/60">
                     <span className="text-muted">Voucher Code</span>
-                    <span className="font-mono font-bold text-white">{claimResult.card_code}</span>
+                    <span className="font-mono font-bold text-textLight">{claimResult.card_code}</span>
                   </div>
                   <div className="flex justify-between items-center text-xs py-1 border-b border-line/60">
                     <span className="text-muted">Amount Credited</span>
@@ -709,7 +709,7 @@ export function GiftCardScreen({ onBack, initialClaimCode = "", onScanQr }) {
                   <Card key={c.id} className="p-4 border-line hover:border-accent/30 transition-all">
                     <div className="flex justify-between items-start mb-2">
                       <div>
-                        <p className="font-mono text-sm font-extrabold text-white">{c.card_code}</p>
+                        <p className="font-mono text-sm font-extrabold text-textLight">{c.card_code}</p>
                         <p className="text-[11px] text-muted mt-0.5">
                           {historyFilter === "created"
                             ? c.recipient_name ? `For ${c.recipient_name}` : "Bearer Voucher"
