@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { PaymentAPI } from "../lib/api";
 import { Btn, Badge, Card } from "../components/ui";
 import { scanVideoFrame, decodeQrFromImage } from "../lib/qrScanner";
-import { BhimUpiLogo, PoweredByUpiBadge } from "../components/UpiBrandBadges";
+import { UpiBadge, PoweredByUpiBadge } from "../components/UpiBrandBadges";
 
 // Universal UPI QR Parser: Handles Paytm, PhonePe, Google Pay, BharatPe, BHIM, Bank QRs, bare VPAs & dynamic bills
 export function parseUniversalUpiQr(rawText) {
@@ -97,7 +97,7 @@ export function parseUniversalUpiQr(rawText) {
     appIcon = "💳";
     badgeColor = "#E0E0E0";
   } else if (handle === "upi") {
-    app = "BHIM UPI";
+    app = "UPI";
     appIcon = "🇮🇳";
     badgeColor = "#22C55E";
   } else {
@@ -408,10 +408,10 @@ export function ScanScreen({ onBack, onSuccess, initialMode = "camera" }) {
             <span className="text-xl">📷</span>
             <div>
               <h3 className="text-[13px] font-black text-textLight tracking-wide uppercase">Scan any UPI QR</h3>
-              <p className="text-[10px] text-muted">Supports Google Pay, PhonePe, Paytm & BHIM</p>
+              <p className="text-[10px] text-muted">Supports Google Pay, PhonePe, Paytm & all UPI apps</p>
             </div>
           </div>
-          <BhimUpiLogo className="scale-85 origin-right" />
+          <UpiBadge className="scale-85 origin-right" />
         </div>
 
         {/* Live Camera Mode */}

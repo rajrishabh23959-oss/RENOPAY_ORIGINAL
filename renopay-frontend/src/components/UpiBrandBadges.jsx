@@ -27,12 +27,20 @@ export function BhimLogo({ className = "h-5 w-auto" }) {
   );
 }
 
-/**
- * Official Real UPI Logo standalone.
- */
 export function UpiLogo({ className = "h-5 w-auto" }) {
   return (
     <img src={upiLogo} alt="UPI" className={`object-contain ${className}`} />
+  );
+}
+
+/**
+ * Official Real UPI Logo Badge in rounded container.
+ */
+export function UpiBadge({ className = "" }) {
+  return (
+    <div className={`inline-flex items-center px-2.5 py-1 rounded-xl bg-white/95 border border-line/60 shadow-sm select-none ${className}`}>
+      <img src={upiLogo} alt="UPI - Unified Payments Interface" className="h-4.5 w-auto object-contain" style={{ maxHeight: "20px" }} />
+    </div>
   );
 }
 
