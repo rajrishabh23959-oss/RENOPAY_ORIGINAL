@@ -1,6 +1,9 @@
 import os
 import sys
+import traceback
 from pathlib import Path
+from fastapi import FastAPI
+from fastapi.responses import PlainTextResponse
 
 # Ensure renopay-backend is in sys.path so 'app' can be imported
 current_dir = Path(__file__).resolve().parent
@@ -9,16 +12,13 @@ backend_dir = current_dir.parent / "renopay-backend"
 if str(backend_dir) not in sys.path:
     sys.path.insert(0, str(backend_dir))
 
+app = FastAPI()
+
 try:
-    from app.main import app
+    from app.main import app as backend_app
+    app = backend_app
 except Exception as e:
-    import traceback
-    from fastapi import FastAPI
-    from fastapi.responses import PlainTextResponse
-
-    err_text = traceback.format_exc()
-    app = FastAPI()
-
+    startup_error = traceback.format_exc()
     @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS", "HEAD"])
-    async def catch_all(path: str):
-        return PlainTextResponse(f"BACKEND STARTUP ERROR:\n{err_text}", status_code=500)
+    async def fallback(path: str):
+        return PlainTextResponse(f"BACKEND STARTUP ERROR:\n{startup_error}", status_code=500)
