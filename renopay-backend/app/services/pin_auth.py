@@ -33,7 +33,7 @@ async def verify_user_pin(db, user: User, pin: str | None) -> None:
         raise PinError("pin_not_set", "You must set a PIN before making payments.")
 
     if not pin or not verify_pin(pin, user.pin_hash):
-        user.pin_failed_attempts += 1
+        user.pin_failed_attempts = (user.pin_failed_attempts or 0) + 1
         if user.pin_failed_attempts >= settings.MAX_PIN_ATTEMPTS:
             user.pin_locked_until = datetime.now(timezone.utc) + timedelta(minutes=settings.PIN_LOCKOUT_MINUTES)
         await db.commit()
